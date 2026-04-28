@@ -15,11 +15,23 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Clone HF Space
+      - name: Setup HF Space repo
         run: |
-          git clone https://arwei944:${{ secrets.HF_TOKEN }}@huggingface.co/spaces/arwei944/ai-task-hub /tmp/hf-space 2>&1 || \
-          (mkdir -p /tmp/hf-space && cd /tmp/hf-space && git init && \
-           git remote add origin https://arwei944:${{ secrets.HF_TOKEN }}@huggingface.co/spaces/arwei944/ai-task-hub)
+          mkdir -p /tmp/hf-space
+          cd /tmp/hf-space
+
+          # Try to clone existing space
+          if git clone https://arwei944:${{ secrets.HF_TOKEN }}@huggingface.co/spaces/arwei944/ai-task-hub . 2>&1; then
+            echo "Cloned existing HF Space"
+          else
+            echo "Creating new HF Space repo"
+            git init
+            git remote add origin https://arwei944:${{ secrets.HF_TOKEN }}@huggingface.co/spaces/arwei944/ai-task-hub
+          fi
+
+          # Configure git identity
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Sync project files to HF Space
         run: |
@@ -45,11 +57,19 @@ jobs:
       - name: Push to HF Spaces
         run: |
           cd /tmp/hf-space
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
           git add -A
           git diff --staged --quiet || git commit -m "🚀 Deploy $(echo ${{ github.sha }} | cut -c1-7)"
-          git push origin main --force 2>&1
+
+          # Determine remote branch name
+          REMOTE_BRANCH=$(git ls-remote --heads origin 2>/dev/null | head -1 | sed 's/.*refs\/heads\///' || echo "")
+          if [ -z "$REMOTE_BRANCH" ]; then
+            # New repo - push main and set upstream
+            git branch -M main
+            git push -u origin main 2>&1
+          else
+            # Existing repo - push to whatever branch exists
+            git push origin HEAD:${REMOTE_BRANCH} --force 2>&1
+          fi
 
       - name: Deployment summary
         if: always()
