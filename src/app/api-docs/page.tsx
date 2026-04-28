@@ -214,9 +214,68 @@ export default function ApiDocsPage() {
           ))}
         </div>
 
-        {/* REST API */}
+        {/* REST API v1 - Universal AI API */}
         <div className="mt-8 bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 p-5">
-          <h2 className="font-semibold text-gray-900 dark:text-gray-100 mb-3">🔌 REST API 端点</h2>
+          <h2 className="font-semibold text-gray-900 dark:text-gray-100 mb-1">🌐 REST API v1 — 通用 AI 接口</h2>
+          <p className="text-xs text-gray-400 mb-4">任何能发 HTTP 请求的 AI 都能用 · X-API-Key 认证 · 单端点多 action</p>
+
+          <div className="bg-blue-50 dark:bg-blue-950 rounded-lg p-3 mb-4 text-xs font-mono text-blue-700 dark:text-blue-300">
+            <div className="font-bold mb-1"># 1. 注册 Agent（无需 API Key）</div>
+            <div>POST /api/v1</div>
+            <pre className="mt-1 bg-white dark:bg-gray-900 p-2 rounded text-gray-700 dark:text-gray-300 overflow-x-auto">
+{`{
+  "action": "register",
+  "name": "My AI Agent",
+  "clientType": "trae",  // trae/cursor/windsurf/vscode/claude/chatgpt/api
+  "clientVersion": "1.0.0"
+}`}
+            </pre>
+            <div className="mt-1 text-gray-500">{'→ 返回 apiKey，后续请求带上 X-API-Key: <your-key>'}</div>
+          </div>
+
+          <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 mb-4 text-xs font-mono text-gray-700 dark:text-gray-300">
+            <div className="font-bold mb-1"># 2. 创建项目</div>
+            <div>POST /api/v1 &nbsp; Header: X-API-Key: ath_trae_xxx</div>
+            <pre className="mt-1 bg-white dark:bg-gray-900 p-2 rounded overflow-x-auto">
+{`{ "action": "create_project", "name": "任务管理面板", "techStack": ["Next.js", "Prisma"] }`}
+            </pre>
+          </div>
+
+          <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 mb-4 text-xs font-mono text-gray-700 dark:text-gray-300">
+            <div className="font-bold mb-1"># 3. 创建任务</div>
+            <pre className="mt-1 bg-white dark:bg-gray-900 p-2 rounded overflow-x-auto">
+{`{ "action": "create_task", "projectId": "xxx", "title": "实现用户认证",
+  "phase": "implementation", "priority": "high" }`}
+            </pre>
+          </div>
+
+          <div className="text-xs text-gray-500 font-medium mb-2">全部 action 列表：</div>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-1.5 text-xs">
+            {[
+              { a: 'register', d: '注册 Agent' },
+              { a: 'create_project', d: '创建项目' },
+              { a: 'update_project', d: '更新项目' },
+              { a: 'get_project', d: '项目详情' },
+              { a: 'list_projects', d: '列出项目' },
+              { a: 'create_task', d: '创建任务' },
+              { a: 'update_task', d: '更新任务' },
+              { a: 'list_tasks', d: '列出任务' },
+              { a: 'advance_phase', d: '推进阶段' },
+              { a: 'log_activity', d: '记录活动' },
+              { a: 'get_activities', d: '活动时间线' },
+              { a: 'get_summary', d: '项目概览' },
+            ].map(({ a, d }) => (
+              <div key={a} className="flex gap-1.5 py-0.5">
+                <code className="text-blue-600 dark:text-blue-400">{a}</code>
+                <span className="text-gray-400">{d}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* System REST API */}
+        <div className="mt-4 bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 p-5">
+          <h2 className="font-semibold text-gray-900 dark:text-gray-100 mb-3">🔌 系统 REST API</h2>
           <div className="space-y-2 text-sm">
             {[
               { method: 'GET', path: '/api/status', desc: '系统健康检查' },
