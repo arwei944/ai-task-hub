@@ -10,6 +10,7 @@ const navItems = [
   { href: '/dashboard', label: '仪表盘', icon: '📊' },
   { href: '/tasks', label: '任务', icon: '✅' },
   { href: '/agents', label: '智能体', icon: '🤖' },
+  { href: '/workspaces', label: '工作区', icon: '🏢' },
   { href: '/integrations', label: '集成', icon: '🔗' },
   { href: '/plugins', label: '插件', icon: '🔌' },
   { href: '/api-docs', label: 'API', icon: '📖' },

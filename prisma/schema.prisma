@@ -305,3 +305,37 @@ model Plugin {
   @@index([name])
   @@index([isEnabled])
 }
+
+// ==================== Workspace ====================
+
+model Workspace {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  slug        String   @unique
+  icon        String?
+  owner       String   // User ID
+  settings    String?  // JSON: workspace settings
+  isDefault   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  members     WorkspaceMember[]
+
+  @@index([owner])
+  @@index([slug])
+}
+
+model WorkspaceMember {
+  id          String   @id @default(uuid())
+  workspaceId String
+  userId      String
+  role        String   @default("member") // owner, admin, member, viewer
+  joinedAt    DateTime @default(now())
+
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, userId])
+  @@index([workspaceId])
+  @@index([userId])
+}
