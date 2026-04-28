@@ -64,6 +64,9 @@ model Task {
   @@index([parentTaskId])
   @@index([dueDate])
   @@index([createdAt])
+  @@index([status, createdAt])
+  @@index([status, priority])
+  @@index([assignee, status])
 }
 
 // ==================== Task Dependency ====================
