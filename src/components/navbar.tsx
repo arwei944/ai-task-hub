@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ThemeToggle } from './theme-toggle';
+import { LanguageSwitcher } from './language-switcher';
 
 const navItems = [
   { href: '/dashboard', label: '仪表盘', icon: '📊' },
@@ -46,7 +47,8 @@ export default function Navbar() {
                 {item.label}
               </Link>
             ))}
-            <div className="ml-2 border-l border-gray-200 dark:border-gray-700 pl-2">
+            <div className="ml-2 border-l border-gray-200 dark:border-gray-700 pl-2 flex items-center gap-2">
+              <LanguageSwitcher />
               <ThemeToggle />
             </div>
           </div>
