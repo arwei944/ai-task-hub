@@ -1,56 +1,46 @@
 # ============================================================
 # Hugging Face Spaces Dockerfile
 # ============================================================
-# Strategy: Full node_modules copy (no standalone mode)
-# This avoids all native module resolution issues
+# Simple, reliable: full node_modules, no standalone, no prune
 # ============================================================
 
 FROM node:20-alpine
 
-# Build dependencies for native modules
 RUN apk add --no-cache libc6-compat python3 make g++
 
 WORKDIR /app
 
-# Copy all source
-COPY package.json pnpm-lock.yaml ./
-COPY prisma ./prisma/
-COPY prisma.config.ts ./
-COPY next.config.ts ./
-COPY tsconfig.json ./
-COPY postcss.config.mjs ./
-COPY src ./src/
-COPY public ./public/
-COPY config ./config/
-COPY mcp-server ./mcp-server/
+# Copy everything (except .dockerignore exclusions)
+COPY . .
 
-# Install ALL dependencies (including devDependencies for build)
+# Install dependencies
 RUN corepack enable pnpm && pnpm install --frozen-lockfile
 
-# Rebuild native modules explicitly
+# Rebuild native module (pnpm 10 may skip build scripts)
 RUN pnpm rebuild better-sqlite3
 
 # Generate Prisma client
 RUN npx prisma generate
 
-# Create data directory and initialize database
+# Init database
 RUN mkdir -p /app/data
 ENV DATABASE_URL=file:/app/data/dev.db
 RUN npx prisma db push --accept-data-loss 2>&1
 
-# Build Next.js (standard mode, not standalone)
+# Build Next.js
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN npx next build
 
-# Remove devDependencies to reduce image size
-RUN pnpm prune --prod
-RUN pnpm rebuild better-sqlite3
-
-# HF Spaces configuration
+# Runtime config
 ENV NODE_ENV=production
 ENV PORT=7860
 ENV HOSTNAME="0.0.0.0"
 
 EXPOSE 7860
 
-CMD ["npx", "next", "start", "-p", "7860", "-H", "0.0.0.0"]
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+  CMD wget --no-verbose --tries=1 --spider http://localhost:7860/api/status || exit 1
+
+# Start with error logging
+CMD ["sh", "-c", "npx next start -p 7860 -H 0.0.0.0 2>&1 | tee /tmp/app.log"]

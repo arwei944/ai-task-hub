@@ -1,6 +1,16 @@
 node_modules/
 .next/
 .git/
-*.md
 .env*
+.env.*
 test-db/
+backups/
+*.db
+*.db-journal
+.github/
+.vscode/
+.idea/
+*.log
+coverage/
+playwright-report/
+test-results/
