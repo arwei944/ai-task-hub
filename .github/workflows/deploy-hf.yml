@@ -15,19 +15,22 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Create HF Space if not exists
+        run: |
+          # Try to create the space (idempotent - fails if already exists)
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X POST "https://huggingface.co/api/spaces" \
+            -H "Authorization: Bearer ${{ secrets.HF_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d '{"name":"ai-task-hub","sdk":"docker","private":false}')
+          echo "Create space status: $STATUS"
+
       - name: Setup HF Space repo
         run: |
           mkdir -p /tmp/hf-space
           cd /tmp/hf-space
 
-          # Try to clone existing space
-          if git clone https://arwei944:${{ secrets.HF_TOKEN }}@huggingface.co/spaces/arwei944/ai-task-hub . 2>&1; then
-            echo "Cloned existing HF Space"
-          else
-            echo "Creating new HF Space repo"
-            git init
-            git remote add origin https://arwei944:${{ secrets.HF_TOKEN }}@huggingface.co/spaces/arwei944/ai-task-hub
-          fi
+          # Clone the space (should succeed now)
+          git clone https://arwei944:${{ secrets.HF_TOKEN }}@huggingface.co/spaces/arwei944/ai-task-hub . 2>&1
 
           # Configure git identity
           git config user.name "github-actions[bot]"
@@ -60,14 +63,12 @@ jobs:
           git add -A
           git diff --staged --quiet || git commit -m "🚀 Deploy $(echo ${{ github.sha }} | cut -c1-7)"
 
-          # Determine remote branch name
+          # Detect remote branch
           REMOTE_BRANCH=$(git ls-remote --heads origin 2>/dev/null | head -1 | sed 's/.*refs\/heads\///' || echo "")
           if [ -z "$REMOTE_BRANCH" ]; then
-            # New repo - push main and set upstream
             git branch -M main
             git push -u origin main 2>&1
           else
-            # Existing repo - push to whatever branch exists
             git push origin HEAD:${REMOTE_BRANCH} --force 2>&1
           fi
 
