@@ -47,12 +47,17 @@ export class AuthService {
     // Hash password
     const passwordHash = await bcrypt.hash(data.password, SALT_ROUNDS);
 
+    // Check if this is the first user (auto-admin)
+    const userCount = await this.userRepo.count();
+    const isFirstUser = userCount === 0;
+
     // Create user
     const user = await this.userRepo.create({
       username: data.username,
       email: data.email,
       passwordHash,
       displayName: data.displayName,
+      role: isFirstUser ? 'admin' : undefined,
     });
 
     // Generate JWT

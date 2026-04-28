@@ -49,6 +49,7 @@ const STEP_TYPE_OPTIONS = [
   { value: 'create-task', label: '创建任务' },
   { value: 'update-status', label: '更新状态' },
   { value: 'ai-analyze', label: 'AI 分析' },
+  { value: 'send-notification', label: '发送通知' },
   { value: 'wait', label: '等待' },
 ] as const;
 

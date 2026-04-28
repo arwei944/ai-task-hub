@@ -20,6 +20,10 @@ export class UserRepository {
     return this.prisma.user.findUnique({ where: { email } });
   }
 
+  async count() {
+    return this.prisma.user.count();
+  }
+
   async create(data: {
     username: string;
     email: string;

@@ -64,7 +64,7 @@ describe('AuthService', () => {
       expect(result.user.username).toBe('testuser');
       expect(result.user.email).toBe('test@example.com');
       expect(result.user.displayName).toBe('Test User');
-      expect(result.user.role).toBe('user');
+      expect(result.user.role).toBe('admin'); // First user is auto-admin
       expect(result.token).toBeTruthy();
     });
 

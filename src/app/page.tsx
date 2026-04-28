@@ -36,6 +36,14 @@ export default function HomePage() {
             <h1 className="text-xl font-bold">AI Task Hub</h1>
             <Badge variant="secondary">v1.0.1</Badge>
           </div>
+          <div className="flex items-center gap-3">
+            <a
+              href="/login"
+              className="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
+            >
+              登录
+            </a>
+          </div>
           <Badge variant="outline">v1.0.1 - 全功能版本</Badge>
         </div>
       </header>
@@ -51,6 +59,14 @@ export default function HomePage() {
             多智能体协作、自动任务提取与进度追踪。
           </p>
           <div className="flex gap-4 justify-center">
+            <a
+              href="/login"
+              className="inline-flex items-center justify-center rounded-lg bg-primary px-6 py-3 text-base font-medium text-primary-foreground shadow hover:bg-primary/90 transition-colors"
+            >
+              开始使用
+            </a>
+          </div>
+          <div className="flex gap-4 justify-center pt-2">
             <Badge variant="default" className="text-sm px-3 py-1">
               模块化架构
             </Badge>
