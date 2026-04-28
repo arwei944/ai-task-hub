@@ -1,62 +1,47 @@
 # ============================================================
 # Hugging Face Spaces Dockerfile
 # ============================================================
-# Multi-stage: npm install → build → prune devDeps → slim runner
+# Single stage: npm install → build → prune → run
 # ============================================================
 
-# ---- Build stage ----
-FROM node:20-alpine AS builder
+FROM node:20-alpine
 
-RUN apk add --no-cache libc6-compat python3 make g++
+RUN apk add --no-cache libc6-compat python3 make g++ wget
 
 WORKDIR /app
+
+ENV DATABASE_URL=file:/app/data/dev.db
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV NODE_ENV=production
+ENV PORT=7860
+ENV HOSTNAME="0.0.0.0"
+
+# Copy everything
 COPY . .
 
-# Install ALL dependencies (dev needed for build)
+# Remove pnpm lockfile so npm uses its own
+RUN rm -f pnpm-lock.yaml .npmrc
+
+# Install all dependencies
 RUN npm install --legacy-peer-deps
 
 # Verify native module
 RUN test -f node_modules/better-sqlite3/build/Release/better_sqlite3.node || (echo "FATAL: native build failed" && exit 1)
 
-RUN npx prisma generate
+# Generate Prisma + init DB
+RUN npx prisma generate && \
+    mkdir -p /app/data && \
+    npx prisma db push --accept-data-loss 2>&1 && \
+    test -f /app/data/dev.db || (echo "FATAL: DB creation failed" && exit 1)
 
-RUN mkdir -p /app/data
-ENV DATABASE_URL=file:/app/data/dev.db
-RUN npx prisma db push --accept-data-loss 2>&1
-RUN test -f /app/data/dev.db || (echo "FATAL: DB creation failed" && exit 1)
-
-ENV NEXT_TELEMETRY_DISABLED=1
+# Build Next.js
 RUN npx next build
 
-# Remove devDependencies to shrink image (~1.2GB → ~400MB)
-RUN npm prune --production && npm rebuild better-sqlite3
+# Remove devDependencies (npm needs package-lock.json which npm install created)
+RUN npm prune --omit=dev && npm rebuild better-sqlite3 2>&1
 
-# ---- Runner stage ----
-FROM node:20-alpine
-
-RUN apk add --no-cache libc6-compat wget
-
-WORKDIR /app
-
-ENV NODE_ENV=production
-ENV DATABASE_URL=file:/app/data/dev.db
-ENV PORT=7860
-ENV HOSTNAME="0.0.0.0"
-
-COPY --from=builder /app/.next ./.next
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/src ./src
-COPY --from=builder /app/prisma ./prisma
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/config ./config
-COPY --from=builder /app/mcp-server ./mcp-server
-COPY --from=builder /app/data ./data
-COPY --from=builder /app/package.json ./
-COPY --from=builder /app/next.config.ts ./
-COPY --from=builder /app/tsconfig.json ./
-COPY --from=builder /app/postcss.config.mjs ./
-COPY --from=builder /app/start.sh ./
-COPY --from=builder /app/prisma.config.ts ./
+# Clean up
+RUN rm -rf .next/cache node_modules/.cache
 
 RUN chmod +x start.sh
 
