@@ -17,6 +17,13 @@ const navItems = [
   { href: '/settings', label: '设置', icon: '⚙️' },
 ];
 
+// More pages (accessible via sidebar or direct URL)
+export const morePages = [
+  { href: '/plugin-market', label: '插件市场', icon: '🏪' },
+  { href: '/dashboard-settings', label: '仪表盘设置', icon: '🎛️' },
+  { href: '/agent-workflows', label: 'Agent 工作流', icon: '🤖' },
+];
+
 export default function Navbar() {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
