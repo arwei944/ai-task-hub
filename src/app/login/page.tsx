@@ -27,7 +27,6 @@ export default function LoginPage() {
         });
         localStorage.setItem('token', result.token);
         localStorage.setItem('user', JSON.stringify(result.user));
-        document.cookie = `token=${result.token}; path=/; max-age=${7 * 24 * 3600}; SameSite=Lax`;
         setMessage({ type: 'success', text: '注册成功，正在跳转到仪表盘...' });
       } else {
         const result = await trpc.auth.login.mutate({
@@ -36,7 +35,6 @@ export default function LoginPage() {
         });
         localStorage.setItem('token', result.token);
         localStorage.setItem('user', JSON.stringify(result.user));
-        document.cookie = `token=${result.token}; path=/; max-age=${7 * 24 * 3600}; SameSite=Lax`;
         setMessage({ type: 'success', text: '登录成功，正在跳转到仪表盘...' });
       }
       // Delay redirect so user can see the success message

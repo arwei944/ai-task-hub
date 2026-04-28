@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { trpc } from '@/lib/trpc/client';
 import { useSSE } from '@/lib/hooks/use-sse';
+import { AuthGuard } from '@/components/auth-guard';
 
 interface StatusCount {
   todo: number;
@@ -38,6 +39,14 @@ interface DailyTrend {
 }
 
 export default function DashboardPage() {
+  return (
+    <AuthGuard>
+      <DashboardContent />
+    </AuthGuard>
+  );
+}
+
+function DashboardContent() {
   const [statusCounts, setStatusCounts] = useState<StatusCount>({ todo: 0, in_progress: 0, done: 0, closed: 0 });
   const [recentTasks, setRecentTasks] = useState<TaskItem[]>([]);
   const [overdueTasks, setOverdueTasks] = useState<TaskItem[]>([]);

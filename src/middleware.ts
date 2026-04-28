@@ -4,20 +4,6 @@ import { rateLimiters } from '@/lib/security/rate-limiter';
 import { getSecurityHeaders } from '@/lib/security/headers';
 import { handlePreflight, applyCORS, isOriginAllowed } from '@/lib/security/cors';
 
-// Routes that don't require authentication
-const PUBLIC_PATHS = [
-  '/login',
-  '/api/mcp',
-  '/api/webhook',
-  '/api/status',
-  '/api/export',
-  '/api/sse',
-  '/api/backup',
-  '/api/projects',
-  '/api/v1',
-  '/api/trpc',
-];
-
 // Rate limit configuration per path pattern
 function getRateLimiter(pathname: string) {
   if (pathname.startsWith('/api/auth') || pathname.startsWith('/login')) return rateLimiters.auth;
@@ -58,37 +44,11 @@ export function middleware(request: NextRequest) {
         { error: '请求过于频繁，请稍后重试', code: 'RATE_LIMITED' },
         { status: 429 },
       );
-      // Apply rate limit headers
       for (const [key, value] of Object.entries(limiter.getHeaders(result))) {
         response.headers.set(key, value);
       }
       return response;
     }
-  }
-
-  // Allow public paths (but still apply security headers)
-  if (PUBLIC_PATHS.some(path => pathname.startsWith(path))) {
-    const response = NextResponse.next();
-    return applySecurityAndCORS(response, origin);
-  }
-
-  // Check for token in cookie or authorization header
-  const token =
-    request.cookies.get('token')?.value ||
-    request.headers.get('authorization')?.replace('Bearer ', '');
-
-  // If no token, redirect to login (for page routes) or return 401 (for API routes)
-  if (!token) {
-    if (pathname.startsWith('/api/')) {
-      const response = NextResponse.json(
-        { error: '请先登录', code: 'UNAUTHORIZED' },
-        { status: 401 },
-      );
-      return applySecurityAndCORS(response, origin);
-    }
-    const loginUrl = new URL('/login', request.url);
-    loginUrl.searchParams.set('redirect', pathname);
-    return NextResponse.redirect(loginUrl);
   }
 
   const response = NextResponse.next();
@@ -99,13 +59,11 @@ export function middleware(request: NextRequest) {
  * Apply security headers and CORS to a response
  */
 function applySecurityAndCORS(response: NextResponse, origin: string | null): NextResponse {
-  // Security headers
   const secHeaders = getSecurityHeaders();
   for (const [key, value] of Object.entries(secHeaders)) {
     response.headers.set(key, value);
   }
 
-  // CORS
   if (origin && isOriginAllowed(origin)) {
     const corsHeaders = {
       'Access-Control-Allow-Origin': origin,
