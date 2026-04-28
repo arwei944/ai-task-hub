@@ -1,0 +1,98 @@
+# AI Task Hub - Module Configuration
+# Modules can be enabled/disabled here without code changes
+
+modules:
+  # Core module - cannot be disabled
+  task-core:
+    enabled: true
+    locked: true
+
+  # AI Engine module
+  ai-engine:
+    enabled: false
+    config:
+      model_provider: "vercel-ai"
+      default_model: "gpt-4o"
+      auto_status_inference: true
+      auto_task_extraction: true
+
+  # MCP Server module
+  mcp-server:
+    enabled: false
+    config:
+      mode: "embedded"
+      transport: "stdio"
+
+  # Agent collaboration module
+  agent-collab:
+    enabled: false
+    config:
+      permission_model: "creator-isolation"
+
+  # Notifications module
+  notifications:
+    enabled: false
+    config:
+      channels:
+        - type: "webhook"
+          url: "${WEBHOOK_URL}"
+        - type: "browser-push"
+      rules:
+        - event: "task.overdue"
+          action: "notify"
+        - event: "task.status_changed"
+          action: "log"
+
+  # Dashboard module
+  dashboard:
+    enabled: false
+
+  # Platform integrations (enable as needed)
+  integration-github:
+    enabled: false
+    config:
+      token: "${GITHUB_TOKEN}"
+      repo: ""
+      sync_interval: "5m"
+
+  integration-feishu:
+    enabled: false
+    config:
+      app_id: "${FEISHU_APP_ID}"
+      app_secret: "${FEISHU_APP_SECRET}"
+
+  integration-notion:
+    enabled: false
+    config:
+      token: "${NOTION_TOKEN}"
+      database_id: ""
+
+  integration-webhook:
+    enabled: false
+    config:
+      secret: "${WEBHOOK_SECRET}"
+
+  integration-telegram:
+    enabled: false
+    config:
+      bot_token: "${TELEGRAM_BOT_TOKEN}"
+      notify_chat_id: "${TELEGRAM_NOTIFY_CHAT_ID}"
+      webhook_url: ""
+
+  integration-wechat:
+    enabled: false
+    config:
+      bot_webhook_url: "${WECHAT_BOT_WEBHOOK_URL}"
+      notify_user_id: "${WECHAT_NOTIFY_USER_ID}"
+
+  # Module hot update system
+  module-updater:
+    enabled: false
+    config:
+      auto_check: true
+      check_interval: "5m"
+
+app:
+  name: "AI Task Hub"
+  version: "0.1.0"
+  port: 3000

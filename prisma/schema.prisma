@@ -1,0 +1,304 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+// ==================== User ====================
+
+model User {
+  id            String   @id @default(uuid())
+  username      String   @unique
+  email         String   @unique
+  passwordHash  String
+  displayName   String?
+  role          String   @default("user") // admin, user, agent
+  avatar        String?
+  isActive      Boolean  @default(true)
+  lastLoginAt   DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([username])
+  @@index([email])
+  @@index([role])
+  @@index([isActive])
+}
+
+// ==================== Task ====================
+
+model Task {
+  id          String   @id @default(uuid())
+  title       String
+  description String?
+  status      String   @default("todo") // todo, in_progress, done, closed, deleted
+  priority    String   @default("medium") // urgent, high, medium, low
+  progress    Int      @default(0) // 0-100
+  type        String   @default("general")
+  source      String   @default("manual") // trae, manual, ai, import
+  sourceRef   String?
+  assignee    String?
+  creator     String?
+  parentTaskId String?
+  dueDate     DateTime?
+  startedAt   DateTime?
+  completedAt DateTime?
+  metadata    String? // JSON string
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  parentTask   Task?              @relation("SubTasks", fields: [parentTaskId], references: [id])
+  subTasks     Task[]             @relation("SubTasks")
+  dependencies TaskDependency[]  @relation("TaskDependsOn")
+  dependents   TaskDependency[]  @relation("TaskDependentOf")
+  history      TaskHistory[]
+  tags         TaskTag[]
+
+  @@index([status])
+  @@index([priority])
+  @@index([type])
+  @@index([creator])
+  @@index([parentTaskId])
+  @@index([dueDate])
+  @@index([createdAt])
+}
+
+// ==================== Task Dependency ====================
+
+model TaskDependency {
+  id          String @id @default(uuid())
+  taskId      String
+  dependsOnId String
+  createdAt   DateTime @default(now())
+
+  task      Task @relation("TaskDependsOn", fields: [taskId], references: [id])
+  dependsOn Task @relation("TaskDependentOf", fields: [dependsOnId], references: [id])
+
+  @@unique([taskId, dependsOnId])
+  @@index([taskId])
+  @@index([dependsOnId])
+}
+
+// ==================== Task History ====================
+
+model TaskHistory {
+  id        String   @id @default(uuid())
+  taskId    String
+  field     String   // status, priority, progress, title, description, etc.
+  oldValue  String?
+  newValue  String?
+  actor     String?  // user or agent id
+  createdAt DateTime @default(now())
+
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
+  @@index([createdAt])
+}
+
+// ==================== Tag ====================
+
+model Tag {
+  id     String @id @default(uuid())
+  name   String @unique
+  color  String @default("#6B7280")
+  createdAt DateTime @default(now())
+
+  tasks TaskTag[]
+
+  @@index([name])
+}
+
+// ==================== Task Tag ====================
+
+model TaskTag {
+  taskId String
+  tagId  String
+
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  tag  Tag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([taskId, tagId])
+  @@index([taskId])
+  @@index([tagId])
+}
+
+// ==================== AI Audit Log ====================
+
+model AIAuditLog {
+  id         String   @id @default(uuid())
+  processor  String
+  input      String
+  output     String
+  model      String
+  tokensUsed Int      @default(0)
+  duration   Int
+  success    Boolean
+  error      String?
+  createdAt  DateTime @default(now())
+
+  @@index([processor])
+  @@index([createdAt])
+}
+
+// ==================== Agent ====================
+
+model Agent {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  apiKey      String   @unique
+  capabilities String? // JSON string: ["task_crud", "ai_extract", ...]
+  permissionLevel String @default("agent") // "user" (最高权限) | "agent" (创建者隔离+全局只读)
+  isActive    Boolean  @default(true)
+  lastSeenAt  DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  operations  AgentOperation[]
+
+  @@index([apiKey])
+  @@index([isActive])
+  @@index([createdAt])
+}
+
+// ==================== Agent Operation ====================
+
+model AgentOperation {
+  id        String   @id @default(uuid())
+  agentId   String
+  action    String   // create_task, update_task, delete_task, extract_tasks, etc.
+  target    String?  // task ID or other resource identifier
+  details   String?  // JSON string with operation details
+  success   Boolean  @default(true)
+  error     String?
+  createdAt DateTime @default(now())
+
+  agent Agent @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+  @@index([agentId])
+  @@index([action])
+  @@index([createdAt])
+}
+
+// ==================== Integration ====================
+
+model Integration {
+  id          String   @id @default(uuid())
+  type        String   // github, feishu, notion, webhook
+  name        String
+  description String?
+  config      String   // JSON string with platform-specific config (tokens, URLs, etc.)
+  isActive    Boolean  @default(true)
+  lastSyncAt  DateTime?
+  syncStatus  String   @default("idle") // idle, syncing, error
+  lastError   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  webhooks    Webhook[]
+
+  @@index([type])
+  @@index([isActive])
+  @@index([createdAt])
+}
+
+// ==================== Webhook ====================
+
+model Webhook {
+  id            String   @id @default(uuid())
+  integrationId String?
+  name          String
+  url           String   // External URL to receive webhooks
+  secret        String?  // HMAC secret for verification
+  events        String?  // JSON string: ["push", "issues", ...]
+  isActive      Boolean  @default(true)
+  lastTriggered DateTime?
+  triggerCount  Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  integration Integration? @relation(fields: [integrationId], references: [id], onDelete: SetNull)
+
+  @@index([integrationId])
+  @@index([isActive])
+  @@index([createdAt])
+}
+
+// ==================== Notification ====================
+
+model Notification {
+  id          String   @id @default(uuid())
+  type        String   // task_created, task_overdue, task_status_changed, agent_operation, etc.
+  title       String
+  message     String
+  level       String   @default("info") // info, warning, error, success
+  channel     String   @default("system") // system, webhook, browser_push, email, telegram, wechat
+  isRead      Boolean  @default(false)
+  metadata    String?  // JSON string with additional context
+  createdAt   DateTime @default(now())
+
+  @@index([type])
+  @@index([isRead])
+  @@index([createdAt])
+  @@index([level])
+}
+
+// ==================== App Version ====================
+
+model AppVersion {
+  id          String   @id @default(uuid())
+  version     String   @unique // e.g., "1.2.3"
+  channel     String   @default("stable") // stable, beta, canary
+  releaseNotes String? // Markdown changelog
+  checksum    String?  // SHA256 for integrity check
+  isCurrent   Boolean  @default(false)
+  publishedAt DateTime @default(now())
+
+  @@index([channel])
+  @@index([isCurrent])
+  @@index([publishedAt])
+}
+
+// ==================== Module Version ====================
+
+model ModuleVersion {
+  id          String   @id @default(uuid())
+  moduleId    String   // e.g., "integration-telegram"
+  version     String   // e.g., "1.2.0"
+  previousVersion String? // Previous version for rollback
+  changelog   String?  // What changed
+  status      String   @default("active") // active, rollback, archived
+  configSnapshot String? // JSON: module config at this version
+  deployedAt  DateTime @default(now())
+
+  @@index([moduleId])
+  @@index([version])
+  @@index([status])
+  @@index([deployedAt])
+}
+
+// ==================== Plugin ====================
+
+model Plugin {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  displayName String
+  description String?
+  version     String   @default("1.0.0")
+  author      String?
+  homepage    String?
+  license     String?
+  entryPoint  String   // Plugin entry file path or module identifier
+  config      String?  // JSON: plugin configuration
+  isEnabled   Boolean  @default(true)
+  settings    String?  // JSON: user-customizable settings
+  installedAt DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([name])
+  @@index([isEnabled])
+}
