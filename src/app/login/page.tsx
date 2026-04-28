@@ -9,12 +9,12 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
-  const [error, setError] = useState('');
+  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    setMessage(null);
     setLoading(true);
 
     try {
@@ -28,7 +28,7 @@ export default function LoginPage() {
         localStorage.setItem('token', result.token);
         localStorage.setItem('user', JSON.stringify(result.user));
         document.cookie = `token=${result.token}; path=/; max-age=${7 * 24 * 3600}; SameSite=Lax`;
-        window.location.href = '/';
+        setMessage({ type: 'success', text: '注册成功，正在跳转到仪表盘...' });
       } else {
         const result = await trpc.auth.login.mutate({
           username,
@@ -37,10 +37,14 @@ export default function LoginPage() {
         localStorage.setItem('token', result.token);
         localStorage.setItem('user', JSON.stringify(result.user));
         document.cookie = `token=${result.token}; path=/; max-age=${7 * 24 * 3600}; SameSite=Lax`;
-        window.location.href = '/';
+        setMessage({ type: 'success', text: '登录成功，正在跳转到仪表盘...' });
       }
+      // Delay redirect so user can see the success message
+      setTimeout(() => {
+        window.location.href = '/dashboard';
+      }, 800);
     } catch (err: any) {
-      setError(err.message || '操作失败');
+      setMessage({ type: 'error', text: err.message || '操作失败，请重试' });
     } finally {
       setLoading(false);
     }
@@ -60,10 +64,17 @@ export default function LoginPage() {
           </p>
         </div>
 
-        {/* Error */}
-        {error && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
-            {error}
+        {/* Message (success or error) */}
+        {message && (
+          <div
+            className={`mb-4 p-3 rounded-lg text-sm flex items-center gap-2 ${
+              message.type === 'success'
+                ? 'bg-green-50 border border-green-200 text-green-700'
+                : 'bg-red-50 border border-red-200 text-red-700'
+            }`}
+          >
+            <span>{message.type === 'success' ? '✓' : '✗'}</span>
+            {message.text}
           </div>
         )}
 
@@ -138,7 +149,7 @@ export default function LoginPage() {
             <>
               已有账户？{' '}
               <button
-                onClick={() => { setIsRegister(false); setError(''); }}
+                onClick={() => { setIsRegister(false); setMessage(null); }}
                 className="text-blue-600 hover:text-blue-700 font-medium"
               >
                 登录
@@ -148,7 +159,7 @@ export default function LoginPage() {
             <>
               没有账户？{' '}
               <button
-                onClick={() => { setIsRegister(true); setError(''); }}
+                onClick={() => { setIsRegister(true); setMessage(null); }}
                 className="text-blue-600 hover:text-blue-700 font-medium"
               >
                 注册
