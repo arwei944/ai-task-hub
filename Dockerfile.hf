@@ -1,8 +1,7 @@
 # ============================================================
 # Hugging Face Spaces Dockerfile
 # ============================================================
-# Multi-stage: build in full stage, copy everything to slim runner
-# Key: copy entire node_modules (not standalone trace) to avoid native module issues
+# Multi-stage build with npm (not pnpm) to avoid build script issues
 # ============================================================
 
 # ---- Build stage ----
@@ -13,8 +12,8 @@ RUN apk add --no-cache libc6-compat python3 make g++
 WORKDIR /app
 COPY . .
 
-RUN corepack enable pnpm && pnpm install --frozen-lockfile
-RUN pnpm rebuild better-sqlite3
+# Use npm instead of pnpm to avoid build script permission issues
+RUN npm install --legacy-peer-deps
 
 # Verify native module
 RUN test -f node_modules/better-sqlite3/build/Release/better_sqlite3.node || (echo "FATAL: native build failed" && exit 1)
@@ -32,7 +31,6 @@ RUN npx next build
 # ---- Runner stage ----
 FROM node:20-alpine
 
-# Runtime only needs libc6-compat (no build tools)
 RUN apk add --no-cache libc6-compat wget
 
 WORKDIR /app
@@ -42,7 +40,6 @@ ENV DATABASE_URL=file:/app/data/dev.db
 ENV PORT=7860
 ENV HOSTNAME="0.0.0.0"
 
-# Copy everything needed at runtime
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/src ./src
@@ -52,7 +49,6 @@ COPY --from=builder /app/config ./config
 COPY --from=builder /app/mcp-server ./mcp-server
 COPY --from=builder /app/data ./data
 COPY --from=builder /app/package.json ./
-COPY --from=builder /app/pnpm-lock.yaml ./
 COPY --from=builder /app/next.config.ts ./
 COPY --from=builder /app/tsconfig.json ./
 COPY --from=builder /app/postcss.config.mjs ./
