@@ -7,6 +7,7 @@ import { ToastProvider } from "@/components/ui/toast";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { I18nProvider } from "@/lib/i18n";
 import { SkipNav } from "@/components/ui/a11y";
+import { ServiceWorkerRegistration } from "@/components/service-worker-registration";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -21,6 +22,13 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "AI Task Hub",
   description: "AI 驱动的智能任务管理平台",
+  manifest: "/manifest.json",
+  themeColor: "#2563eb",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "AI Task Hub",
+  },
 };
 
 export default function RootLayout({
@@ -42,6 +50,7 @@ export default function RootLayout({
               <SkipNav />
               <Navbar />
               <main id="main-content" className="flex-1">{children}</main>
+              <ServiceWorkerRegistration />
               </ErrorBoundary>
             </ToastProvider>
           </I18nProvider>
