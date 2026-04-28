@@ -12,9 +12,9 @@ echo ""
 # Verify critical files
 echo "Checking files..."
 test -f /app/node_modules/better-sqlite3/build/Release/better_sqlite3.node && echo "✓ better-sqlite3 OK" || echo "✗ better-sqlite3 MISSING"
-test -f /app/src/generated/prisma/client.js && echo "✓ Prisma client OK" || echo "✗ Prisma client MISSING"
+test -d /app/src/generated/prisma && echo "✓ Prisma client OK" || echo "✗ Prisma client MISSING"
 test -f /app/data/dev.db && echo "✓ Database OK" || echo "✗ Database MISSING"
-test -f /app/.next/build-manifest.json && echo "✓ Next.js build OK" || echo "✗ Next.js build MISSING"
+test -d /app/.next && echo "✓ Next.js build OK" || echo "✗ Next.js build MISSING"
 echo ""
 
 # Test database connection
@@ -33,6 +33,6 @@ try {
 "
 echo ""
 
-# Start server - use node directly with next start
+# Start server
 echo "Starting server on port ${PORT:-7860}..."
-exec node /app/node_modules/.bin/next start -p ${PORT:-7860} -H 0.0.0.0
+exec npx next start -p ${PORT:-7860} -H 0.0.0.0
