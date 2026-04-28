@@ -7,6 +7,8 @@
 // registers an IntegrationAdapter implementation.
 //
 
+import type { TaskService } from '@/lib/modules/task-core/task.service';
+
 export interface SyncOptions {
   /** Sync only tasks updated after this timestamp */
   since?: Date;
@@ -39,7 +41,7 @@ export interface IntegrationAdapter {
   readonly name: string;
 
   /** Sync tasks from external platform */
-  pullTasks(options?: SyncOptions): Promise<SyncResult>;
+  pullTasks(options?: SyncOptions, taskService?: TaskService): Promise<SyncResult>;
 
   /** Push a task to external platform */
   pushTask(task: { title: string; description?: string; status?: string; priority?: string; externalId?: string }): Promise<PushResult>;

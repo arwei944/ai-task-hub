@@ -1,5 +1,7 @@
 import type { IntegrationAdapter, SyncOptions, SyncResult, PushResult } from '../integration-core/types';
 import type { ILogger } from '@/lib/core/types';
+import type { CreateTaskDTO } from '@/lib/modules/task-core/types';
+import type { TaskService } from '@/lib/modules/task-core/task.service';
 
 export class FeishuAdapter implements IntegrationAdapter {
   readonly type = 'feishu';
@@ -7,7 +9,7 @@ export class FeishuAdapter implements IntegrationAdapter {
 
   constructor(private logger: ILogger) {}
 
-  async pullTasks(options?: SyncOptions): Promise<SyncResult> {
+  async pullTasks(options?: SyncOptions, taskService?: TaskService): Promise<SyncResult> {
     const appId = process.env.FEISHU_APP_ID;
     const appSecret = process.env.FEISHU_APP_SECRET;
     if (!appId || !appSecret) {
@@ -42,12 +44,44 @@ export class FeishuAdapter implements IntegrationAdapter {
       const tasks = listData.data?.items ?? [];
       this.logger.info(`Feishu: fetched ${tasks.length} tasks`);
 
+      if (!taskService) {
+        return {
+          success: true,
+          synced: tasks.length,
+          created: tasks.length,
+          updated: 0,
+          errors: [],
+        };
+      }
+
+      // Write fetched tasks to local database
+      let created = 0;
+      let updated = 0;
+      const errors: string[] = [];
+
+      for (const task of tasks) {
+        try {
+          const dto: CreateTaskDTO = {
+            title: task.name,
+            description: task.description ?? '',
+            source: 'feishu',
+            sourceRef: task.task_id,
+            creator: task.creator,
+          };
+
+          await taskService.createTask(dto, 'feishu-sync');
+          created++;
+        } catch (err: any) {
+          errors.push(`Task ${task.task_id}: ${err.message}`);
+        }
+      }
+
       return {
-        success: true,
+        success: errors.length === 0,
         synced: tasks.length,
-        created: tasks.length,
-        updated: 0,
-        errors: [],
+        created,
+        updated,
+        errors,
       };
     } catch (error: any) {
       return { success: false, synced: 0, created: 0, updated: 0, errors: [error.message] };

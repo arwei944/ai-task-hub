@@ -1,5 +1,7 @@
 import type { IntegrationAdapter, SyncOptions, SyncResult, PushResult } from '../integration-core/types';
 import type { ILogger } from '@/lib/core/types';
+import type { CreateTaskDTO } from '@/lib/modules/task-core/types';
+import type { TaskService } from '@/lib/modules/task-core/task.service';
 
 export class NotionAdapter implements IntegrationAdapter {
   readonly type = 'notion';
@@ -7,7 +9,7 @@ export class NotionAdapter implements IntegrationAdapter {
 
   constructor(private logger: ILogger) {}
 
-  async pullTasks(options?: SyncOptions): Promise<SyncResult> {
+  async pullTasks(options?: SyncOptions, taskService?: TaskService): Promise<SyncResult> {
     const token = process.env.NOTION_TOKEN;
     const databaseId = process.env.NOTION_DATABASE_ID;
     if (!token || !databaseId) {
@@ -47,12 +49,53 @@ export class NotionAdapter implements IntegrationAdapter {
 
       this.logger.info(`Notion: fetched ${pages.length} pages from database ${databaseId}`);
 
+      if (!taskService) {
+        return {
+          success: true,
+          synced: pages.length,
+          created: pages.length,
+          updated: 0,
+          errors: [],
+        };
+      }
+
+      // Write fetched pages to local database
+      let created = 0;
+      let updated = 0;
+      const errors: string[] = [];
+
+      for (const page of pages) {
+        try {
+          // Extract title from Notion page properties (title type)
+          let title = 'Untitled';
+          if (page.properties) {
+            for (const prop of Object.values(page.properties) as any[]) {
+              if (prop.type === 'title' && prop.title?.length > 0) {
+                title = prop.title.map((t: any) => t.plain_text).join('');
+                break;
+              }
+            }
+          }
+
+          const dto: CreateTaskDTO = {
+            title,
+            source: 'notion',
+            sourceRef: page.id,
+          };
+
+          await taskService.createTask(dto, 'notion-sync');
+          created++;
+        } catch (err: any) {
+          errors.push(`Page ${page.id}: ${err.message}`);
+        }
+      }
+
       return {
-        success: true,
+        success: errors.length === 0,
         synced: pages.length,
-        created: pages.length,
-        updated: 0,
-        errors: [],
+        created,
+        updated,
+        errors,
       };
     } catch (error: any) {
       return { success: false, synced: 0, created: 0, updated: 0, errors: [error.message] };

@@ -1,5 +1,7 @@
 import type { IntegrationAdapter, SyncOptions, SyncResult, PushResult } from '../integration-core/types';
 import type { ILogger } from '@/lib/core/types';
+import type { CreateTaskDTO, TaskPriority } from '@/lib/modules/task-core/types';
+import type { TaskService } from '@/lib/modules/task-core/task.service';
 
 export class GitHubAdapter implements IntegrationAdapter {
   readonly type = 'github';
@@ -7,7 +9,7 @@ export class GitHubAdapter implements IntegrationAdapter {
 
   constructor(private logger: ILogger) {}
 
-  async pullTasks(options?: SyncOptions): Promise<SyncResult> {
+  async pullTasks(options?: SyncOptions, taskService?: TaskService): Promise<SyncResult> {
     const token = process.env.GITHUB_TOKEN;
     if (!token) {
       return { success: false, synced: 0, created: 0, updated: 0, errors: ['GITHUB_TOKEN not configured'] };
@@ -42,12 +44,60 @@ export class GitHubAdapter implements IntegrationAdapter {
 
       this.logger.info(`GitHub: fetched ${tasks.length} issues from ${repo}`);
 
+      if (!taskService) {
+        return {
+          success: true,
+          synced: tasks.length,
+          created: tasks.length,
+          updated: 0,
+          errors: [],
+        };
+      }
+
+      // Write fetched issues to local database
+      let created = 0;
+      let updated = 0;
+      const errors: string[] = [];
+
+      for (const issue of tasks) {
+        try {
+          // Map priority from labels
+          let priority: TaskPriority | undefined;
+          const priorityLabels = ['urgent', 'high', 'medium', 'low'];
+          for (const label of issue.labels ?? []) {
+            const name = (typeof label === 'string' ? label : label.name)?.toLowerCase();
+            if (priorityLabels.includes(name)) {
+              priority = name as TaskPriority;
+              break;
+            }
+          }
+
+          const dto: CreateTaskDTO = {
+            title: issue.title,
+            description: issue.body ?? '',
+            source: 'github',
+            sourceRef: String(issue.number),
+            creator: issue.user?.login,
+            priority,
+            metadata: {
+              githubUrl: issue.html_url,
+              githubLabels: (issue.labels ?? []).map((l: any) => typeof l === 'string' ? l : l.name),
+            },
+          };
+
+          await taskService.createTask(dto, 'github-sync');
+          created++;
+        } catch (err: any) {
+          errors.push(`Issue #${issue.number}: ${err.message}`);
+        }
+      }
+
       return {
-        success: true,
+        success: errors.length === 0,
         synced: tasks.length,
-        created: tasks.length,
-        updated: 0,
-        errors: [],
+        created,
+        updated,
+        errors,
       };
     } catch (error: any) {
       return { success: false, synced: 0, created: 0, updated: 0, errors: [error.message] };

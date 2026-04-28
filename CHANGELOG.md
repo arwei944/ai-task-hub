@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.2.0] - 2026-04-28
+
+### ✨ 新功能
+
+- **集成适配器数据写入** — GitHub/飞书/Notion pullTasks 现在会将外部任务写入本地数据库
+  - GitHub Issues → 本地任务（含标签→优先级映射）
+  - 飞书任务 → 本地任务
+  - Notion Pages → 本地任务（含属性提取）
+  - 每个任务独立 try/catch，错误不影响其他任务
+
+### 🐛 修复
+
+- **测试数据库 schema** — 添加 global-setup 自动同步 Prisma schema
+  - 修复 task-core/agent-collab 测试失败（phase/projectId 列缺失）
+  - 全部 224 个测试通过
+
 ## [1.1.0] - 2026-04-28
 
 ### 🔒 安全加固

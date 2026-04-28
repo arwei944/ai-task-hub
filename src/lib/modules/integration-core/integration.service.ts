@@ -122,7 +122,7 @@ export class IntegrationService {
     await this.integrationRepo.update(id, { syncStatus: 'syncing' });
 
     try {
-      const result = await adapter.pullTasks();
+      const result = await adapter.pullTasks(undefined, this.taskService);
       await this.integrationRepo.update(id, {
         syncStatus: result.success ? 'idle' : 'error',
         lastSyncAt: new Date(),
