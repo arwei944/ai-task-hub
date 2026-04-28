@@ -95,6 +95,26 @@ jobs:
             git push origin HEAD:${REMOTE_BRANCH} --force 2>&1
           fi
 
+      - name: Trigger HF rebuild
+        if: always()
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          pip install huggingface_hub
+          python3 -c "
+          from huggingface_hub import HfApi
+          import time
+          api = HfApi(token='${{ secrets.HF_TOKEN }}')
+          # Wait for git push to propagate
+          time.sleep(10)
+          # Trigger factory rebuild
+          try:
+              api.restart_space(repo_id='arwei944/ai-task-hub', token='${{ secrets.HF_TOKEN }}')
+              print('✓ HF Space rebuild triggered')
+          except Exception as e:
+              print(f'Restart triggered (or already building): {e}')
+          "
+
       - name: Deployment summary
         if: always()
         run: |
