@@ -12,6 +12,7 @@ const navItems = [
   { href: '/agents', label: '智能体', icon: '🤖' },
   { href: '/integrations', label: '集成', icon: '🔗' },
   { href: '/plugins', label: '插件', icon: '🔌' },
+  { href: '/api-docs', label: 'API', icon: '📖' },
   { href: '/settings', label: '设置', icon: '⚙️' },
 ];
 
