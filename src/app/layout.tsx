@@ -8,6 +8,7 @@ import { ErrorBoundary } from "@/components/error-boundary";
 import { I18nProvider } from "@/lib/i18n";
 import { SkipNav } from "@/components/ui/a11y";
 import { ServiceWorkerRegistration } from "@/components/service-worker-registration";
+import { MobileBottomNav } from "@/components/mobile-bottom-nav";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -49,7 +50,8 @@ export default function RootLayout({
               <ErrorBoundary>
               <SkipNav />
               <Navbar />
-              <main id="main-content" className="flex-1">{children}</main>
+              <main id="main-content" className="flex-1 pb-16 md:pb-0">{children}</main>
+              <MobileBottomNav />
               <ServiceWorkerRegistration />
               </ErrorBoundary>
             </ToastProvider>

@@ -102,9 +102,9 @@ export function KanbanView() {
 
   return (
     <>
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory md:grid md:grid-cols-2 lg:grid-cols-4 md:overflow-visible md:pb-0 md:snap-none">
       {COLUMNS.map((col) => (
-        <div key={col.id} className="space-y-3">
+        <div key={col.id} className="min-w-[280px] md:min-w-0 snap-start space-y-3">
           <div className="flex items-center gap-2 px-1">
             <div className={`h-3 w-3 rounded-full ${col.color}`} />
             <h3 className="font-semibold text-sm">{col.title}</h3>
