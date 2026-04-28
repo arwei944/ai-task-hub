@@ -16,6 +16,8 @@ import { EventBus } from '@/lib/core/event-bus';
 import { createTaskCoreToolHandlers, createAIEngineToolHandlers } from '@/lib/modules/mcp-server/tools/handlers';
 import { taskCoreMcpTools } from '@/lib/modules/mcp-server/tools/task-core-tools';
 import { aiEngineMcpTools } from '@/lib/modules/mcp-server/tools/ai-engine-tools';
+import { projectMcpTools } from '@/lib/modules/mcp-server/tools/project-tools';
+import { createProjectToolHandlers } from '@/lib/modules/mcp-server/tools/project-handlers';
 import { PrismaClient } from '@/generated/prisma/client';
 import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
 import { NextRequest } from 'next/server';
@@ -171,6 +173,23 @@ async function initializeSharedTools() {
       }
     } catch (error: any) {
       logger.warn(`AI Engine init failed for HTTP: ${error.message}`);
+    }
+  }
+
+  _sharedTools = allTools;
+
+  // Register project lifecycle tools
+  const projectHandlers = createProjectToolHandlers(logger);
+  for (const toolConfig of projectMcpTools) {
+    const handler = (projectHandlers as any)[toolConfig.name];
+    if (handler !== undefined) {
+      allTools.push({
+        name: toolConfig.name,
+        description: toolConfig.description ?? `Tool: ${toolConfig.name}`,
+        sourceModule: 'project-lifecycle',
+        handler,
+        schema: jsonSchemaToZodShape(toolConfig.inputSchema),
+      });
     }
   }
 

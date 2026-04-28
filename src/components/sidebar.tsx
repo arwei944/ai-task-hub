@@ -18,6 +18,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Brain,
+  FolderKanban,
 } from 'lucide-react';
 import { ThemeToggle } from './theme-toggle';
 import { LanguageSwitcher } from './language-switcher';
@@ -30,6 +31,7 @@ interface NavItem {
 }
 
 const mainNavItems: NavItem[] = [
+  { href: '/projects', label: '项目', icon: FolderKanban },
   { href: '/dashboard', label: '仪表盘', icon: LayoutDashboard },
   { href: '/tasks', label: '任务', icon: CheckSquare },
   { href: '/agents', label: '智能体', icon: Bot },

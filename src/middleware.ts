@@ -13,6 +13,7 @@ const PUBLIC_PATHS = [
   '/api/export',
   '/api/sse',
   '/api/backup',
+  '/api/projects',
 ];
 
 // Rate limit configuration per path pattern

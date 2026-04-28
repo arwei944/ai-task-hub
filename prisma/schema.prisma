@@ -38,11 +38,13 @@ model Task {
   priority    String   @default("medium") // urgent, high, medium, low
   progress    Int      @default(0) // 0-100
   type        String   @default("general")
-  source      String   @default("manual") // trae, manual, ai, import
+  phase       String   @default("implementation") // requirements, planning, architecture, implementation, testing, deployment, review
+  source      String   @default("manual") // trae, cursor, windsurf, manual, ai, import, mcp
   sourceRef   String?
   assignee    String?
-  creator     String?
+  creator     String?  // agentId or userId
   parentTaskId String?
+  projectId   String?  // 所属项目
   dueDate     DateTime?
   startedAt   DateTime?
   completedAt DateTime?
@@ -50,12 +52,14 @@ model Task {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  project      Project?           @relation(fields: [projectId], references: [id], onDelete: SetNull)
   parentTask   Task?              @relation("SubTasks", fields: [parentTaskId], references: [id])
   subTasks     Task[]             @relation("SubTasks")
   dependencies TaskDependency[]  @relation("TaskDependsOn")
   dependents   TaskDependency[]  @relation("TaskDependentOf")
   history      TaskHistory[]
   tags         TaskTag[]
+  activities   ActivityLog[]
 
   @@index([status])
   @@index([priority])
@@ -67,6 +71,9 @@ model Task {
   @@index([status, createdAt])
   @@index([status, priority])
   @@index([assignee, status])
+  @@index([projectId])
+  @@index([phase])
+  @@index([source])
 }
 
 // ==================== Task Dependency ====================
@@ -154,6 +161,8 @@ model Agent {
   name        String
   description String?
   apiKey      String   @unique
+  clientType  String   @default("mcp") // trae, cursor, windsurf, vscode, claude, chatgpt, mcp, api
+  clientVersion String? // e.g., "Trae 1.2.0"
   capabilities String? // JSON string: ["task_crud", "ai_extract", ...]
   permissionLevel String @default("agent") // "user" (最高权限) | "agent" (创建者隔离+全局只读)
   isActive    Boolean  @default(true)
@@ -162,9 +171,12 @@ model Agent {
   updatedAt   DateTime @updatedAt
 
   operations  AgentOperation[]
+  projects    Project[]
+  activities   ActivityLog[]
 
   @@index([apiKey])
   @@index([isActive])
+  @@index([clientType])
   @@index([createdAt])
 }
 
@@ -338,4 +350,61 @@ model WorkspaceMember {
   @@unique([workspaceId, userId])
   @@index([workspaceId])
   @@index([userId])
+}
+
+// ==================== Project ====================
+
+model Project {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  status      String   @default("active") // active, completed, archived, paused
+  phase       String   @default("requirements") // requirements, planning, architecture, implementation, testing, deployment, completed
+  priority    String   @default("medium") // urgent, high, medium, low
+  techStack   String?  // JSON: ["Next.js", "Prisma", "tRPC"]
+  repository  String?  // GitHub/GitLab URL
+  creatorId   String?  // Agent ID or User ID
+  creatorType String   @default("agent") // agent, user
+  metadata    String?  // JSON: project settings, config, etc.
+  startedAt   DateTime?
+  completedAt DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tasks       Task[]
+  activities  ActivityLog[]
+  creator     Agent?  @relation(fields: [creatorId], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@index([phase])
+  @@index([priority])
+  @@index([creatorId])
+  @@index([createdAt])
+}
+
+// ==================== Activity Log ====================
+// Records every action by agents/users - the timeline of the project
+
+model ActivityLog {
+  id          String   @id @default(uuid())
+  projectId   String?
+  taskId      String?
+  agentId     String?
+  action      String   // project_created, task_created, task_updated, phase_changed, requirement_added, architecture_chosen, code_committed, etc.
+  phase       String?  // requirements, planning, architecture, implementation, testing, deployment
+  title       String   // Human-readable summary
+  details     String?  // JSON: full context of the action
+  metadata    String?  // JSON: extra data (diff, file list, etc.)
+  createdAt   DateTime @default(now())
+
+  project     Project?  @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  task        Task?     @relation(fields: [taskId], references: [id], onDelete: SetNull)
+  agent       Agent?    @relation(fields: [agentId], references: [id], onDelete: SetNull)
+
+  @@index([projectId])
+  @@index([taskId])
+  @@index([agentId])
+  @@index([action])
+  @@index([phase])
+  @@index([createdAt])
 }
