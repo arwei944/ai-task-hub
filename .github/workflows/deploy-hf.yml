@@ -15,24 +15,53 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install huggingface_hub
+        run: pip install huggingface_hub
+
       - name: Create HF Space if not exists
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          HF_USERNAME: arwei944
         run: |
-          # Try to create the space (idempotent - fails if already exists)
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X POST "https://huggingface.co/api/spaces" \
-            -H "Authorization: Bearer ${{ secrets.HF_TOKEN }}" \
-            -H "Content-Type: application/json" \
-            -d '{"name":"ai-task-hub","sdk":"docker","private":false}')
-          echo "Create space status: $STATUS"
+          python3 << 'PYEOF'
+          from huggingface_hub import HfApi
+          import os
+
+          token = os.environ["HF_TOKEN"]
+          username = os.environ["HF_USERNAME"]
+          repo_id = f"{username}/ai-task-hub"
+
+          api = HfApi(token=token)
+
+          try:
+              api.repo_info(repo_id=repo_id, repo_type="space")
+              print(f"Space {repo_id} already exists")
+          except Exception as e:
+              print(f"Space does not exist, creating... ({e})")
+              try:
+                  api.create_repo(
+                      repo_id=repo_id,
+                      repo_type="space",
+                      space_sdk="docker",
+                      private=False,
+                      exist_ok=True,
+                  )
+                  print(f"Space {repo_id} created successfully!")
+              except Exception as e2:
+                  print(f"Failed to create space: {e2}")
+                  raise
+          PYEOF
 
       - name: Setup HF Space repo
         run: |
           mkdir -p /tmp/hf-space
           cd /tmp/hf-space
-
-          # Clone the space (should succeed now)
           git clone https://arwei944:${{ secrets.HF_TOKEN }}@huggingface.co/spaces/arwei944/ai-task-hub . 2>&1
-
-          # Configure git identity
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
@@ -50,20 +79,14 @@ jobs:
             $GITHUB_WORKSPACE/ /tmp/hf-space/
 
           cd /tmp/hf-space
-          if [ -f Dockerfile.hf ]; then
-            mv Dockerfile.hf Dockerfile
-          fi
-          if [ -f README.hf.md ]; then
-            mv README.hf.md README.md
-          fi
+          if [ -f Dockerfile.hf ]; then mv Dockerfile.hf Dockerfile; fi
+          if [ -f README.hf.md ]; then mv README.hf.md README.md; fi
 
       - name: Push to HF Spaces
         run: |
           cd /tmp/hf-space
           git add -A
           git diff --staged --quiet || git commit -m "🚀 Deploy $(echo ${{ github.sha }} | cut -c1-7)"
-
-          # Detect remote branch
           REMOTE_BRANCH=$(git ls-remote --heads origin 2>/dev/null | head -1 | sed 's/.*refs\/heads\///' || echo "")
           if [ -z "$REMOTE_BRANCH" ]; then
             git branch -M main
@@ -76,7 +99,4 @@ jobs:
         if: always()
         run: |
           echo "## 🚀 HF Spaces Deployment" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- **Commit**: \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "- **Triggered by**: ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Space**: https://arwei944-ai-task-hub.hf.space" >> $GITHUB_STEP_SUMMARY
