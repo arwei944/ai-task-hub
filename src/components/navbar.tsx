@@ -76,7 +76,7 @@ export default function Navbar() {
 
         {/* Mobile menu */}
         {mobileOpen && (
-          <div className="md:hidden border-t border-gray-200 dark:border-gray-800 py-3 space-y-1">
+          <div className="md:hidden border-t border-gray-200 dark:border-gray-800 py-3 space-y-1" role="navigation" aria-label="Mobile navigation">
             {navItems.map((item) => (
               <Link
                 key={item.href}
@@ -84,7 +84,7 @@ export default function Navbar() {
                 className={linkClass(item.href)}
                 onClick={() => setMobileOpen(false)}
               >
-                <span className="mr-2">{item.icon}</span>
+                <span className="mr-2" aria-hidden="true">{item.icon}</span>
                 {item.label}
               </Link>
             ))}

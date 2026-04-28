@@ -6,6 +6,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { ToastProvider } from "@/components/ui/toast";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { I18nProvider } from "@/lib/i18n";
+import { SkipNav } from "@/components/ui/a11y";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -38,8 +39,9 @@ export default function RootLayout({
           <I18nProvider>
             <ToastProvider>
               <ErrorBoundary>
-                <Navbar />
-                <main className="flex-1">{children}</main>
+              <SkipNav />
+              <Navbar />
+              <main id="main-content" className="flex-1">{children}</main>
               </ErrorBoundary>
             </ToastProvider>
           </I18nProvider>
