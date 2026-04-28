@@ -1,7 +1,7 @@
 # ============================================================
 # Hugging Face Spaces Dockerfile
 # ============================================================
-# Multi-stage build with npm (not pnpm) to avoid build script issues
+# Multi-stage: npm install → build → prune devDeps → slim runner
 # ============================================================
 
 # ---- Build stage ----
@@ -12,7 +12,7 @@ RUN apk add --no-cache libc6-compat python3 make g++
 WORKDIR /app
 COPY . .
 
-# Use npm instead of pnpm to avoid build script permission issues
+# Install ALL dependencies (dev needed for build)
 RUN npm install --legacy-peer-deps
 
 # Verify native module
@@ -27,6 +27,9 @@ RUN test -f /app/data/dev.db || (echo "FATAL: DB creation failed" && exit 1)
 
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN npx next build
+
+# Remove devDependencies to shrink image (~1.2GB → ~400MB)
+RUN npm prune --production && npm rebuild better-sqlite3
 
 # ---- Runner stage ----
 FROM node:20-alpine
