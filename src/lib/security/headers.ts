@@ -28,13 +28,13 @@ const DEFAULT_CONFIG: SecurityHeadersConfig = {
     "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "font-src 'self' https://fonts.gstatic.com",
-    "img-src 'self' data: blob:",
+    "img-src 'self' data: blob: https:",
     "connect-src 'self' https: wss:",
-    "frame-ancestors 'none'",
+    "frame-ancestors 'self' https://huggingface.co https://*.huggingface.co",
   ].join('; '),
   referrerPolicy: 'strict-origin-when-cross-origin',
   contentTypeOptions: 'nosniff',
-  frameOptions: 'DENY',
+  frameOptions: 'SAMEORIGIN',
   xssProtection: '0', // Modern browsers use CSP instead
   strictTransportSecurity: 'max-age=31536000; includeSubDomains',
   permissionsPolicy: [
