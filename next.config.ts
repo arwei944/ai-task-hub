@@ -4,6 +4,9 @@ const nextConfig: NextConfig = {
   // Enable React strict mode for development
   reactStrictMode: true,
 
+  // Standalone output for Docker deployment
+  output: 'standalone',
+
   // Turbopack config (Next.js 16 default bundler)
   turbopack: {},
 
