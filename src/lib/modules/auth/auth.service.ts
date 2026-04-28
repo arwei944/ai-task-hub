@@ -127,16 +127,25 @@ export class AuthService {
   }
 
   /**
-   * Get current user from request (Bearer token)
+   * Get current user from request (Bearer token or cookie)
    */
   async getUserFromRequest(request: Request): Promise<AuthUser | null> {
+    // Try Authorization header first
     const authHeader = request.headers.get('authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      return null;
+    if (authHeader?.startsWith('Bearer ')) {
+      return this.verifyToken(authHeader.slice(7));
     }
 
-    const token = authHeader.slice(7);
-    return this.verifyToken(token);
+    // Try cookie
+    const cookieHeader = request.headers.get('cookie');
+    if (cookieHeader) {
+      const match = cookieHeader.match(/(?:^|;\s*)token=([^;]+)/);
+      if (match) {
+        return this.verifyToken(match[1]);
+      }
+    }
+
+    return null;
   }
 
   /**

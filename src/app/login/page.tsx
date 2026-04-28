@@ -27,6 +27,7 @@ export default function LoginPage() {
         });
         localStorage.setItem('token', result.token);
         localStorage.setItem('user', JSON.stringify(result.user));
+        document.cookie = `token=${result.token}; path=/; max-age=${7 * 24 * 3600}; SameSite=Lax`;
         window.location.href = '/';
       } else {
         const result = await trpc.auth.login.mutate({
@@ -35,6 +36,7 @@ export default function LoginPage() {
         });
         localStorage.setItem('token', result.token);
         localStorage.setItem('user', JSON.stringify(result.user));
+        document.cookie = `token=${result.token}; path=/; max-age=${7 * 24 * 3600}; SameSite=Lax`;
         window.location.href = '/';
       }
     } catch (err: any) {
