@@ -106,7 +106,6 @@ export default function IntegrationsPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('确定删除此集成？')) return;
     try {
       await trpc.integrations.delete.mutate({ id });
       await fetchIntegrations();

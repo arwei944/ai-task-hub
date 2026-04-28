@@ -51,7 +51,6 @@ export default function WorkspacesPage() {
   };
 
   const handleDelete = async (id: string, name: string) => {
-    if (!confirm(`确定要删除工作区 "${name}" 吗？此操作不可撤销。`)) return;
     try {
       await trpc.workspaces.delete.mutate({ id });
       await fetchWorkspaces();

@@ -75,7 +75,6 @@ export default function AgentsPage() {
   };
 
   const handleDeactivate = async (id: string, name: string) => {
-    if (!confirm(`确定停用智能体 "${name}" 吗？`)) return;
     try {
       await trpc.agents.deactivate.mutate({ id });
       await fetchAgents();

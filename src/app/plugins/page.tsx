@@ -56,7 +56,6 @@ export default function PluginsPage() {
   };
 
   const handleUninstall = async (name: string) => {
-    if (!confirm(`确定要卸载插件 "${name}" 吗？`)) return;
     try {
       await trpc.plugins.uninstall.mutate({ name });
       await fetchPlugins();
