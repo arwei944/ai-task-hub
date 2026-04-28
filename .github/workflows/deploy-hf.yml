@@ -1,0 +1,64 @@
+name: Deploy to Hugging Face Spaces
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy-hf:
+    name: Deploy to HF Spaces
+    runs-on: ubuntu-latest
+    environment: huggingface
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Clone HF Space
+        run: |
+          git clone https://arwei944:${{ secrets.HF_TOKEN }}@huggingface.co/spaces/arwei944/ai-task-hub /tmp/hf-space 2>&1 || \
+          (mkdir -p /tmp/hf-space && cd /tmp/hf-space && git init && \
+           git remote add origin https://arwei944:${{ secrets.HF_TOKEN }}@huggingface.co/spaces/arwei944/ai-task-hub)
+
+      - name: Sync project files to HF Space
+        run: |
+          cd /tmp/hf-space
+
+          # Copy source files (excluding .git, node_modules, etc.)
+          rsync -a --delete \
+            --exclude='.git' \
+            --exclude='node_modules' \
+            --exclude='.next' \
+            --exclude='test-db' \
+            --exclude='backups' \
+            --exclude='*.db' \
+            --exclude='*.db-journal' \
+            --exclude='.github/workflows/deploy-hf.yml' \
+            /workspace/ai-task-hub/ ./
+
+          # Use HF-specific Dockerfile and README
+          cp Dockerfile.hf Dockerfile 2>/dev/null || true
+          cp README.hf.md README.md 2>/dev/null || true
+
+      - name: Push to HF Spaces
+        run: |
+          cd /tmp/hf-space
+          git add -A
+          git diff --staged --quiet || git commit -m "🚀 Deploy from GitHub $(echo ${{ github.sha }} | cut -c1-7)"
+          git push origin main --force 2>&1
+
+      - name: Deployment summary
+        run: |
+          echo "## 🚀 HF Spaces Deployment" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit**: \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Branch**: \`${{ github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Triggered by**: ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Space URL**: https://arwei944-ai-task-hub.hf.space" >> $GITHUB_STEP_SUMMARY
