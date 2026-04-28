@@ -21,6 +21,10 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
 RUN npx prisma generate
+
+# Pre-create database with schema
+RUN mkdir -p /app/data && DATABASE_URL=file:/app/data/dev.db npx prisma db push --skip-generate --accept-data-loss 2>&1
+
 RUN npx next build
 
 # Production image
@@ -49,17 +53,17 @@ COPY --from=builder --chown=nextjs:nodejs /app/src/generated ./src/generated
 # Copy native modules (better-sqlite3 + prisma adapter)
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules/better-sqlite3 ./node_modules/better-sqlite3
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@prisma ./node_modules/@prisma
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/.pnpm ./node_modules/.pnpm
+
+# Copy pre-initialized database
+COPY --from=builder --chown=nextjs:nodejs /app/data ./data
 
 # Copy config and mcp-server
 COPY --from=builder --chown=nextjs:nodejs /app/config ./config
 COPY --from=builder --chown=nextjs:nodejs /app/mcp-server ./mcp-server
 
-# Create data directory for SQLite
+# Create data directory (in case DB gets recreated)
 RUN mkdir -p /app/data && chown nextjs:nodejs /app/data
-
-# Startup script
-COPY --chown=nextjs:nodejs entrypoint.sh /app/entrypoint.sh
-RUN chmod +x /app/entrypoint.sh
 
 USER nextjs
 
@@ -69,4 +73,4 @@ EXPOSE 7860
 ENV PORT=7860
 ENV HOSTNAME="0.0.0.0"
 
-ENTRYPOINT ["/app/entrypoint.sh"]
+CMD ["node", "server.js"]
