@@ -1,4 +1,5 @@
 import type { ILogger } from '@/lib/core/types';
+import { z } from 'zod';
 
 export interface ChatMessage {
   role: 'system' | 'user' | 'assistant';
@@ -123,8 +124,6 @@ export class OpenAICompatibleAdapter implements IAIModelAdapter {
 
   private jsonSchemaToZod(jsonSchema: Record<string, unknown>): any {
     // Simplified JSON Schema to Zod conversion
-    // For production, use a proper library like zod-to-json-schema
-    const { z } = require('zod');
     const schema: Record<string, any> = {};
 
     for (const [key, value] of Object.entries(jsonSchema)) {
@@ -134,7 +133,7 @@ export class OpenAICompatibleAdapter implements IAIModelAdapter {
         else if (v.type === 'number') schema[key] = z.number();
         else if (v.type === 'boolean') schema[key] = z.boolean();
         else if (v.type === 'array') schema[key] = z.array(z.any());
-        else if (v.type === 'object') schema[key] = z.record(z.any());
+        else if (v.type === 'object') schema[key] = z.record(z.string(), z.any());
         else schema[key] = z.any();
       } else {
         schema[key] = z.any();
