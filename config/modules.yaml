@@ -9,7 +9,7 @@ modules:
 
   # AI Engine module
   ai-engine:
-    enabled: false
+    enabled: true
     config:
       model_provider: "vercel-ai"
       default_model: "gpt-4o"
@@ -18,20 +18,20 @@ modules:
 
   # MCP Server module
   mcp-server:
-    enabled: false
+    enabled: true
     config:
       mode: "embedded"
       transport: "stdio"
 
   # Agent collaboration module
   agent-collab:
-    enabled: false
+    enabled: true
     config:
       permission_model: "creator-isolation"
 
   # Notifications module
   notifications:
-    enabled: false
+    enabled: true
     config:
       channels:
         - type: "webhook"
@@ -45,54 +45,54 @@ modules:
 
   # Dashboard module
   dashboard:
-    enabled: false
+    enabled: true
 
   # Platform integrations (enable as needed)
   integration-github:
-    enabled: false
+    enabled: true
     config:
       token: "${GITHUB_TOKEN}"
       repo: ""
       sync_interval: "5m"
 
   integration-feishu:
-    enabled: false
+    enabled: true
     config:
       app_id: "${FEISHU_APP_ID}"
       app_secret: "${FEISHU_APP_SECRET}"
 
   integration-notion:
-    enabled: false
+    enabled: true
     config:
       token: "${NOTION_TOKEN}"
       database_id: ""
 
   integration-webhook:
-    enabled: false
+    enabled: true
     config:
       secret: "${WEBHOOK_SECRET}"
 
   integration-telegram:
-    enabled: false
+    enabled: true
     config:
       bot_token: "${TELEGRAM_BOT_TOKEN}"
       notify_chat_id: "${TELEGRAM_NOTIFY_CHAT_ID}"
       webhook_url: ""
 
   integration-wechat:
-    enabled: false
+    enabled: true
     config:
       bot_webhook_url: "${WECHAT_BOT_WEBHOOK_URL}"
       notify_user_id: "${WECHAT_NOTIFY_USER_ID}"
 
   # Module hot update system
   module-updater:
-    enabled: false
+    enabled: true
     config:
       auto_check: true
       check_interval: "5m"
 
 app:
   name: "AI Task Hub"
-  version: "0.1.0"
+  version: "1.0.1"
   port: 3000

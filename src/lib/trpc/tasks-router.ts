@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { createTRPCRouter, publicProcedure } from './server';
+import { createTRPCRouter, protectedProcedure } from './server';
 import { TaskService } from '@/lib/modules/task-core/task.service';
 import { TaskRepository } from '@/lib/modules/task-core/task.repository';
 import { TaskHistoryRepository } from '@/lib/modules/task-core/task-history.repository';
@@ -30,7 +30,7 @@ function getTaskService(): TaskService {
 
 export const tasksRouter = createTRPCRouter({
   // List tasks with filtering
-  list: publicProcedure
+  list: protectedProcedure
     .input(
       z.object({
         status: z.array(z.string()).optional(),
@@ -60,7 +60,7 @@ export const tasksRouter = createTRPCRouter({
     }),
 
   // Get single task
-  get: publicProcedure.input(z.object({ id: z.string() })).query(async ({ input }) => {
+  get: protectedProcedure.input(z.object({ id: z.string() })).query(async ({ input }) => {
     const service = getTaskService();
     const task = await service.getTask(input.id);
     if (!task) throw new Error('Task not found');
@@ -68,7 +68,7 @@ export const tasksRouter = createTRPCRouter({
   }),
 
   // Create task
-  create: publicProcedure
+  create: protectedProcedure
     .input(
       z.object({
         title: z.string().min(1),
@@ -94,7 +94,7 @@ export const tasksRouter = createTRPCRouter({
     }),
 
   // Update task
-  update: publicProcedure
+  update: protectedProcedure
     .input(
       z.object({
         id: z.string(),
@@ -120,7 +120,7 @@ export const tasksRouter = createTRPCRouter({
     }),
 
   // Update status (with transition validation)
-  updateStatus: publicProcedure
+  updateStatus: protectedProcedure
     .input(z.object({ id: z.string(), status: z.enum(['todo', 'in_progress', 'done', 'closed']) }))
     .mutation(async ({ input }) => {
       const service = getTaskService();
@@ -128,26 +128,26 @@ export const tasksRouter = createTRPCRouter({
     }),
 
   // Delete task (soft delete)
-  delete: publicProcedure.input(z.object({ id: z.string() })).mutation(async ({ input }) => {
+  delete: protectedProcedure.input(z.object({ id: z.string() })).mutation(async ({ input }) => {
     const service = getTaskService();
     await service.deleteTask(input.id);
     return { success: true };
   }),
 
   // Get task history
-  history: publicProcedure.input(z.object({ taskId: z.string() })).query(async ({ input }) => {
+  history: protectedProcedure.input(z.object({ taskId: z.string() })).query(async ({ input }) => {
     const service = getTaskService();
     return service.getTaskHistory(input.taskId);
   }),
 
   // Get subtasks
-  subTasks: publicProcedure.input(z.object({ parentTaskId: z.string() })).query(async ({ input }) => {
+  subTasks: protectedProcedure.input(z.object({ parentTaskId: z.string() })).query(async ({ input }) => {
     const service = getTaskService();
     return service.getSubTasks(input.parentTaskId);
   }),
 
   // Status counts
-  statusCounts: publicProcedure.query(async () => {
+  statusCounts: protectedProcedure.query(async () => {
     const service = getTaskService();
     return service.getStatusCounts();
   }),

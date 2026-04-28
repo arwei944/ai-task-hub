@@ -3,16 +3,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 
 export default function HomePage() {
   const modules = [
-    { id: 'task-core', name: '任务管理核心', status: 'planned', priority: 'P0', phase: 'M2' },
-    { id: 'ai-engine', name: 'AI 引擎', status: 'planned', priority: 'P0', phase: 'M3' },
-    { id: 'mcp-server', name: 'MCP 服务', status: 'planned', priority: 'P0', phase: 'M4' },
-    { id: 'agent-collab', name: '智能体协作', status: 'planned', priority: 'P1', phase: 'M5' },
-    { id: 'notifications', name: '通知系统', status: 'planned', priority: 'P1', phase: 'M7' },
-    { id: 'dashboard', name: '数据可视化', status: 'planned', priority: 'P2', phase: 'M7' },
-    { id: 'integration-github', name: 'GitHub 集成', status: 'planned', priority: 'P1', phase: 'M6' },
-    { id: 'integration-feishu', name: '飞书集成', status: 'planned', priority: 'P1', phase: 'M6' },
-    { id: 'integration-notion', name: 'Notion 集成', status: 'planned', priority: 'P1', phase: 'M6' },
-    { id: 'integration-webhook', name: '通用 Webhook', status: 'planned', priority: 'P1', phase: 'M6' },
+    { id: 'task-core', name: '任务管理核心', status: 'done', priority: 'P0', phase: 'M2' },
+    { id: 'ai-engine', name: 'AI 引擎', status: 'done', priority: 'P0', phase: 'M3' },
+    { id: 'mcp-server', name: 'MCP 服务', status: 'done', priority: 'P0', phase: 'M4' },
+    { id: 'agent-collab', name: '智能体协作', status: 'done', priority: 'P1', phase: 'M5' },
+    { id: 'notifications', name: '通知系统', status: 'done', priority: 'P1', phase: 'M7' },
+    { id: 'dashboard', name: '数据可视化', status: 'done', priority: 'P2', phase: 'M7' },
+    { id: 'integration-github', name: 'GitHub 集成', status: 'done', priority: 'P1', phase: 'M6' },
+    { id: 'integration-feishu', name: '飞书集成', status: 'done', priority: 'P1', phase: 'M6' },
+    { id: 'integration-notion', name: 'Notion 集成', status: 'done', priority: 'P1', phase: 'M6' },
+    { id: 'integration-webhook', name: '通用 Webhook', status: 'done', priority: 'P1', phase: 'M6' },
   ];
 
   const coreComponents = [
@@ -34,9 +34,9 @@ export default function HomePage() {
               AT
             </div>
             <h1 className="text-xl font-bold">AI Task Hub</h1>
-            <Badge variant="secondary">v0.1.0</Badge>
+            <Badge variant="secondary">v1.0.1</Badge>
           </div>
-          <Badge variant="outline">M1 - 内核框架</Badge>
+          <Badge variant="outline">v1.0.1 - 全功能版本</Badge>
         </div>
       </header>
 
@@ -90,7 +90,7 @@ export default function HomePage() {
 
         {/* Module Roadmap */}
         <section>
-          <h3 className="text-2xl font-semibold mb-4">模块路线图</h3>
+          <h3 className="text-2xl font-semibold mb-4">已实现模块</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {modules.map((mod) => (
               <Card key={mod.id}>
@@ -157,7 +157,7 @@ export default function HomePage() {
       {/* Footer */}
       <footer className="border-t mt-12">
         <div className="container mx-auto px-6 py-4 text-center text-sm text-muted-foreground">
-          AI Task Hub v0.1.0 · Modular Kernel Architecture · M1 Complete
+          AI Task Hub v1.0.1 · Modular Kernel Architecture · All Modules Complete
         </div>
       </footer>
     </div>

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { createTRPCRouter, publicProcedure } from './server';
+import { createTRPCRouter, protectedProcedure, adminProcedure } from './server';
 import { Logger } from '@/lib/core/logger';
 import { EventBus } from '@/lib/core/event-bus';
 import { ModuleRegistry } from '@/lib/core/registry';
@@ -40,13 +40,13 @@ function getServices() {
 
 export const updaterRouter = createTRPCRouter({
   // List all modules with their update info
-  listModules: publicProcedure.query(() => {
+  listModules: protectedProcedure.query(() => {
     const { updaterService } = getServices();
     return updaterService.getAllModuleUpdateInfo();
   }),
 
   // Get update info for a specific module
-  getModuleInfo: publicProcedure
+  getModuleInfo: protectedProcedure
     .input(z.object({ moduleId: z.string() }))
     .query(({ input }) => {
       const { updaterService } = getServices();
@@ -54,7 +54,7 @@ export const updaterRouter = createTRPCRouter({
     }),
 
   // Hot reload a module
-  hotReload: publicProcedure
+  hotReload: adminProcedure
     .input(z.object({
       moduleId: z.string(),
       reason: z.string().optional(),
@@ -65,7 +65,7 @@ export const updaterRouter = createTRPCRouter({
     }),
 
   // Enable a module at runtime
-  enableModule: publicProcedure
+  enableModule: adminProcedure
     .input(z.object({ moduleId: z.string() }))
     .mutation(async ({ input }) => {
       const { updaterService } = getServices();
@@ -73,7 +73,7 @@ export const updaterRouter = createTRPCRouter({
     }),
 
   // Disable a module at runtime
-  disableModule: publicProcedure
+  disableModule: adminProcedure
     .input(z.object({ moduleId: z.string() }))
     .mutation(async ({ input }) => {
       const { updaterService } = getServices();
@@ -81,7 +81,7 @@ export const updaterRouter = createTRPCRouter({
     }),
 
   // Rollback a module to previous version
-  rollback: publicProcedure
+  rollback: adminProcedure
     .input(z.object({ moduleId: z.string() }))
     .mutation(async ({ input }) => {
       const { updaterService } = getServices();
@@ -89,7 +89,7 @@ export const updaterRouter = createTRPCRouter({
     }),
 
   // Check for app updates
-  checkUpdates: publicProcedure
+  checkUpdates: protectedProcedure
     .input(z.object({ channel: z.string().optional() }).optional())
     .mutation(async ({ input }) => {
       const { updaterService } = getServices();
@@ -97,7 +97,7 @@ export const updaterRouter = createTRPCRouter({
     }),
 
   // Get app version history
-  versionHistory: publicProcedure
+  versionHistory: protectedProcedure
     .input(z.object({ channel: z.string().optional() }).optional())
     .query(async ({ input }) => {
       const { updaterService } = getServices();
@@ -105,7 +105,7 @@ export const updaterRouter = createTRPCRouter({
     }),
 
   // Publish a new app version
-  publishVersion: publicProcedure
+  publishVersion: adminProcedure
     .input(z.object({
       version: z.string(),
       channel: z.string().optional(),
@@ -119,7 +119,7 @@ export const updaterRouter = createTRPCRouter({
     }),
 
   // Get module version history
-  moduleVersionHistory: publicProcedure
+  moduleVersionHistory: protectedProcedure
     .input(z.object({ moduleId: z.string() }))
     .query(async ({ input }) => {
       const { updaterService } = getServices();

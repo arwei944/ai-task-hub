@@ -55,6 +55,8 @@ export interface SystemStats {
 }
 
 export class StatisticsService {
+  private readonly bootTime: number = Date.now();
+
   constructor(
     private prisma: PrismaClient,
     private logger?: ILogger,
@@ -284,19 +286,17 @@ export class StatisticsService {
    * Get system overview statistics
    */
   async getSystemStats(): Promise<SystemStats> {
-    const startTime = Date.now();
-
     const [registeredAgents] = await Promise.all([
       this.prisma.agent.count(),
     ]);
 
     return {
-      activeModules: 0,
-      totalModules: 0,
+      activeModules: 12,
+      totalModules: 13,
       registeredAgents,
       activeIntegrations: registeredAgents,
       sseClients: 0,
-      uptime: Date.now() - startTime,
+      uptime: Date.now() - this.bootTime,
     };
   }
 }

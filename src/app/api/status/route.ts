@@ -57,7 +57,7 @@ export async function GET() {
     status: Object.values(healthChecks).every(h => h.status === 'ok' || h.status === 'configured' || h.status === 'available')
       ? 'healthy'
       : 'degraded',
-    version: process.env.npm_package_version ?? '1.0.0',
+    version: process.env.npm_package_version ?? '1.0.1',
     uptime: Math.round((Date.now() - startTime) / 1000),
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV ?? 'development',

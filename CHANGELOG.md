@@ -1,5 +1,32 @@
 # Changelog
 
+## [1.1.0] - 2026-04-28
+
+### 🔒 安全加固
+
+- **tRPC API 权限** — 48 个 procedure 从 publicProcedure 改为 protectedProcedure/adminProcedure
+  - tasks-router: 9 个 procedure 全部需要登录
+  - agents-router: register/authenticate/checkPermission 保持公开，其余需要登录/管理员
+  - notifications-router: 5 个 procedure 全部需要登录
+  - stats-router: 4 个需要登录，systemStats 仅管理员
+  - integrations-router: 查询需要登录，创建/修改/删除仅管理员
+  - updater-router: 查询需要登录，热重载/启停/回滚/发布仅管理员
+  - plugins-router: list/get/getCustomTools 需要登录
+- **REST API 认证** — SSE/备份/导出/Webhook 端点添加 JWT 认证
+  - /api/sse: 需要登录
+  - /api/backup: 需要 admin 角色
+  - /api/export/tasks: 需要登录
+  - /api/webhook: 需要登录
+
+### 🐛 修复
+
+- **登录跳转** — middleware 移除服务端认证，改为客户端 AuthGuard + tRPC header 认证
+- **版本号同步** — package.json/首页/modules.yaml/status API 统一为 1.1.0
+- **首页内容** — 模块状态从"计划中"更新为"已实现"
+- **模块配置** — modules.yaml 所有已实现模块 enabled: true
+- **仪表盘统计** — activeModules/totalModules 使用实际值，uptime 使用启动时间
+- **安全测试** — 更新测试断言匹配新的安全策略
+
 ## [1.0.1] - 2026-04-28
 
 ### 🐛 修复

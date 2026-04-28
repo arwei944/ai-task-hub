@@ -23,13 +23,13 @@ function getPluginLoader(): PluginLoader {
 
 export const pluginsRouter = createTRPCRouter({
   // List all plugins
-  list: publicProcedure.query(async () => {
+  list: protectedProcedure.query(async () => {
     const loader = getPluginLoader();
     return loader.list();
   }),
 
   // Get a specific plugin
-  get: publicProcedure
+  get: protectedProcedure
     .input(z.object({ name: z.string() }))
     .query(async ({ input }) => {
       const loader = getPluginLoader();
@@ -89,7 +89,7 @@ export const pluginsRouter = createTRPCRouter({
     }),
 
   // Get registered custom tools from plugins
-  getCustomTools: publicProcedure.query(async () => {
+  getCustomTools: protectedProcedure.query(async () => {
     const loader = getPluginLoader();
     return loader.getCustomTools();
   }),

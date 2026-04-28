@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { createTRPCRouter, publicProcedure } from './server';
+import { createTRPCRouter, protectedProcedure } from './server';
 import { NotificationRepository } from '@/lib/modules/notifications/notification.repository';
 import { Logger } from '@/lib/core/logger';
 import { PrismaClient } from '@/generated/prisma/client';
@@ -17,7 +17,7 @@ function getRepo() {
 }
 
 export const notificationsRouter = createTRPCRouter({
-  list: publicProcedure
+  list: protectedProcedure
     .input(z.object({
       type: z.string().optional(),
       isRead: z.boolean().optional(),
@@ -30,24 +30,24 @@ export const notificationsRouter = createTRPCRouter({
       return repo.findMany(input);
     }),
 
-  unreadCount: publicProcedure.query(async () => {
+  unreadCount: protectedProcedure.query(async () => {
     const repo = getRepo();
     return getRepo().findUnreadCount();
   }),
 
-  markAsRead: publicProcedure.input(z.object({ id: z.string() })).mutation(async ({ input }) => {
+  markAsRead: protectedProcedure.input(z.object({ id: z.string() })).mutation(async ({ input }) => {
     const repo = getRepo();
     await repo.markAsRead(input.id);
     return { success: true };
   }),
 
-  markAllAsRead: publicProcedure.mutation(async () => {
+  markAllAsRead: protectedProcedure.mutation(async () => {
     const repo = getRepo();
     await repo.markAllAsRead();
     return { success: true };
   }),
 
-  delete: publicProcedure.input(z.object({ id: z.string() })).mutation(async ({ input }) => {
+  delete: protectedProcedure.input(z.object({ id: z.string() })).mutation(async ({ input }) => {
     const repo = getRepo();
     await repo.delete(input.id);
     return { success: true };

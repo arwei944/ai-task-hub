@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { createTRPCRouter, publicProcedure } from './server';
+import { createTRPCRouter, protectedProcedure, adminProcedure } from './server';
 import { StatisticsService } from '@/lib/modules/dashboard/statistics.service';
 import { PrismaClient } from '@/generated/prisma/client';
 import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
@@ -15,13 +15,13 @@ function getStatsService(): StatisticsService {
 
 export const statsRouter = createTRPCRouter({
   // Task statistics overview
-  taskStats: publicProcedure.query(async () => {
+  taskStats: protectedProcedure.query(async () => {
     const service = getStatsService();
     return service.getTaskStats();
   }),
 
   // Daily task trends
-  dailyTrends: publicProcedure
+  dailyTrends: protectedProcedure
     .input(z.object({ days: z.number().min(7).max(90).optional() }).optional())
     .query(async ({ input }) => {
       const service = getStatsService();
@@ -29,19 +29,19 @@ export const statsRouter = createTRPCRouter({
     }),
 
   // AI engine statistics
-  aiStats: publicProcedure.query(async () => {
+  aiStats: protectedProcedure.query(async () => {
     const service = getStatsService();
     return service.getAIStats();
   }),
 
   // System overview
-  systemStats: publicProcedure.query(async () => {
+  systemStats: adminProcedure.query(async () => {
     const service = getStatsService();
     return service.getSystemStats();
   }),
 
   // Combined dashboard data
-  dashboard: publicProcedure.query(async () => {
+  dashboard: protectedProcedure.query(async () => {
     const service = getStatsService();
     const [taskStats, dailyTrends, aiStats, systemStats] = await Promise.all([
       service.getTaskStats(),

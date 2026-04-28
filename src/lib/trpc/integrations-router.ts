@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { createTRPCRouter, publicProcedure } from './server';
+import { createTRPCRouter, protectedProcedure, adminProcedure } from './server';
 import { IntegrationRepository, WebhookRepository } from '@/lib/modules/integration-core/integration.repository';
 import { IntegrationService } from '@/lib/modules/integration-core/integration.service';
 import { EventBus } from '@/lib/core/event-bus';
@@ -53,13 +53,13 @@ function getServices() {
 
 export const integrationsRouter = createTRPCRouter({
   // List available adapter types
-  adapterTypes: publicProcedure.query(() => {
+  adapterTypes: protectedProcedure.query(() => {
     const { integrationService } = getServices();
     return integrationService.getAdapterTypes();
   }),
 
   // Create integration
-  create: publicProcedure
+  create: adminProcedure
     .input(z.object({
       type: z.string(),
       name: z.string().min(1),
@@ -72,7 +72,7 @@ export const integrationsRouter = createTRPCRouter({
     }),
 
   // List integrations
-  list: publicProcedure
+  list: protectedProcedure
     .input(z.object({
       type: z.string().optional(),
       isActive: z.boolean().optional(),
@@ -83,7 +83,7 @@ export const integrationsRouter = createTRPCRouter({
     }),
 
   // Get integration
-  get: publicProcedure.input(z.object({ id: z.string() })).query(async ({ input }) => {
+  get: protectedProcedure.input(z.object({ id: z.string() })).query(async ({ input }) => {
     const { integrationService } = getServices();
     const integration = await integrationService.getIntegration(input.id);
     if (!integration) throw new Error('Integration not found');
@@ -91,7 +91,7 @@ export const integrationsRouter = createTRPCRouter({
   }),
 
   // Update integration
-  update: publicProcedure
+  update: adminProcedure
     .input(z.object({
       id: z.string(),
       name: z.string().optional(),
@@ -106,20 +106,20 @@ export const integrationsRouter = createTRPCRouter({
     }),
 
   // Delete integration
-  delete: publicProcedure.input(z.object({ id: z.string() })).mutation(async ({ input }) => {
+  delete: adminProcedure.input(z.object({ id: z.string() })).mutation(async ({ input }) => {
     const { integrationService } = getServices();
     await integrationService.deleteIntegration(input.id);
     return { success: true };
   }),
 
   // Test connection
-  testConnection: publicProcedure.input(z.object({ id: z.string() })).mutation(async ({ input }) => {
+  testConnection: protectedProcedure.input(z.object({ id: z.string() })).mutation(async ({ input }) => {
     const { integrationService } = getServices();
     return integrationService.testConnection(input.id);
   }),
 
   // Trigger sync
-  sync: publicProcedure.input(z.object({ id: z.string() })).mutation(async ({ input }) => {
+  sync: protectedProcedure.input(z.object({ id: z.string() })).mutation(async ({ input }) => {
     const { integrationService } = getServices();
     return integrationService.syncIntegration(input.id);
   }),

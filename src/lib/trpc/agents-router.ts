@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { createTRPCRouter, publicProcedure } from './server';
+import { createTRPCRouter, publicProcedure, protectedProcedure, adminProcedure } from './server';
 import { AgentService } from '@/lib/modules/agent-collab/agent.service';
 import { AgentRepository } from '@/lib/modules/agent-collab/agent.repository';
 import { AgentOperationRepository } from '@/lib/modules/agent-collab/agent-operation.repository';
@@ -69,7 +69,7 @@ export const agentsRouter = createTRPCRouter({
     }),
 
   // List all agents
-  list: publicProcedure
+  list: protectedProcedure
     .input(z.object({
       isActive: z.boolean().optional(),
       page: z.number().min(1).optional(),
@@ -81,7 +81,7 @@ export const agentsRouter = createTRPCRouter({
     }),
 
   // Get single agent
-  get: publicProcedure.input(z.object({ id: z.string() })).query(async ({ input }) => {
+  get: protectedProcedure.input(z.object({ id: z.string() })).query(async ({ input }) => {
     const { agentService } = getServices();
     const agent = await agentService.getAgent(input.id);
     if (!agent) throw new Error('Agent not found');
@@ -89,7 +89,7 @@ export const agentsRouter = createTRPCRouter({
   }),
 
   // Update agent
-  update: publicProcedure
+  update: adminProcedure
     .input(z.object({
       id: z.string(),
       name: z.string().optional(),
@@ -107,21 +107,21 @@ export const agentsRouter = createTRPCRouter({
     }),
 
   // Deactivate agent
-  deactivate: publicProcedure.input(z.object({ id: z.string() })).mutation(async ({ input }) => {
+  deactivate: adminProcedure.input(z.object({ id: z.string() })).mutation(async ({ input }) => {
     const { agentService } = getServices();
     await agentService.deactivateAgent(input.id);
     return { success: true };
   }),
 
   // Delete agent
-  delete: publicProcedure.input(z.object({ id: z.string() })).mutation(async ({ input }) => {
+  delete: adminProcedure.input(z.object({ id: z.string() })).mutation(async ({ input }) => {
     const { agentService } = getServices();
     await agentService.deleteAgent(input.id);
     return { success: true };
   }),
 
   // Get agent operations
-  operations: publicProcedure
+  operations: protectedProcedure
     .input(z.object({
       agentId: z.string(),
       action: z.string().optional(),
@@ -138,7 +138,7 @@ export const agentsRouter = createTRPCRouter({
     }),
 
   // Get recent operations across all agents
-  recentOperations: publicProcedure
+  recentOperations: protectedProcedure
     .input(z.object({ limit: z.number().min(1).max(200).optional() }).optional())
     .query(async ({ input }) => {
       const { agentService } = getServices();
@@ -146,7 +146,7 @@ export const agentsRouter = createTRPCRouter({
     }),
 
   // Get agent stats
-  stats: publicProcedure.input(z.object({ agentId: z.string() })).query(async ({ input }) => {
+  stats: protectedProcedure.input(z.object({ agentId: z.string() })).query(async ({ input }) => {
     const { agentService } = getServices();
     return agentService.getAgentStats(input.agentId);
   }),
