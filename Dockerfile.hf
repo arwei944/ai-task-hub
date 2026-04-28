@@ -14,6 +14,9 @@ WORKDIR /app
 COPY package.json pnpm-lock.yaml ./
 RUN corepack enable pnpm && pnpm install --frozen-lockfile
 
+# Rebuild native modules that pnpm may have skipped
+RUN pnpm rebuild better-sqlite3 2>&1 || true
+
 # Rebuild the source code only when needed
 FROM base AS builder
 WORKDIR /app
