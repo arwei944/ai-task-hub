@@ -7,6 +7,12 @@ const nextConfig: NextConfig = {
   // Standalone output for Docker deployment
   output: 'standalone',
 
+  // Prisma and native modules must be external in standalone
+  serverExternalPackages: [
+    '@prisma/adapter-better-sqlite3',
+    'better-sqlite3',
+  ],
+
   // Turbopack config (Next.js 16 default bundler)
   turbopack: {},
 
