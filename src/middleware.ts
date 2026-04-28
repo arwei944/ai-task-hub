@@ -15,6 +15,7 @@ const PUBLIC_PATHS = [
   '/api/backup',
   '/api/projects',
   '/api/v1',
+  '/api/trpc',
 ];
 
 // Rate limit configuration per path pattern

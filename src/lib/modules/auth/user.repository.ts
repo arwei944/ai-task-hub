@@ -85,13 +85,13 @@ export class UserRepository {
 
   toAuthUser(user: any): AuthUser {
     return {
-      id: user.id,
-      username: user.username,
-      email: user.email,
-      displayName: user.displayName,
-      role: user.role as UserRole,
-      avatar: user.avatar,
-      isActive: user.isActive,
+      id: String(user.id),
+      username: String(user.username ?? ''),
+      email: String(user.email ?? ''),
+      displayName: user.displayName ? String(user.displayName) : null,
+      role: String(user.role ?? 'user') as UserRole,
+      avatar: user.avatar ? String(user.avatar) : null,
+      isActive: Boolean(user.isActive),
     };
   }
 }
