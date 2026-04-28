@@ -6,16 +6,10 @@
 //
 
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@/generated/prisma/client';
-import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
+import { Prisma } from '@/generated/prisma/client';
+import { getPrisma } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
-
-function getPrisma() {
-  const dbPath = process.env.DATABASE_URL?.replace(/^file:/, '') ?? './prisma/dev.db';
-  const adapter = new PrismaBetterSqlite3({ url: dbPath });
-  return new PrismaClient({ adapter });
-}
 
 // Auth middleware: validate X-API-Key
 async function authenticate(request: Request) {
@@ -169,9 +163,9 @@ export async function POST(request: Request) {
 
     if (action === 'list_projects') {
       const { status, phase } = body;
-      const where: any = {};
-      if (status) where.status = status;
-      if (phase) where.phase = phase;
+      const where: Prisma.ProjectWhereInput = {};
+      if (status) where.status = status as string;
+      if (phase) where.phase = phase as string;
 
       const projects = await prisma.project.findMany({
         where, orderBy: { updatedAt: 'desc' },
@@ -254,12 +248,12 @@ export async function POST(request: Request) {
 
     if (action === 'list_tasks') {
       const { projectId, phase, status, parentTaskId, search } = body;
-      const where: any = {};
+      const where: Prisma.TaskWhereInput = {};
       if (projectId) where.projectId = projectId;
-      if (phase) where.phase = phase;
+      if (phase) where.phase = phase as string;
       if (parentTaskId) where.parentTaskId = parentTaskId;
       if (status) where.status = { in: Array.isArray(status) ? status : [status] };
-      if (search) where.title = { contains: search };
+      if (search) where.title = { contains: search as string };
 
       const tasks = await prisma.task.findMany({
         where, orderBy: { createdAt: 'desc' },
@@ -309,7 +303,7 @@ export async function POST(request: Request) {
 
     if (action === 'get_activities') {
       const { projectId, taskId, limit } = body;
-      const where: any = {};
+      const where: Prisma.ActivityLogWhereInput = {};
       if (projectId) where.projectId = projectId;
       if (taskId) where.taskId = taskId;
 

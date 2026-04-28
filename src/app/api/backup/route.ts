@@ -9,6 +9,7 @@
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@/generated/prisma/client';
 import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
+import { getPrisma } from '@/lib/db';
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
 import { join } from 'path';
 import { AuthService } from '@/lib/modules/auth/auth.service';
@@ -36,12 +37,6 @@ async function requireAdmin(request: Request): Promise<{ userId: string } | Next
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
   return { userId: user.id };
-}
-
-function getPrisma() {
-  const dbPath = process.env.DATABASE_URL?.replace(/^file:/, '') ?? './prisma/dev.db';
-  const adapter = new PrismaBetterSqlite3({ url: dbPath });
-  return new PrismaClient({ adapter });
 }
 
 // Tables to export (in dependency order)

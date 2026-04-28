@@ -1,5 +1,30 @@
 # Changelog
 
+## [1.3.0] - 2026-04-28
+
+### ✨ 新功能
+
+- **Agent 工作流引擎** — 完整的工作流编排系统
+  - 工作流定义 CRUD（名称、触发器、步骤、变量）
+  - 顺序执行引擎（create-task/update-status/ai-analyze/wait 步骤）
+  - 执行历史记录 + 步骤级别状态追踪
+  - 模板变量解析（{{varName}} 语法）
+  - 9 个 tRPC procedure（创建/更新/删除/执行/取消/历史查询）
+  - 3 张新数据库表（Workflow/WorkflowExecution/WorkflowStepExecution）
+- **工作流前端页面** — 接入真实 API，替换硬编码数据
+  - 工作流列表 + 创建表单
+  - 执行按钮 + 执行历史折叠面板
+  - AuthGuard 保护
+- **Web Push 通知** — 基础推送通知框架
+  - 订阅/取消订阅 API
+  - 测试通知发送
+  - 内存存储（可扩展为数据库持久化）
+
+### 🔧 优化
+
+- **代码去重** — 统一 getPrisma() 到 src/lib/db.ts（6 个文件）
+- **类型安全** — REST API v1 关键 any 类型替换为 Prisma 类型
+
 ## [1.2.0] - 2026-04-28
 
 ### ✨ 新功能
