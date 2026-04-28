@@ -9,7 +9,6 @@ jobs:
   deploy-hf:
     name: Deploy to HF Spaces
     runs-on: ubuntu-latest
-    environment: huggingface
 
     steps:
       - uses: actions/checkout@v4
@@ -29,9 +28,7 @@ jobs:
 
       - name: Sync project files to HF Space
         run: |
-          cd /tmp/hf-space
-
-          # Copy source files (excluding .git, node_modules, etc.)
+          # Use GITHUB_WORKSPACE which is the correct path in Actions
           rsync -a --delete \
             --exclude='.git' \
             --exclude='node_modules' \
@@ -41,11 +38,16 @@ jobs:
             --exclude='*.db' \
             --exclude='*.db-journal' \
             --exclude='.github/workflows/deploy-hf.yml' \
-            /workspace/ai-task-hub/ ./
+            $GITHUB_WORKSPACE/ /tmp/hf-space/
 
           # Use HF-specific Dockerfile and README
-          cp Dockerfile.hf Dockerfile 2>/dev/null || true
-          cp README.hf.md README.md 2>/dev/null || true
+          cd /tmp/hf-space
+          if [ -f Dockerfile.hf ]; then
+            mv Dockerfile.hf Dockerfile
+          fi
+          if [ -f README.hf.md ]; then
+            mv README.hf.md README.md
+          fi
 
       - name: Push to HF Spaces
         run: |
