@@ -4,9 +4,6 @@ const nextConfig: NextConfig = {
   // Enable React strict mode for development
   reactStrictMode: true,
 
-  // Standalone output for Docker deployment
-  output: 'standalone',
-
   // Prisma and native modules must be external in standalone
   serverExternalPackages: [
     '@prisma/adapter-better-sqlite3',

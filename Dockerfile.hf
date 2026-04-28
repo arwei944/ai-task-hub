@@ -1,79 +1,56 @@
 # ============================================================
 # Hugging Face Spaces Dockerfile
 # ============================================================
+# Strategy: Full node_modules copy (no standalone mode)
+# This avoids all native module resolution issues
+# ============================================================
 
-FROM node:20-alpine AS base
+FROM node:20-alpine
 
-# Install build dependencies for native modules (better-sqlite3)
+# Build dependencies for native modules
 RUN apk add --no-cache libc6-compat python3 make g++
 
-# Install dependencies only when needed
-FROM base AS deps
 WORKDIR /app
 
+# Copy all source
 COPY package.json pnpm-lock.yaml ./
+COPY prisma ./prisma/
+COPY prisma.config.ts ./
+COPY next.config.ts ./
+COPY tsconfig.json ./
+COPY postcss.config.mjs ./
+COPY src ./src/
+COPY public ./public/
+COPY config ./config/
+COPY mcp-server ./mcp-server/
+
+# Install ALL dependencies (including devDependencies for build)
 RUN corepack enable pnpm && pnpm install --frozen-lockfile
 
-# Rebuild native modules that pnpm may have skipped
-RUN pnpm rebuild better-sqlite3 2>&1 || true
+# Rebuild native modules explicitly
+RUN pnpm rebuild better-sqlite3
 
-# Rebuild the source code only when needed
-FROM base AS builder
-WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
-COPY . .
-
+# Generate Prisma client
 RUN npx prisma generate
 
-# Pre-create database with schema
-RUN mkdir -p /app/data && DATABASE_URL=file:/app/data/dev.db npx prisma db push --accept-data-loss 2>&1
+# Create data directory and initialize database
+RUN mkdir -p /app/data
+ENV DATABASE_URL=file:/app/data/dev.db
+RUN npx prisma db push --accept-data-loss 2>&1
 
+# Build Next.js (standard mode, not standalone)
+ENV NEXT_TELEMETRY_DISABLED=1
 RUN npx next build
 
-# Production image
-FROM node:20-alpine AS runner
+# Remove devDependencies to reduce image size
+RUN pnpm prune --prod
+RUN pnpm rebuild better-sqlite3
 
-# Runtime dependencies for native modules
-RUN apk add --no-cache libc6-compat
-
-WORKDIR /app
-
+# HF Spaces configuration
 ENV NODE_ENV=production
-ENV DATABASE_URL=file:/app/data/dev.db
-
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
-
-# Copy standalone output
-COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
-COPY --from=builder /app/public ./public
-
-# Copy Prisma schema and generated client
-COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
-COPY --from=builder --chown=nextjs:nodejs /app/src/generated ./src/generated
-
-# Copy native modules (better-sqlite3 + prisma adapter)
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/better-sqlite3 ./node_modules/better-sqlite3
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@prisma ./node_modules/@prisma
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/.pnpm ./node_modules/.pnpm
-
-# Copy pre-initialized database
-COPY --from=builder --chown=nextjs:nodejs /app/data ./data
-
-# Copy config and mcp-server
-COPY --from=builder --chown=nextjs:nodejs /app/config ./config
-COPY --from=builder --chown=nextjs:nodejs /app/mcp-server ./mcp-server
-
-# Create data directory (in case DB gets recreated)
-RUN mkdir -p /app/data && chown nextjs:nodejs /app/data
-
-USER nextjs
-
-# HF Spaces uses port 7860
-EXPOSE 7860
-
 ENV PORT=7860
 ENV HOSTNAME="0.0.0.0"
 
-CMD ["node", "server.js"]
+EXPOSE 7860
+
+CMD ["npx", "next", "start", "-p", "7860", "-H", "0.0.0.0"]
