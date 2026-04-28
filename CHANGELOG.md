@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.0.1] - 2026-04-28
+
+### 🐛 修复
+
+- **登录后跳转失败** — token 存 localStorage 但 middleware 读 cookie，导致死循环重定向到 /login
+  - 登录/注册成功后同时设置 cookie
+  - AuthService.getUserFromRequest 支持 cookie + Bearer header 双通道
+- **注册报错 "Unable to transform response"** — middleware 拦截 /api/trpc 返回非 tRPC 格式的 401
+  - /api/trpc 加入 PUBLIC_PATHS（权限由 tRPC 自身的 publicProcedure/protectedProcedure 控制）
+
 ## [1.0.0] - 2026-04-28
 
 ### 🎉 首次正式发布
