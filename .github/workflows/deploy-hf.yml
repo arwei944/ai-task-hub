@@ -15,11 +15,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Configure Git
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-
       - name: Clone HF Space
         run: |
           git clone https://arwei944:${{ secrets.HF_TOKEN }}@huggingface.co/spaces/arwei944/ai-task-hub /tmp/hf-space 2>&1 || \
@@ -28,7 +23,6 @@ jobs:
 
       - name: Sync project files to HF Space
         run: |
-          # Use GITHUB_WORKSPACE which is the correct path in Actions
           rsync -a --delete \
             --exclude='.git' \
             --exclude='node_modules' \
@@ -40,7 +34,6 @@ jobs:
             --exclude='.github/workflows/deploy-hf.yml' \
             $GITHUB_WORKSPACE/ /tmp/hf-space/
 
-          # Use HF-specific Dockerfile and README
           cd /tmp/hf-space
           if [ -f Dockerfile.hf ]; then
             mv Dockerfile.hf Dockerfile
@@ -52,15 +45,17 @@ jobs:
       - name: Push to HF Spaces
         run: |
           cd /tmp/hf-space
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
           git add -A
-          git diff --staged --quiet || git commit -m "🚀 Deploy from GitHub $(echo ${{ github.sha }} | cut -c1-7)"
+          git diff --staged --quiet || git commit -m "🚀 Deploy $(echo ${{ github.sha }} | cut -c1-7)"
           git push origin main --force 2>&1
 
       - name: Deployment summary
+        if: always()
         run: |
           echo "## 🚀 HF Spaces Deployment" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "- **Commit**: \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "- **Branch**: \`${{ github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY
           echo "- **Triggered by**: ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Space URL**: https://arwei944-ai-task-hub.hf.space" >> $GITHUB_STEP_SUMMARY
+          echo "- **Space**: https://arwei944-ai-task-hub.hf.space" >> $GITHUB_STEP_SUMMARY
