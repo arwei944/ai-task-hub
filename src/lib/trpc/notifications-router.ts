@@ -82,7 +82,7 @@ export const notificationsRouter = createTRPCRouter({
     .input(pushSubscriptionSchema)
     .mutation(async ({ ctx, input }) => {
       const push = getPushService();
-      const userId = ctx.session.user.id;
+      const userId = ctx.user.id;
       push.subscribe(userId, input as unknown as PushSubscriptionLike);
       return { success: true };
     }),
@@ -90,7 +90,7 @@ export const notificationsRouter = createTRPCRouter({
   pushUnsubscribe: protectedProcedure
     .mutation(async ({ ctx }) => {
       const push = getPushService();
-      const userId = ctx.session.user.id;
+      const userId = ctx.user.id;
       push.unsubscribe(userId);
       return { success: true };
     }),
@@ -98,7 +98,7 @@ export const notificationsRouter = createTRPCRouter({
   pushTest: protectedProcedure
     .mutation(async ({ ctx }) => {
       const push = getPushService();
-      const userId = ctx.session.user.id;
+      const userId = ctx.user.id;
       const sent = await push.sendNotification(
         userId,
         'Test Notification',
