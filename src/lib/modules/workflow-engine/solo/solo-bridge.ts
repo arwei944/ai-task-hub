@@ -31,21 +31,10 @@ export class SOLOBridge {
   }
 
   private initClients(): void {
-    this.clients.set('mcp', new SOLOMCPClient({
-      endpoint: this.config.mcpEndpoint,
-      defaultTimeoutMs: this.config.defaultTimeoutMs,
-    }));
-    this.clients.set('rest', new SOLORESTClient({
-      endpoint: this.config.restEndpoint,
-      defaultTimeoutMs: this.config.defaultTimeoutMs,
-    }));
-    this.clients.set('pull', new SOLOPullClient({
-      defaultTimeoutMs: this.config.defaultTimeoutMs,
-    }));
-    this.logger?.info('SOLO Bridge initialized', {
-      modes: Array.from(this.clients.keys()),
-      defaultMode: this.config.defaultMode,
-    });
+    this.clients.set('mcp', new SOLOMCPClient({ endpoint: this.config.mcpEndpoint, defaultTimeoutMs: this.config.defaultTimeoutMs }));
+    this.clients.set('rest', new SOLORESTClient({ endpoint: this.config.restEndpoint, defaultTimeoutMs: this.config.defaultTimeoutMs }));
+    this.clients.set('pull', new SOLOPullClient({ defaultTimeoutMs: this.config.defaultTimeoutMs }));
+    this.logger?.info('SOLO Bridge initialized', { modes: Array.from(this.clients.keys()), defaultMode: this.config.defaultMode });
   }
 
   async call(params: SOLOCallParams): Promise<SOLOCallResult> {
@@ -61,12 +50,7 @@ export class SOLOBridge {
     try {
       this.eventBus?.emit({ type: 'solo.call.started', payload: record, timestamp: new Date(), source: 'workflow-engine' });
       const startTime = Date.now();
-      const result = await client.call({
-        prompt: params.prompt,
-        subAgentType: params.subAgentType,
-        sessionId,
-        timeoutMs: params.timeoutMs ?? this.config.defaultTimeoutMs,
-      });
+      const result = await client.call({ prompt: params.prompt, subAgentType: params.subAgentType, sessionId, timeoutMs: params.timeoutMs ?? this.config.defaultTimeoutMs });
       const durationMs = Date.now() - startTime;
       record.output = result.data;
       record.durationMs = durationMs;
@@ -86,9 +70,7 @@ export class SOLOBridge {
     }
   }
 
-  createSessionId(): string {
-    return `solo-${uuidv4().slice(0, 8)}`;
-  }
+  createSessionId(): string { return `solo-${uuidv4().slice(0, 8)}`; }
 
   getRecords(options?: { executionId?: string; stepId?: string; limit?: number }): SOLOCallRecord[] {
     let records = [...this.callRecords];
@@ -98,10 +80,7 @@ export class SOLOBridge {
     return records;
   }
 
-  getActiveSessionCount(): number {
-    this.cleanupStaleSessions();
-    return this.activeSessions.size;
-  }
+  getActiveSessionCount(): number { this.cleanupStaleSessions(); return this.activeSessions.size; }
 
   private cleanupStaleSessions(): void {
     const staleThreshold = 30 * 60 * 1000;
@@ -111,23 +90,12 @@ export class SOLOBridge {
     }
   }
 
-  private createRecord(params: {
-    executionId: string; stepId: string; stepName: string;
-    callMode: SOLOCallMode; subAgentType?: SOLOSubAgentType;
-    sessionId: string; prompt: string;
-  }): SOLOCallRecord {
-    return {
-      id: uuidv4(), executionId: params.executionId, stepId: params.stepId,
-      stepName: params.stepName, callMode: params.callMode,
-      subAgentType: params.subAgentType ?? 'explore', sessionId: params.sessionId,
-      prompt: params.prompt, durationMs: 0, startedAt: new Date(),
-    };
+  private createRecord(params: { executionId: string; stepId: string; stepName: string; callMode: SOLOCallMode; subAgentType?: SOLOSubAgentType; sessionId: string; prompt: string }): SOLOCallRecord {
+    return { id: uuidv4(), executionId: params.executionId, stepId: params.stepId, stepName: params.stepName, callMode: params.callMode, subAgentType: params.subAgentType ?? 'explore', sessionId: params.sessionId, prompt: params.prompt, durationMs: 0, startedAt: new Date() };
   }
 
   private addRecord(record: SOLOCallRecord): void {
     this.callRecords.push(record);
-    if (this.callRecords.length > this.maxRecords) {
-      this.callRecords = this.callRecords.slice(-this.maxRecords);
-    }
+    if (this.callRecords.length > this.maxRecords) this.callRecords = this.callRecords.slice(-this.maxRecords);
   }
 }
