@@ -20,6 +20,8 @@ import {
   Brain,
   FolderKanban,
   Info,
+  MessageSquare,
+  GitBranch,
 } from 'lucide-react';
 import { ThemeToggle } from './theme-toggle';
 import { LanguageSwitcher } from './language-switcher';
@@ -32,8 +34,9 @@ interface NavItem {
 }
 
 const mainNavItems: NavItem[] = [
-  { href: '/projects', label: '项目', icon: FolderKanban },
   { href: '/dashboard', label: '仪表盘', icon: LayoutDashboard },
+  { href: '/feedback', label: '反馈中心', icon: MessageSquare },
+  { href: '/workflows', label: '工作流管理', icon: GitBranch },
   { href: '/tasks', label: '任务', icon: CheckSquare },
   { href: '/agents', label: '智能体', icon: Bot },
   { href: '/workspaces', label: '工作区', icon: Building2 },
@@ -43,7 +46,6 @@ const mainNavItems: NavItem[] = [
 
 const secondaryNavItems: NavItem[] = [
   { href: '/plugin-market', label: '插件市场', icon: Store },
-  { href: '/agent-workflows', label: 'Agent 工作流', icon: Workflow },
   { href: '/dashboard-settings', label: '仪表盘设置', icon: SlidersHorizontal },
   { href: '/api-docs', label: 'API 文档', icon: BookOpen },
   { href: '/about', label: '关于', icon: Info },

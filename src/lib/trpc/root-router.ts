@@ -10,6 +10,7 @@ import { statsRouter } from './stats-router';
 import { pluginsRouter } from './plugins-router';
 import { workspacesRouter } from './workspaces-router';
 import { workflowsRouter } from './workflows-router';
+import { feedbackRouter } from './feedback-router';
 
 export const appRouter = createTRPCRouter({
   auth: authRouter,
@@ -23,6 +24,7 @@ export const appRouter = createTRPCRouter({
   plugins: pluginsRouter,
   workspaces: workspacesRouter,
   workflows: workflowsRouter,
+  feedback: feedbackRouter,
 });
 
 export type AppRouter = typeof appRouter;
