@@ -1,10 +1,30 @@
 # Changelog
 
-## [v1.6.0-alpha.1] - 2026-04-29
+## [1.6.0] - 2026-04-29
 
-### 🚀 变更
+### 🚀 Phase A: SOLO 统一 AI 层 + 反馈模块
 
-- Phase A Day 1: 数据库变更 + SOLO Bridge + 类型定义
+#### 后端架构
+- **SOLO Bridge** — 统一 AI 调用层，支持 MCP/REST/Pull 三种模式，完整调用记录和会话管理
+- **反馈模块** — 嵌入执行流程的检查点系统，4 种干预模式（auto/notify/block/smart），SOLO 自省，规则引擎
+- **执行层重构** — Executor + Orchestrator + Context + Concurrency + Observability 六层架构
+- **12 种步骤类型** — create-task, update-status, ai-analyze, send-notification, wait, parallel-group, condition, foreach, invoke-agent, http-request, transform, approval
+- **数据库扩展** — 新增 FeedbackCheckpoint/FeedbackRule/StepFeedback 模型，Workflow/WorkflowStepExecution 新字段
+
+#### 前端
+- **反馈中心** — 独立交互通道，待处理队列、批准/拒绝操作、统计面板
+- **工作流管理** — 5 Tab 导航（工作流/智能体/技能库/记忆/规则组合），支持 12 种步骤类型
+- **导航重构** — 侧边栏更新为：仪表盘、反馈中心、工作流管理、任务、智能体等
+- **旧页面重定向** — /agent-workflows 自动重定向到 /workflows
+
+#### tRPC 路由
+- **feedback-router** — listCheckpoints, handleApproval, listRules, createRule, getStats
+- **workflows-router** — 扩展支持 12 种步骤类型和反馈模式字段
+
+#### 版本管理
+- 新增发布脚本 `scripts/release.sh`，支持自动版本号、CHANGELOG 更新、Git tag
+
+---
 
 ## [1.5.0] - 2026-04-29
 
