@@ -79,7 +79,7 @@ export const projectMcpTools: ProjectMcpTool[] = [
 
   // ---- Task Management (project-scoped) ----
   {
-    name: 'create_task',
+    name: 'project_create_task',
     description: '在项目中创建任务。每个任务属于一个阶段（需求/规划/架构/实施/测试/部署）。AI 在执行过程中自动创建和更新任务。',
     inputSchema: {
       type: 'object',
@@ -101,8 +101,8 @@ export const projectMcpTools: ProjectMcpTool[] = [
   },
 
   {
-    name: 'update_task',
-    description: '更新任务信息。AI 完成某一步后调用此工具更新任务状态和进度。',
+    name: 'project_update_task',
+    description: '更新项目中的任务信息。AI 完成某一步后调用此工具更新任务状态和进度。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -120,8 +120,8 @@ export const projectMcpTools: ProjectMcpTool[] = [
   },
 
   {
-    name: 'list_tasks',
-    description: '列出任务，支持按项目、阶段、状态筛选。',
+    name: 'project_list_tasks',
+    description: '列出项目中的任务，支持按项目、阶段、状态筛选。',
     inputSchema: {
       type: 'object',
       properties: {

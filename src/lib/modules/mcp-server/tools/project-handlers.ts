@@ -172,7 +172,7 @@ export function createProjectToolHandlers(logger: ILogger) {
     },
 
     // ---- Task CRUD (project-scoped) ----
-    create_task: async (args: Record<string, unknown>) => {
+    project_create_task: async (args: Record<string, unknown>) => {
       const prisma = getPrisma();
       try {
         const { projectId, title, description, phase, priority, status, parentTaskId, dueDate, tags, agentId, clientType } = args as any;
@@ -225,7 +225,7 @@ export function createProjectToolHandlers(logger: ILogger) {
       }
     },
 
-    update_task: async (args: Record<string, unknown>) => {
+    project_update_task: async (args: Record<string, unknown>) => {
       const prisma = getPrisma();
       try {
         const { id, agentId, ...updates } = args as any;
@@ -272,7 +272,7 @@ export function createProjectToolHandlers(logger: ILogger) {
       }
     },
 
-    list_tasks: async (args: Record<string, unknown>) => {
+    project_list_tasks: async (args: Record<string, unknown>) => {
       const prisma = getPrisma();
       try {
         const { projectId, phase, status, priority, parentTaskId, search } = args as any;

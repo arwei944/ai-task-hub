@@ -178,8 +178,6 @@ async function initializeSharedTools() {
     }
   }
 
-  _sharedTools = allTools;
-
   // Register project lifecycle tools
   const projectHandlers = createProjectToolHandlers(logger);
   for (const toolConfig of projectMcpTools) {
