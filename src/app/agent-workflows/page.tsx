@@ -484,7 +484,6 @@ export default function AgentWorkflowsPage() {
             </div>
           </div>
         )}
-      </div>
     </div>
   );
 }
