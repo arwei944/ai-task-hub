@@ -20,7 +20,7 @@ export async function GET(request: Request) {
   const channelsParam = url.searchParams.get('channels');
   const channels = channelsParam ? channelsParam.split(',').filter(Boolean) : ['global'];
 
-  const userId: string = user.id;
+  const userId: string = 'admin'; // Single admin mode
 
   const stream = new ReadableStream({
     start(controller) {
