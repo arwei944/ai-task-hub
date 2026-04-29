@@ -1,5 +1,39 @@
 # Changelog
 
+## [1.7.0] - 2026-04-29
+
+### 🚀 Phase B: 触发器系统 + 高级步骤 + 通知集成
+
+#### 触发器系统 (B-1~B-4)
+- **TriggerDispatcher** — 统一触发器管理，支持 5 种触发类型
+  - `schedule` — 定时触发（cron 表达式 + 固定间隔）
+  - `event` — EventBus 事件触发（支持通配符过滤）
+  - `webhook` — HTTP 回调触发
+  - `manual` — 手动触发
+  - `github-issue` — GitHub Issue 触发（预留）
+- **WorkflowTriggerLog** — 触发器执行日志记录
+
+#### 高级步骤 (B-5~B-8)
+- **invoke-agent** — SOLO 完整任务执行步骤，支持子智能体类型和调用模式配置
+- **foreach** — 数组迭代步骤，支持子步骤执行、itemVar/indexVar 变量注入、failFast 模式
+- **approval** — 人工审批节点，阻塞式等待，支持 approved/rejected/modified/skipped/timeout 状态
+- **重试机制** — 步骤级重试策略，支持 exponential/linear/fixed 三种退避算法
+
+#### 反馈规则引擎 (B-9)
+- **后置规则评估** — postExecuteCheck 集成规则引擎，支持 duration/token_cost/error 触发
+- **SOLO 深度自省** — soloSelfReflect 通过 SOLO Bridge 进行风险评估，失败时回退简单逻辑
+- **error 触发类型** — 正则表达式匹配错误消息，自动触发干预规则
+
+#### 通知集成 (B-10)
+- **WorkflowNotificationIntegration** — EventBus→SSE 事件桥接，7 种工作流事件实时推送
+- **反馈检查点 SSE 推送** — checkpoint.created / checkpoint.completed 实时广播
+- **工作流通知 SSE 推送** — send-notification 步骤结果实时广播到 notifications 频道
+
+#### tRPC 路由
+- **workflows-router** — 新增 trigger procedure，支持手动触发工作流
+
+---
+
 ## [1.6.0] - 2026-04-29
 
 ### 🚀 Phase A: SOLO 统一 AI 层 + 反馈模块
