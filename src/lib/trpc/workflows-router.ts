@@ -33,9 +33,19 @@ function getWorkflowService(): WorkflowService {
 const stepSchema = z.object({
   id: z.string(),
   name: z.string(),
-  type: z.enum(['create-task', 'update-status', 'ai-analyze', 'send-notification', 'wait']),
+  type: z.enum(['create-task', 'update-status', 'ai-analyze', 'send-notification', 'wait', 'parallel-group', 'condition', 'foreach', 'invoke-agent', 'http-request', 'transform', 'approval']),
   config: z.record(z.string(), z.unknown()),
   onError: z.enum(['continue', 'fail']).optional(),
+  feedbackMode: z.enum(['auto', 'notify', 'block', 'smart']).optional(),
+  soloSubAgent: z.enum(['explore', 'plan', 'general_purpose']).optional(),
+  soloCallMode: z.enum(['mcp', 'rest', 'pull']).optional(),
+  timeoutMs: z.number().optional(),
+  condition: z.object({
+    expression: z.string(),
+    thenSteps: z.array(z.any()).optional(),
+    elseSteps: z.array(z.any()).optional(),
+  }).optional(),
+  steps: z.array(z.any()).optional(),
 });
 
 export const workflowsRouter = createTRPCRouter({
@@ -49,6 +59,18 @@ export const workflowsRouter = createTRPCRouter({
         triggerConfig: z.string().optional(),
         steps: z.array(stepSchema).min(1),
         variables: z.record(z.string(), z.unknown()).optional(),
+        retryPolicy: z.object({
+          max: z.number(),
+          backoff: z.enum(['fixed', 'exponential', 'linear']),
+          delayMs: z.number(),
+        }).optional(),
+        concurrencyLimit: z.number().min(1).max(20).optional(),
+        timeoutMs: z.number().optional(),
+        soloConfig: z.object({
+          defaultMode: z.enum(['mcp', 'rest', 'pull']).optional(),
+          defaultSubAgent: z.enum(['explore', 'plan', 'general_purpose']).optional(),
+          defaultTimeoutMs: z.number().optional(),
+        }).optional(),
       }),
     )
     .mutation(async ({ input, ctx }) => {
@@ -71,6 +93,18 @@ export const workflowsRouter = createTRPCRouter({
         steps: z.array(stepSchema).optional(),
         variables: z.record(z.string(), z.unknown()).optional(),
         isActive: z.boolean().optional(),
+        retryPolicy: z.object({
+          max: z.number(),
+          backoff: z.enum(['fixed', 'exponential', 'linear']),
+          delayMs: z.number(),
+        }).optional(),
+        concurrencyLimit: z.number().min(1).max(20).optional(),
+        timeoutMs: z.number().optional(),
+        soloConfig: z.object({
+          defaultMode: z.enum(['mcp', 'rest', 'pull']).optional(),
+          defaultSubAgent: z.enum(['explore', 'plan', 'general_purpose']).optional(),
+          defaultTimeoutMs: z.number().optional(),
+        }).optional(),
       }),
     )
     .mutation(async ({ input }) => {
