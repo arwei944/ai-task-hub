@@ -1,6 +1,6 @@
 {
   "name": "ai-task-hub",
-  "version": "1.5.0",
+  "version": "1.6.0-alpha.1",
   "private": true,
   "packageManager": "pnpm@10.33.2",
   "pnpm": {
@@ -41,7 +41,6 @@
     "js-yaml": "^4.1.1",
     "lucide-react": "^1.11.0",
     "next": "16.2.4",
-    "prisma": "^7.8.0",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "shadcn": "^4.5.0",
@@ -66,6 +65,7 @@
     "husky": "^9.1.7",
     "lint-staged": "^16.4.0",
     "prettier": "^3.8.3",
+    "prisma": "^7.8.0",
     "tailwindcss": "^4",
     "tsx": "^4.21.0",
     "typescript": "^5",

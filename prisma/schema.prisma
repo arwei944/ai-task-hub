@@ -423,7 +423,11 @@ model Workflow {
   createdBy     String?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
-  executions    WorkflowExecution[]
+  retryPolicy       String?  // JSON: { max: 3, backoff: "exponential", delayMs: 1000 }
+  concurrencyLimit  Int      @default(5)
+  timeoutMs         Int      @default(300000)
+  soloConfig        String?  // JSON: SOLO 默认调用配置
+  executions        WorkflowExecution[]
   @@index([isActive])
   @@index([createdBy])
 }
@@ -443,7 +447,8 @@ model WorkflowExecution {
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
   workflow         Workflow  @relation(fields: [workflowId], references: [id], onDelete: Cascade)
-  stepExecutions   WorkflowStepExecution[]
+  stepExecutions     WorkflowStepExecution[]
+  feedbackCheckpoints FeedbackCheckpoint[]
   @@index([workflowId])
   @@index([status])
   @@index([createdAt])
@@ -461,9 +466,84 @@ model WorkflowStepExecution {
   error       String?
   startedAt   DateTime?
   completedAt DateTime?
-  durationMs  Int?
+  durationMs        Int?
+  tokensUsed        Int      @default(0)
+  retryCount        Int      @default(0)
+  parentStepId      String?
+  soloSessionId     String?
+  soloCallMode      String?
+  soloSubAgent      String?
   createdAt   DateTime @default(now())
   execution   WorkflowExecution @relation(fields: [executionId], references: [id], onDelete: Cascade)
   @@index([executionId])
   @@index([status])
+}
+
+// ==================== Feedback Checkpoint ====================
+
+model FeedbackCheckpoint {
+  id              String   @id @default(uuid())
+  executionId     String
+  stepId          String
+  stepName        String
+  stepType        String
+  checkpointType  String   @default("pre_execute") // pre_execute | post_execute | timeout | error | manual
+  status          String   @default("pending") // pending | approved | rejected | skipped | modified | timeout_expired
+  approvalMode    String   @default("auto") // auto | notify | block | smart
+  contextSnapshot String?
+  stepOutput      String?
+  soloCallRecord  String?
+  intervenedBy    String?  // "user" | "solo" | "auto_rule"
+  intervention    String?
+  rating          Int?
+  feedback        String?
+  createdAt       DateTime @default(now())
+  resolvedAt      DateTime?
+
+  execution       WorkflowExecution @relation(fields: [executionId], references: [id])
+
+  @@index([executionId])
+  @@index([status])
+  @@index([checkpointType])
+  @@index([createdAt])
+}
+
+// ==================== Feedback Rule ====================
+
+model FeedbackRule {
+  id              String   @id @default(uuid())
+  name            String
+  triggerType     String   // step_type | duration | token_cost | rating | error_rate | always
+  triggerConfig   String   // JSON
+  action          String   // block | notify | skip | modify | escalate
+  actionConfig    String?
+  scopeWorkflowId String?
+  scopeStepType   String?
+  isActive        Boolean  @default(true)
+  createdBy       String?  // "user" | "solo"
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([isActive])
+  @@index([triggerType])
+  @@index([scopeWorkflowId])
+}
+
+// ==================== Step Feedback ====================
+
+model StepFeedback {
+  id                String   @id @default(uuid())
+  executionId       String
+  stepExecutionId   String
+  rating            Int      // 1-5
+  tags              String?  // JSON array
+  comment           String?
+  soloReflection    String?  // JSON
+  improvementAction String?  // JSON
+  createdAt         DateTime @default(now())
+
+  @@index([executionId])
+  @@index([stepExecutionId])
+  @@index([rating])
+  @@index([createdAt])
 }
