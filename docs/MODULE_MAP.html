@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Task Hub — Module Map</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0a0a0f;
+  --card-bg:rgba(255,255,255,0.04);
+  --card-border:rgba(255,255,255,0.08);
+  --card-hover:rgba(255,255,255,0.07);
+  --line-color:rgba(255,255,255,0.12);
+  --accent:#8b5cf6;
+  --accent-dim:rgba(139,92,246,0.25);
+  --green:#22c55e;
+  --yellow:#eab308;
+  --text-primary:rgba(255,255,255,0.92);
+  --text-secondary:rgba(255,255,255,0.55);
+  --text-dim:rgba(255,255,255,0.35);
+  --font-ui:system-ui,-apple-system,sans-serif;
+  --font-mono:'SF Mono',SFMono-Regular,Consolas,'Liberation Mono',Menlo,monospace;
+}
+html{font-size:14px}
+body{
+  background:var(--bg);
+  color:var(--text-primary);
+  font-family:var(--font-ui);
+  min-width:1200px;
+  overflow-x:auto;
+  padding:40px 48px 80px;
+}
+/* ── Header ── */
+.header{text-align:center;margin-bottom:48px}
+.header h1{
+  font-size:1.75rem;
+  font-weight:700;
+  letter-spacing:-0.03em;
+  background:linear-gradient(135deg,#fff 0%,var(--accent) 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text;
+}
+.header p{color:var(--text-secondary);margin-top:6px;font-size:.92rem}
+
+/* ── Layout ── */
+.layout{display:flex;gap:40px;align-items:flex-start}
+.map-area{flex:1;min-width:0}
+.path-panel{
+  width:340px;flex-shrink:0;
+  position:sticky;top:40px;
+  max-height:calc(100vh - 80px);overflow-y:auto;
+  background:var(--card-bg);
+  border:1px solid var(--card-border);
+  border-radius:16px;
+  padding:24px;
+}
+.path-panel::-webkit-scrollbar{width:4px}
+.path-panel::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.1);border-radius:2px}
+.path-panel h2{
+  font-size:1rem;font-weight:600;
+  margin-bottom:20px;
+  display:flex;align-items:center;gap:8px;
+}
+.path-panel h2 .icon{font-size:1.1rem}
+
+/* ── Layer ── */
+.layer{margin-bottom:8px;position:relative}
+.layer-label{
+  font-size:.7rem;
+  text-transform:uppercase;
+  letter-spacing:.12em;
+  color:var(--text-dim);
+  margin-bottom:10px;
+  padding-left:4px;
+  font-weight:500;
+}
+.layer-cards{display:flex;flex-wrap:wrap;gap:12px;justify-content:center}
+
+/* ── Card ── */
+.card{
+  background:var(--card-bg);
+  border:1px solid var(--card-border);
+  border-radius:12px;
+  padding:14px 18px;
+  min-width:160px;
+  max-width:240px;
+  flex:1;
+  transition:background .2s,border-color .2s,box-shadow .2s;
+  position:relative;
+}
+.card:hover{
+  background:var(--card-hover);
+  border-color:rgba(255,255,255,0.14);
+  box-shadow:0 0 24px rgba(139,92,246,0.06);
+}
+.card-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.card-name{font-weight:700;font-size:.92rem;letter-spacing:-0.01em}
+.card-ver{
+  font-size:.65rem;
+  color:var(--text-dim);
+  background:rgba(255,255,255,0.06);
+  padding:1px 6px;
+  border-radius:4px;
+  font-family:var(--font-mono);
+}
+.card-features{list-style:none;display:flex;flex-direction:column;gap:3px}
+.card-features li{
+  font-size:.72rem;
+  color:var(--text-secondary);
+  padding-left:12px;
+  position:relative;
+  line-height:1.4;
+}
+.card-features li::before{
+  content:'';
+  position:absolute;left:0;top:6px;
+  width:4px;height:4px;
+  border-radius:50%;
+  background:var(--text-dim);
+}
+/* status dot */
+.status-dot{
+  width:7px;height:7px;border-radius:50%;flex-shrink:0;
+}
+.status-dot.green{background:var(--green);box-shadow:0 0 6px rgba(34,197,94,0.5)}
+.status-dot.yellow{background:var(--yellow);box-shadow:0 0 6px rgba(234,179,8,0.4)}
+.card-desc{
+  font-size:.68rem;color:var(--text-dim);
+  margin-top:6px;
+  font-style:italic;
+}
+
+/* ── SVG Connector Area ── */
+.connector{display:flex;justify-content:center;margin:4px 0}
+.connector svg{overflow:visible}
+
+/* ── Path Panel Steps ── */
+.step{margin-bottom:14px;position:relative;padding-left:36px}
+.step:last-child{margin-bottom:0}
+.step-num{
+  position:absolute;left:0;top:0;
+  width:24px;height:24px;
+  border-radius:50%;
+  background:var(--accent);
+  color:#fff;
+  font-size:.7rem;
+  font-weight:700;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 0 10px var(--accent-dim);
+}
+.step-fn{
+  font-family:var(--font-mono);
+  font-size:.75rem;
+  color:var(--accent);
+  font-weight:600;
+  margin-bottom:4px;
+  word-break:break-all;
+}
+.step-flow{
+  font-size:.7rem;
+  color:var(--text-secondary);
+  line-height:1.5;
+}
+.step-flow .mod{
+  display:inline-block;
+  padding:1px 6px;
+  border-radius:4px;
+  font-size:.65rem;
+  font-weight:600;
+  margin:1px 2px;
+  background:rgba(139,92,246,0.15);
+  color:var(--accent);
+  border:1px solid rgba(139,92,246,0.25);
+}
+.step-flow .mod.external{
+  background:rgba(59,130,246,0.12);
+  color:#60a5fa;
+  border-color:rgba(59,130,246,0.25);
+}
+.step-flow .mod.db{
+  background:rgba(34,197,94,0.1);
+  color:#4ade80;
+  border-color:rgba(34,197,94,0.2);
+}
+.step-flow .arrow{color:var(--text-dim);margin:0 2px}
+
+/* ── Legend ── */
+.legend{
+  display:flex;gap:20px;justify-content:center;
+  margin-top:36px;
+  padding-top:20px;
+  border-top:1px solid var(--card-border);
+}
+.legend-item{display:flex;align-items:center;gap:6px;font-size:.72rem;color:var(--text-secondary)}
+.legend-dot{width:7px;height:7px;border-radius:50%}
+.legend-dot.green{background:var(--green)}
+.legend-dot.yellow{background:var(--yellow)}
+.legend-line{width:24px;height:2px;background:var(--line-color);border-radius:1px}
+
+/* ── Business sub-tree indent ── */
+.sub-tree{padding-left:24px;border-left:1px solid var(--line-color);margin-left:12px}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>AI Task Hub — Module Map</h1>
+  <p>完整模块架构 &amp; 截图小工具执行路径演示</p>
+</div>
+
+<div class="layout">
+<!-- ═══════════════════════════════════════════════════════════════════
+     LEFT: Module Map
+     ═══════════════════════════════════════════════════════════════════ -->
+<div class="map-area">
+
+<!-- Layer 1: External Entry -->
+<div class="layer">
+  <div class="layer-label">Layer 1 &mdash; External Entry</div>
+  <div class="layer-cards">
+    <div class="card">
+      <div class="card-head">
+        <span class="status-dot green"></span>
+        <span class="card-name">External AI Agent</span>
+      </div>
+      <ul class="card-features">
+        <li>Trae IDE Agent</li>
+        <li>Claude Desktop</li>
+        <li>ChatGPT / Custom Agent</li>
+      </ul>
+      <div class="card-desc">via MCP Streamable HTTP</div>
+    </div>
+  </div>
+</div>
+
+<!-- Connector 1→2 -->
+<div class="connector">
+  <svg width="2" height="32"><line x1="1" y1="0" x2="1" y2="32" stroke="rgba(255,255,255,0.15)" stroke-width="1.5" stroke-dasharray="4,3"/></svg>
+</div>
+
+<!-- Layer 2: API Gateway -->
+<div class="layer">
+  <div class="layer-label">Layer 2 &mdash; API Gateway</div>
+  <div class="layer-cards">
+    <div class="card">
+      <div class="card-head">
+        <span class="status-dot green"></span>
+        <span class="card-name">tRPC Router</span>
+        <span class="card-ver">v1</span>
+      </div>
+      <ul class="card-features">
+        <li>Type-safe procedures</li>
+        <li>WebSocket subscriptions</li>
+        <li>Input validation (Zod)</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="card-head">
+        <span class="status-dot green"></span>
+        <span class="card-name">REST API</span>
+        <span class="card-ver">/api/v1</span>
+      </div>
+      <ul class="card-features">
+        <li>Express.js routes</li>
+        <li>JSON request/response</li>
+        <li>CORS &amp; rate limiting</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="card-head">
+        <span class="status-dot green"></span>
+        <span class="card-name">MCP Server</span>
+        <span class="card-ver">v1</span>
+      </div>
+      <ul class="card-features">
+        <li>Streamable HTTP transport</li>
+        <li>25 tool definitions</li>
+        <li>Session management</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- Connector 2→3 -->
+<div class="connector">
+  <svg width="2" height="32"><line x1="1" y1="0" x2="1" y2="32" stroke="rgba(255,255,255,0.15)" stroke-width="1.5" stroke-dasharray="4,3"/></svg>
+</div>
+
+<!-- Layer 3: Core Framework -->
+<div class="layer">
+  <div class="layer-label">Layer 3 &mdash; Core Framework</div>
+  <div class="layer-cards">
+    <div class="card">
+      <div class="card-head">
+        <span class="status-dot green"></span>
+        <span class="card-name">ModuleKernel</span>
+        <span class="card-ver">v1</span>
+      </div>
+      <ul class="card-features">
+        <li>Module lifecycle</li>
+        <li>Registration &amp; init</li>
+        <li>Dependency resolution</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="card-head">
+        <span class="status-dot green"></span>
+        <span class="card-name">DIContainer</span>
+        <span class="card-ver">v1</span>
+      </div>
+      <ul class="card-features">
+        <li>IoC container</li>
+        <li>Singleton / transient scopes</li>
+        <li>Auto-wiring</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="card-head">
+        <span class="status-dot green"></span>
+        <span class="card-name">EventBus</span>
+        <span class="card-ver">v1</span>
+      </div>
+      <ul class="card-features">
+        <li>Publish / subscribe</li>
+        <li>Async event processing</li>
+        <li>Event replay</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="card-head">
+        <span class="status-dot green"></span>
+        <span class="card-name">ConfigAccessor</span>
+        <span class="card-ver">v1</span>
+      </div>
+      <ul class="card-features">
+        <li>Typed config access</li>
+        <li>Environment overlay</li>
+        <li>Hot reload</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="card-head">
+        <span class="status-dot green"></span>
+        <span class="card-name">Logger</span>
+        <span class="card-ver">v1</span>
+      </div>
+      <ul class="card-features">
+        <li>Structured logging</li>
+        <li>Log levels &amp; transports</li>
+        <li>Contextual metadata</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- Connector 3→4 -->
+<div class="connector">
+  <svg width="2" height="32"><line x1="1" y1="0" x2="1" y2="32" stroke="rgba(255,255,255,0.15)" stroke-width="1.5" stroke-dasharray="4,3"/></svg>
+</div>
+
+<!-- Layer 4: Auth -->
+<div class="layer">
+  <div class="layer-label">Layer 4 &mdash; Authentication</div>
+  <div class="layer-cards">
+    <div class="card">
+      <div class="card-head">
+        <span class="status-dot green"></span>
+        <span class="card-name">auth</span>
+        <span class="card-ver">v1</span>
+      </div>
+      <ul class="card-features">
+        <li>JWT authentication</li>
+        <li>Password management (bcrypt)</li>
+        <li>3-level permissions (public / protected / admin)</li>
+        <li>API Key support</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- Connector 4→5 -->
+<div class="connector">
+  <svg width="2" height="32"><line x1="1" y1="0" x2="1" y2="32" stroke="rgba(255,255,255,0.15)" stroke-width="1.5" stroke-dasharray="4,3"/></svg>
+</div>
+
+<!-- Layer 5: Business Modules -->
+<div class="layer">
+  <div class="layer-label">Layer 5 &mdash; Business Modules (Core)</div>
+
+  <!-- task-core -->
+  <div class="layer-cards" style="margin-bottom:12px">
+    <div class="card" style="max-width:320px">
+      <div class="card-head">
+        <span class="status-dot green"></span>
+        <span class="card-name">task-core</span>
+        <span class="card-ver">v1</span>
+      </div>
+      <ul class="card-features">
+        <li>Task CRUD (9 APIs)</li>
+        <li>State transition validation</li>
+        <li>Change history tracking</li>
+        <li>Dependencies / tags / subtasks</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Sub-modules tree -->
+  <div class="sub-tree">
+    <div class="layer-cards" style="gap:12px">
+      <div class="card">
+        <div class="card-head">
+          <span class="status-dot green"></span>
+          <span class="card-name">workflow-engine</span>
+          <span class="card-ver">v1</span>
+        </div>
+        <ul class="card-features">
+          <li>12 step types</li>
+          <li>5 trigger types</li>
+          <li>Feedback system (4 intervention modes)</li>
+          <li>SOLO introspection</li>
+          <li>Observability</li>
+          <li>Concurrency control</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="card-head">
+          <span class="status-dot green"></span>
+          <span class="card-name">ai-engine</span>
+          <span class="card-ver">v1</span>
+        </div>
+        <ul class="card-features">
+          <li>Text extraction</li>
+          <li>Intelligent decomposition</li>
+          <li>Status inference</li>
+          <li>Smart reports</li>
+          <li>Natural language query</li>
+          <li>Intelligent scheduling</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="card-head">
+          <span class="status-dot green"></span>
+          <span class="card-name">mcp-server</span>
+          <span class="card-ver">v1</span>
+        </div>
+        <ul class="card-features">
+          <li>25 MCP tools</li>
+          <li>Session management</li>
+          <li>Streamable HTTP</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="card-head">
+          <span class="status-dot green"></span>
+          <span class="card-name">agent-collab</span>
+          <span class="card-ver">v1</span>
+        </div>
+        <ul class="card-features">
+          <li>Agent registration &amp; auth</li>
+          <li>API Key management</li>
+          <li>Operation logging</li>
+          <li>Permission checks</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="card-head">
+          <span class="status-dot yellow"></span>
+          <span class="card-name">module-updater</span>
+          <span class="card-ver">v0.1</span>
+        </div>
+        <ul class="card-features">
+          <li>Hot module update</li>
+          <li>Version tracking</li>
+          <li>Rollback support</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Connector 5→6 -->
+<div class="connector">
+  <svg width="2" height="32"><line x1="1" y1="0" x2="1" y2="32" stroke="rgba(255,255,255,0.15)" stroke-width="1.5" stroke-dasharray="4,3"/></svg>
+</div>
+
+<!-- Layer 6: Support Modules -->
+<div class="layer">
+  <div class="layer-label">Layer 6 &mdash; Support Modules</div>
+  <div class="layer-cards">
+    <div class="card">
+      <div class="card-head">
+        <span class="status-dot green"></span>
+        <span class="card-name">notifications</span>
+        <span class="card-ver">v1</span>
+      </div>
+      <ul class="card-features">
+        <li>Multi-channel push</li>
+        <li>Rule engine</li>
+        <li>Web Push</li>
+        <li>Unread management</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="card-head">
+        <span class="status-dot green"></span>
+        <span class="card-name">realtime / SSE</span>
+        <span class="card-ver">v1</span>
+      </div>
+      <ul class="card-features">
+        <li>Server-Sent Events</li>
+        <li>Channel subscriptions</li>
+        <li>EventBridge</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="card-head">
+        <span class="status-dot yellow"></span>
+        <span class="card-name">plugin</span>
+        <span class="card-ver">v0.1</span>
+      </div>
+      <ul class="card-features">
+        <li>Install / uninstall</li>
+        <li>Custom tool registration</li>
+        <li>Sandbox execution</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="card-head">
+        <span class="status-dot green"></span>
+        <span class="card-name">integration-core</span>
+        <span class="card-ver">v1</span>
+      </div>
+      <ul class="card-features">
+        <li>6 adapters</li>
+        <li>Webhook receiver</li>
+        <li>Sync management</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- Connector 6→7 -->
+<div class="connector">
+  <svg width="2" height="32"><line x1="1" y1="0" x2="1" y2="32" stroke="rgba(255,255,255,0.15)" stroke-width="1.5" stroke-dasharray="4,3"/></svg>
+</div>
+
+<!-- Layer 7: Integration Adapters -->
+<div class="layer">
+  <div class="layer-label">Layer 7 &mdash; Integration Adapters</div>
+  <div class="layer-cards">
+    <div class="card" style="min-width:120px;max-width:160px;text-align:center">
+      <div class="card-head" style="justify-content:center">
+        <span class="status-dot green"></span>
+        <span class="card-name">GitHub</span>
+      </div>
+    </div>
+    <div class="card" style="min-width:120px;max-width:160px;text-align:center">
+      <div class="card-head" style="justify-content:center">
+        <span class="status-dot green"></span>
+        <span class="card-name">Feishu</span>
+      </div>
+    </div>
+    <div class="card" style="min-width:120px;max-width:160px;text-align:center">
+      <div class="card-head" style="justify-content:center">
+        <span class="status-dot green"></span>
+        <span class="card-name">Notion</span>
+      </div>
+    </div>
+    <div class="card" style="min-width:120px;max-width:160px;text-align:center">
+      <div class="card-head" style="justify-content:center">
+        <span class="status-dot green"></span>
+        <span class="card-name">Telegram</span>
+      </div>
+    </div>
+    <div class="card" style="min-width:120px;max-width:160px;text-align:center">
+      <div class="card-head" style="justify-content:center">
+        <span class="status-dot yellow"></span>
+        <span class="card-name">WeChat</span>
+      </div>
+    </div>
+    <div class="card" style="min-width:120px;max-width:160px;text-align:center">
+      <div class="card-head" style="justify-content:center">
+        <span class="status-dot green"></span>
+        <span class="card-name">Webhook</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Connector 7→8 -->
+<div class="connector">
+  <svg width="2" height="32"><line x1="1" y1="0" x2="1" y2="32" stroke="rgba(255,255,255,0.15)" stroke-width="1.5" stroke-dasharray="4,3"/></svg>
+</div>
+
+<!-- Layer 8: Infrastructure -->
+<div class="layer">
+  <div class="layer-label">Layer 8 &mdash; Infrastructure</div>
+  <div class="layer-cards">
+    <div class="card" style="max-width:280px">
+      <div class="card-head">
+        <span class="status-dot green"></span>
+        <span class="card-name">Prisma ORM</span>
+        <span class="card-ver">v6</span>
+      </div>
+      <ul class="card-features">
+        <li>Global singleton getPrisma()</li>
+        <li>Type-safe queries</li>
+        <li>Migration management</li>
+      </ul>
+    </div>
+    <div class="card" style="max-width:280px">
+      <div class="card-head">
+        <span class="status-dot green"></span>
+        <span class="card-name">SQLite</span>
+        <span class="card-ver">v3</span>
+      </div>
+      <ul class="card-features">
+        <li>25 data models</li>
+        <li>Embedded database</li>
+        <li>Zero-config deployment</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- Legend -->
+<div class="legend">
+  <div class="legend-item"><span class="legend-dot green"></span> Implemented</div>
+  <div class="legend-item"><span class="legend-dot yellow"></span> Partial</div>
+  <div class="legend-item"><span class="legend-line"></span> Dependency</div>
+</div>
+
+</div><!-- /map-area -->
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     RIGHT: Execution Path Panel
+     ═══════════════════════════════════════════════════════════════════ -->
+<div class="path-panel">
+  <h2><span class="icon">&#x1F4F8;</span> 执行路径</h2>
+
+  <div style="display:inline-block;background:rgba(34,197,94,0.12);border:1px solid rgba(34,197,94,0.3);border-radius:8px;padding:6px 14px;margin-bottom:20px;font-size:.78rem;font-weight:600;color:#4ade80">
+    &#x2705; 13/13 全部通过
+  </div>
+
+  <div class="step">
+    <div class="step-num">0</div>
+    <div class="step-fn">MCP 初始化</div>
+    <div class="step-flow">
+      <span class="mod">mcp-server</span>
+      <span class="arrow">&rarr;</span>
+      <span class="mod">ModuleKernel</span>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-fn">register_agent</div>
+    <div class="step-flow">
+      <span class="mod">mcp-server</span>
+      <span class="arrow">&rarr;</span>
+      <span class="mod">agent-collab</span>
+      <span class="arrow">&rarr;</span>
+      <span class="mod db">Prisma</span>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-fn">create_project</div>
+    <div class="step-flow">
+      <span class="mod">mcp-server</span>
+      <span class="arrow">&rarr;</span>
+      <span class="mod">task-core</span>
+      <span class="arrow">&rarr;</span>
+      <span class="mod db">Prisma</span>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-fn">project_create_task &times;6</div>
+    <div class="step-flow">
+      <span class="mod">mcp-server</span>
+      <span class="arrow">&rarr;</span>
+      <span class="mod">task-core</span>
+      <span class="arrow">&rarr;</span>
+      <span class="mod db">Prisma</span>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">4</div>
+    <div class="step-fn">log_activity</div>
+    <div class="step-flow">
+      <span class="mod">mcp-server</span>
+      <span class="arrow">&rarr;</span>
+      <span class="mod">task-core</span>
+      <span class="arrow">&rarr;</span>
+      <span class="mod db">Prisma</span>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">5</div>
+    <div class="step-fn">advance_phase(planning)</div>
+    <div class="step-flow">
+      <span class="mod">mcp-server</span>
+      <span class="arrow">&rarr;</span>
+      <span class="mod">task-core</span>
+      <span class="arrow">&rarr;</span>
+      <span class="mod db">Prisma</span>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">6</div>
+    <div class="step-fn">advance_phase(architecture)</div>
+    <div class="step-flow">
+      <span class="mod">mcp-server</span>
+      <span class="arrow">&rarr;</span>
+      <span class="mod">task-core</span>
+      <span class="arrow">&rarr;</span>
+      <span class="mod db">Prisma</span>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">7</div>
+    <div class="step-fn">advance_phase(implementation)</div>
+    <div class="step-flow">
+      <span class="mod">mcp-server</span>
+      <span class="arrow">&rarr;</span>
+      <span class="mod">task-core</span>
+      <span class="arrow">&rarr;</span>
+      <span class="mod db">Prisma</span>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">8</div>
+    <div class="step-fn">advance_phase(testing)</div>
+    <div class="step-flow">
+      <span class="mod">mcp-server</span>
+      <span class="arrow">&rarr;</span>
+      <span class="mod">task-core</span>
+      <span class="arrow">&rarr;</span>
+      <span class="mod db">Prisma</span>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">9</div>
+    <div class="step-fn">advance_phase(deployment)</div>
+    <div class="step-flow">
+      <span class="mod">mcp-server</span>
+      <span class="arrow">&rarr;</span>
+      <span class="mod">task-core</span>
+      <span class="arrow">&rarr;</span>
+      <span class="mod db">Prisma</span>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">10</div>
+    <div class="step-fn">advance_phase(completed)</div>
+    <div class="step-flow">
+      <span class="mod">mcp-server</span>
+      <span class="arrow">&rarr;</span>
+      <span class="mod">task-core</span>
+      <span class="arrow">&rarr;</span>
+      <span class="mod db">Prisma</span>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">11</div>
+    <div class="step-fn">get_project_summary</div>
+    <div class="step-flow">
+      <span class="mod">mcp-server</span>
+      <span class="arrow">&rarr;</span>
+      <span class="mod">task-core</span>
+      <span class="arrow">+</span>
+      <span class="mod">agent-collab</span>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">12</div>
+    <div class="step-fn">get_activity_log</div>
+    <div class="step-flow">
+      <span class="mod">mcp-server</span>
+      <span class="arrow">&rarr;</span>
+      <span class="mod">task-core</span>
+      <span class="arrow">&rarr;</span>
+      <span class="mod db">Prisma</span>
+    </div>
+  </div>
+
+  <!-- Module color legend -->
+  <div style="margin-top:24px;padding-top:16px;border-top:1px solid rgba(255,255,255,0.06)">
+    <div style="font-size:.68rem;color:var(--text-dim);margin-bottom:10px;font-weight:500">MODULE COLORS</div>
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <div style="display:flex;align-items:center;gap:8px;font-size:.7rem;color:var(--text-secondary)">
+        <span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:rgba(139,92,246,0.4);border:1px solid rgba(139,92,246,0.5)"></span>
+        Internal Module
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;font-size:.7rem;color:var(--text-secondary)">
+        <span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:rgba(59,130,246,0.3);border:1px solid rgba(59,130,246,0.5)"></span>
+        External Service
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;font-size:.7rem;color:var(--text-secondary)">
+        <span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:rgba(34,197,94,0.3);border:1px solid rgba(34,197,94,0.4)"></span>
+        Database / Storage
+      </div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /layout -->
+
+</body>
+</html>
