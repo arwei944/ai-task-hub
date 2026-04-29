@@ -95,8 +95,10 @@ async function initializeSharedTools() {
 
   // Initialize database
   const dbPath = process.env.DATABASE_URL?.replace(/^file:/, '') ?? './prisma/dev.db';
+  logger.info(`Database path: ${dbPath}`);
   const adapter = new PrismaBetterSqlite3({ url: dbPath });
   const prisma = new PrismaClient({ adapter });
+  logger.info('Prisma client initialized');
 
   // Register task-core services
   const { TaskRepository } = await import('@/lib/modules/task-core/task.repository');
@@ -238,47 +240,63 @@ function createMcpServer(): McpServer {
  * Handle all HTTP methods (GET, POST, DELETE) for MCP Streamable HTTP
  */
 export async function handler(request: NextRequest) {
-  await initializeSharedTools();
+  try {
+    await initializeSharedTools();
+  } catch (error: any) {
+    console.error('[MCP] Failed to initialize shared tools:', error);
+    return new Response(
+      JSON.stringify({ error: 'MCP initialization failed', detail: error.message }),
+      { status: 500, headers: { 'Content-Type': 'application/json' } },
+    );
+  }
 
-  // Check for existing session
-  const sessionId = request.headers.get('mcp-session-id');
+  try {
+    // Check for existing session
+    const sessionId = request.headers.get('mcp-session-id');
 
-  if (sessionId && sessions.has(sessionId)) {
-    // Reuse existing session's transport
-    const session = sessions.get(sessionId)!;
+    if (sessionId && sessions.has(sessionId)) {
+      // Reuse existing session's transport
+      const session = sessions.get(sessionId)!;
+      const webRequest = new Request(request.url, {
+        method: request.method,
+        headers: request.headers,
+        body: request.body,
+        duplex: 'half',
+      } as RequestInit);
+      return session.transport.handleRequest(webRequest);
+    }
+
+    // New session: create McpServer + transport
+    const mcpServer = createMcpServer();
+    const transport = new WebStandardStreamableHTTPServerTransport({
+      sessionIdGenerator: () => crypto.randomUUID(),
+    });
+
+    await mcpServer.connect(transport);
+
     const webRequest = new Request(request.url, {
       method: request.method,
       headers: request.headers,
       body: request.body,
       duplex: 'half',
     } as RequestInit);
-    return session.transport.handleRequest(webRequest);
+
+    const response = await transport.handleRequest(webRequest);
+
+    // Store session
+    const newSessionId = transport.sessionId;
+    if (newSessionId) {
+      sessions.set(newSessionId, { server: mcpServer, transport });
+    }
+
+    return response;
+  } catch (error: any) {
+    console.error('[MCP] Handler error:', error);
+    return new Response(
+      JSON.stringify({ error: 'MCP request failed', detail: error.message }),
+      { status: 500, headers: { 'Content-Type': 'application/json' } },
+    );
   }
-
-  // New session: create McpServer + transport
-  const mcpServer = createMcpServer();
-  const transport = new WebStandardStreamableHTTPServerTransport({
-    sessionIdGenerator: () => crypto.randomUUID(),
-  });
-
-  await mcpServer.connect(transport);
-
-  const webRequest = new Request(request.url, {
-    method: request.method,
-    headers: request.headers,
-    body: request.body,
-    duplex: 'half',
-  } as RequestInit);
-
-  const response = await transport.handleRequest(webRequest);
-
-  // Store session
-  const newSessionId = transport.sessionId;
-  if (newSessionId) {
-    sessions.set(newSessionId, { server: mcpServer, transport });
-  }
-
-  return response;
 }
 
 export const GET = handler;
