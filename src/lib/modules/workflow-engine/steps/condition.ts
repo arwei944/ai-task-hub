@@ -1,4 +1,5 @@
 import type { StepHandler, StepHandlerDeps, WorkflowStep } from '../types';
+
 export class ConditionStep implements StepHandler {
   constructor(private deps: StepHandlerDeps) {}
   async execute(config: Record<string, unknown>, context: Record<string, unknown>) {
@@ -14,7 +15,7 @@ export class ConditionStep implements StepHandler {
     const resolved = expression.replace(/\{\{(\w+(?:\.\w+)*)\}\}/g, (_, path) => {
       const parts = path.split('.');
       let value: unknown = context;
-      for (const part of parts) { if (value && typeof value === 'object') { value = (value as Record<string, unknown>)[part]; } else { return 'undefined'; } }
+      for (const part of parts) { if (value && typeof value === 'object') value = (value as Record<string, unknown>)[part]; else return 'undefined'; }
       return JSON.stringify(value);
     });
     const safeExpr = resolved.replace(/[^=!<>""'\w\d.\s_-]/g, '').trim();

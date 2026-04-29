@@ -1,4 +1,7 @@
 import type { StepHandler, StepHandlerDeps, WorkflowStep, StepResult } from '../types';
+import type { WorkflowContextManager } from '../context';
+import type { WorkflowExecutor } from '../executor';
+
 export class ParallelGroupStep implements StepHandler {
   constructor(private deps: StepHandlerDeps) {}
   async execute(config: Record<string, unknown>, context: Record<string, unknown>) {
@@ -9,7 +12,15 @@ export class ParallelGroupStep implements StepHandler {
     const parentStepId = String(context._stepId ?? '');
     const promises = subSteps.map((step, index) => {
       const subContext: Record<string, unknown> = { ...context, _parallelIndex: index, _soloSessionId: undefined, _parentStepId: parentStepId };
-      return this.deps.executor.executeStep({ executionId, step, contextManager: { getAll: () => subContext, merge: (result: StepResult) => { Object.assign(subContext, result); }, resolveTemplateVars: (obj: Record<string, unknown>) => obj, setExecutionMeta: () => {}, getSoloSessionId: () => subContext._soloSessionId as string | undefined, setSoloSessionId: (id: string) => { subContext._soloSessionId = id; } }, isCancelled: () => false, parentStepId });
+      return this.deps.executor.executeStep({
+        executionId, step,
+        contextManager: {
+          getAll: () => subContext, merge: (result: StepResult) => { Object.assign(subContext, result); },
+          resolveTemplateVars: (obj: Record<string, unknown>) => obj, setExecutionMeta: () => {},
+          getSoloSessionId: () => subContext._soloSessionId as string | undefined,
+          setSoloSessionId: (id: string) => { subContext._soloSessionId = id; },
+        }, isCancelled: () => false, parentStepId,
+      });
     });
     const results = await Promise.allSettled(promises);
     const parallelResults = results.map((r, i) => ({ index: i, stepName: subSteps[i]?.name ?? `parallel-${i}`, status: r.status === 'fulfilled' ? r.value.status : 'failed', error: r.status === 'fulfilled' ? r.value.error : String(r.reason) }));
