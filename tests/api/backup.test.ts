@@ -49,7 +49,9 @@ function createMockRequest(url: string, body?: unknown): Request {
   const init: RequestInit = { method: body ? 'POST' : 'GET' };
   if (body) {
     init.body = JSON.stringify(body);
-    init.headers = { 'Content-Type': 'application/json' };
+    init.headers = { 'Content-Type': 'application/json', 'Authorization': 'Bearer test-token' };
+  } else {
+    init.headers = { 'Authorization': 'Bearer test-token' };
   }
   return new Request(url, init) as Request;
 }
@@ -66,7 +68,7 @@ describe('GET /api/backup', () => {
 
   it('should return 200 with backup data structure', async () => {
     const request = createMockRequest('http://localhost:3000/api/backup');
-    const response = await GET();
+    const response = await GET(request);
     const data = await response.json();
 
     expect(response.status).toBe(200);
@@ -82,7 +84,7 @@ describe('GET /api/backup', () => {
     mockFindMany.mockResolvedValue([]);
 
     const request = createMockRequest('http://localhost:3000/api/backup');
-    const response = await GET();
+    const response = await GET(request);
     const data = await response.json();
 
     const expectedTables = [
@@ -97,7 +99,7 @@ describe('GET /api/backup', () => {
     mockFindMany.mockResolvedValue([]);
 
     const request = createMockRequest('http://localhost:3000/api/backup');
-    const response = await GET();
+    const response = await GET(request);
     const data = await response.json();
 
     for (const count of Object.values(data.recordCounts)) {
@@ -112,7 +114,7 @@ describe('GET /api/backup', () => {
       .mockResolvedValue([]);
 
     const request = createMockRequest('http://localhost:3000/api/backup');
-    const response = await GET();
+    const response = await GET(request);
     const data = await response.json();
 
     expect(data.recordCounts.User).toBe(1);
@@ -126,7 +128,7 @@ describe('GET /api/backup', () => {
     ]);
 
     const request = createMockRequest('http://localhost:3000/api/backup');
-    const response = await GET();
+    const response = await GET(request);
     const data = await response.json();
 
     expect(fs.writeFileSync).toHaveBeenCalled();
@@ -140,7 +142,7 @@ describe('GET /api/backup', () => {
     mockFindMany.mockResolvedValue([]);
 
     const request = createMockRequest('http://localhost:3000/api/backup');
-    await GET();
+    await GET(request);
 
     expect(fs.writeFileSync).toHaveBeenCalledTimes(1);
     const filePath = (fs.writeFileSync as any).mock.calls[0][0];
@@ -163,7 +165,7 @@ describe('GET /api/backup', () => {
       .mockResolvedValue([]);
 
     const request = createMockRequest('http://localhost:3000/api/backup');
-    const response = await GET();
+    const response = await GET(request);
     const data = await response.json();
 
     expect(response.status).toBe(200);
@@ -174,7 +176,7 @@ describe('GET /api/backup', () => {
     mockFindMany.mockResolvedValue([]);
 
     const request = createMockRequest('http://localhost:3000/api/backup');
-    await GET();
+    await GET(request);
 
     expect(mockDisconnect).toHaveBeenCalledTimes(1);
   });
@@ -186,7 +188,7 @@ describe('GET /api/backup', () => {
     });
 
     const request = createMockRequest('http://localhost:3000/api/backup');
-    const response = await GET();
+    const response = await GET(request);
     const data = await response.json();
 
     expect(response.status).toBe(500);
@@ -330,7 +332,7 @@ describe('POST /api/backup', () => {
     const request = new Request('http://localhost:3000/api/backup', {
       method: 'POST',
       body: 'invalid json',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer test-token' },
     }) as Request;
 
     const response = await POST(request);

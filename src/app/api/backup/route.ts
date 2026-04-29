@@ -13,7 +13,7 @@ import { join } from 'path';
 
 export const dynamic = 'force-dynamic';
 
-// No auth required - single admin mode
+// Auth required for backup operations
 
 // Tables to export (in dependency order)
 const TABLES = [
@@ -26,8 +26,17 @@ const TABLES = [
 /**
  * GET /api/backup - Export all data
  */
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    // Auth check
+    const authHeader = request.headers.get('authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return NextResponse.json(
+        { success: false, error: 'Authentication required' },
+        { status: 401 },
+      );
+    }
+
     const prisma = getPrisma();
     const backup: Record<string, unknown[]> = {};
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
@@ -75,6 +84,15 @@ export async function GET() {
  */
 export async function POST(request: Request) {
   try {
+    // Auth check
+    const authHeader = request.headers.get('authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return NextResponse.json(
+        { success: false, error: 'Authentication required' },
+        { status: 401 },
+      );
+    }
+
     const body = await request.json();
     const { data } = body as { data: Record<string, unknown[]> };
 

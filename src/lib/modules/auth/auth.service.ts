@@ -25,8 +25,13 @@ export class AuthService {
     private userRepo: UserRepository,
     private logger: ILogger,
   ) {
-    const secret = process.env.JWT_SECRET || 'ai-task-hub-default-secret-change-in-production';
-    this.secretKey = new TextEncoder().encode(secret);
+    const secret = process.env.JWT_SECRET;
+    if (!secret || secret.trim() === '') {
+      this.logger.warn('JWT_SECRET is not set or empty! Using default secret - CHANGE IN PRODUCTION!');
+      this.secretKey = new TextEncoder().encode('ai-task-hub-default-secret-change-in-production');
+    } else {
+      this.secretKey = new TextEncoder().encode(secret);
+    }
   }
 
   /**

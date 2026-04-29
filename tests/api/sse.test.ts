@@ -33,9 +33,21 @@ vi.mock('@/lib/core/logger', () => ({
 import { GET } from '@/app/api/sse/route';
 
 function createMockRequest(url: string, signal?: AbortSignal): Request {
+  // Private channels (non-global) require Bearer token
+  const urlObj = new URL(url);
+  const channelsParam = urlObj.searchParams.get('channels');
+  const channels = channelsParam ? channelsParam.split(',').filter(Boolean) : ['global'];
+  const hasPrivateChannel = channels.some(ch => ch !== 'global');
+
+  const headers: Record<string, string> = {};
+  if (hasPrivateChannel) {
+    headers['Authorization'] = 'Bearer test-token';
+  }
+
   return new Request(url, {
     method: 'GET',
     signal,
+    headers,
   }) as Request;
 }
 

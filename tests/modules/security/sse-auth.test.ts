@@ -1,12 +1,10 @@
 // ============================================================
-// C-05: SSE Endpoint - No Authentication (Security Vulnerability)
+// C-05: SSE Endpoint - Authentication for Private Channels
 // ============================================================
 //
-// These tests document the CURRENT behavior of /api/sse:
-// The endpoint has NO authentication protection.
-// Any unauthenticated client can connect and receive real-time events.
-//
-// This is a CRITICAL security vulnerability (C-05).
+// These tests verify that /api/sse requires Bearer token authentication
+// for private channels. The 'global' channel remains open (no auth required).
+// Private channels (non-global) require a Bearer token.
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
@@ -46,7 +44,16 @@ function createUnauthenticatedRequest(url: string, signal?: AbortSignal): Reques
   }) as Request;
 }
 
-describe('C-05: SSE Endpoint - No Authentication', () => {
+// Helper: create a mock Request WITH Bearer token
+function createAuthenticatedRequest(url: string, signal?: AbortSignal): Request {
+  return new Request(url, {
+    method: 'GET',
+    signal,
+    headers: { 'Authorization': 'Bearer valid-token' },
+  }) as Request;
+}
+
+describe('C-05: SSE Endpoint - Authentication for Private Channels', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockAddClient.mockReturnValue({ id: 'test-client-id' });
@@ -56,10 +63,8 @@ describe('C-05: SSE Endpoint - No Authentication', () => {
     vi.restoreAllMocks();
   });
 
-  // C-05-1: Unauthenticated SSE connection succeeds
-  it('C-05-1: Unauthenticated SSE connection returns 200 + SSE stream (VULNERABILITY - no auth check)', async () => {
-    // This test documents the vulnerability: an SSE connection without any
-    // Authorization header still succeeds and returns a live event stream.
+  // C-05-1: Global channel (default) does not require authentication
+  it('C-05-1: Unauthenticated SSE connection to global channel returns 200', async () => {
     const request = createUnauthenticatedRequest('http://localhost:3000/api/sse');
 
     // Verify the request has no Authorization header
@@ -67,7 +72,7 @@ describe('C-05: SSE Endpoint - No Authentication', () => {
 
     const response = await GET(request);
 
-    // VULNERABILITY: Should return 401/403, but currently returns 200
+    // Global channel is open - no auth required
     expect(response.status).toBe(200);
     expect(response.headers.get('Content-Type')).toBe('text/event-stream');
     expect(response.headers.get('Cache-Control')).toBe('no-cache, no-transform');
@@ -75,14 +80,37 @@ describe('C-05: SSE Endpoint - No Authentication', () => {
     expect(response.body).toBeInstanceOf(ReadableStream);
   });
 
-  // C-05-2: Subscribe to a specific channel
-  it('C-05-2: Should subscribe to specified channel (channels=task-updates)', async () => {
-    mockAddClient.mockReturnValue({ id: 'client-channels' });
-
+  // C-05-2: Private channel without auth returns 401
+  it('C-05-2: Unauthenticated request to private channel returns 401', async () => {
     const request = createUnauthenticatedRequest(
       'http://localhost:3000/api/sse?channels=task-updates',
     );
-    await GET(request);
+
+    expect(request.headers.get('Authorization')).toBeNull();
+
+    const response = await GET(request);
+    const data = await response.json();
+
+    // Private channels require authentication
+    expect(response.status).toBe(401);
+    expect(data.error).toContain('Authentication required');
+  });
+
+  // C-05-3: Private channel with auth returns 200
+  it('C-05-3: Authenticated request to private channel returns 200 + SSE stream', async () => {
+    mockAddClient.mockReturnValue({ id: 'client-auth' });
+
+    const request = createAuthenticatedRequest(
+      'http://localhost:3000/api/sse?channels=task-updates',
+    );
+
+    expect(request.headers.get('Authorization')).toBe('Bearer valid-token');
+
+    const response = await GET(request);
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get('Content-Type')).toBe('text/event-stream');
+    expect(response.body).toBeInstanceOf(ReadableStream);
 
     expect(mockAddClient).toHaveBeenCalledTimes(1);
     const callArgs = mockAddClient.mock.calls[0];
@@ -92,11 +120,11 @@ describe('C-05: SSE Endpoint - No Authentication', () => {
     });
   });
 
-  // C-05-3: Subscribe to multiple channels
-  it('C-05-3: Should subscribe to multiple channels (channels=system,task-updates)', async () => {
+  // C-05-4: Authenticated request to multiple private channels
+  it('C-05-4: Authenticated request to multiple private channels succeeds', async () => {
     mockAddClient.mockReturnValue({ id: 'client-multi' });
 
-    const request = createUnauthenticatedRequest(
+    const request = createAuthenticatedRequest(
       'http://localhost:3000/api/sse?channels=system,task-updates',
     );
     await GET(request);
@@ -109,8 +137,8 @@ describe('C-05: SSE Endpoint - No Authentication', () => {
     });
   });
 
-  // C-05-4: Empty channels param defaults to global
-  it('C-05-4: Empty channels param should subscribe to default global channel', async () => {
+  // C-05-5: Empty channels param defaults to global (no auth needed)
+  it('C-05-5: Empty channels param should subscribe to default global channel (no auth needed)', async () => {
     mockAddClient.mockReturnValue({ id: 'client-empty' });
 
     const request = createUnauthenticatedRequest(
@@ -126,8 +154,8 @@ describe('C-05: SSE Endpoint - No Authentication', () => {
     });
   });
 
-  // C-05-5: Abort signal triggers client cleanup
-  it('C-05-5: Abort signal should trigger client cleanup (removeClient)', async () => {
+  // C-05-6: Abort signal triggers client cleanup
+  it('C-05-6: Abort signal should trigger client cleanup (removeClient)', async () => {
     const abortController = new AbortController();
     mockAddClient.mockReturnValue({ id: 'client-abort-test' });
 

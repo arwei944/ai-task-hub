@@ -4,6 +4,7 @@
 //
 // Server-Sent Events endpoint for real-time updates.
 // Supports channel subscription via query params: ?channels=tasks,notifications
+// Auth: Bearer token required for private channels; public channels (global) are open
 //
 
 import { getSSEService } from '@/lib/modules/realtime/sse.service';
@@ -11,14 +12,24 @@ import { Logger } from '@/lib/core/logger';
 
 const logger = new Logger('sse');
 
-// No auth required - single admin mode
-
 export async function GET(request: Request) {
   const sseService = getSSEService(logger);
 
   const url = new URL(request.url);
   const channelsParam = url.searchParams.get('channels');
   const channels = channelsParam ? channelsParam.split(',').filter(Boolean) : ['global'];
+
+  // Auth check: private channels require Bearer token
+  const privateChannels = channels.filter(ch => ch !== 'global');
+  if (privateChannels.length > 0) {
+    const authHeader = request.headers.get('authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(
+        JSON.stringify({ error: 'Authentication required for private channels' }),
+        { status: 401, headers: { 'Content-Type': 'application/json' } },
+      );
+    }
+  }
 
   const userId: string = 'admin'; // Single admin mode
 

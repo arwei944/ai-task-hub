@@ -38,9 +38,24 @@ export class ConditionStep implements StepHandler {
       return JSON.stringify(value);
     });
 
-    // 安全求值（白名单字符）
-    const safeExpr = resolved.replace(/[^=!<>""'\w\d.\s_-]/g, '').trim();
+    // 安全求值 - 严格白名单：只允许标识符、数字、字符串、比较/逻辑运算符
+    // 移除所有非安全字符（包括点号，防止 process.env 等对象链访问）
+    const safeExpr = resolved.replace(/[^=!<>"'\w\d\s_-]/g, '').trim();
     if (!safeExpr) return false;
+
+    // 危险标识符黑名单 - 阻止全局对象访问
+    const dangerousPatterns = [
+      /\bprocess\b/, /\bglobal\b/, /\bglobalThis\b/, /\bwindow\b/,
+      /\bdocument\b/, /\brequire\b/, /\bimport\b/, /\beval\b/,
+      /\bFunction\b/, /\bconstructor\b/, /\b__proto__\b/,
+      /\bprototype\b/, /\bthis\b/, /\barguments\b/,
+    ];
+    for (const pattern of dangerousPatterns) {
+      if (pattern.test(safeExpr)) return false;
+    }
+
+    // 表达式长度限制
+    if (safeExpr.length > 500) return false;
 
     try {
       // Build a safe evaluation scope without using `with()` (incompatible with strict mode)

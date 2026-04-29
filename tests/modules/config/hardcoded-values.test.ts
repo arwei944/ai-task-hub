@@ -23,20 +23,19 @@ describe('S-HC: 硬编码值测试', () => {
   // S-HC-04: approval.ts:13 vs feedback-module.ts:401
   // 验证两处审批超时值不一致（3000ms vs 2000ms）
   // -------------------------------------------------------
-  describe('S-HC-04: 审批轮询间隔不一致', () => {
-    it('approval.ts 中 pollInterval 应为 3000ms', () => {
+  describe('S-HC-04: 审批轮询间隔已统一', () => {
+    it('approval.ts 中 pollInterval 应为 2000ms（已统一修复）', () => {
       const source = readSource('lib/modules/workflow-engine/steps/approval.ts');
-      // 第 44 行: const pollInterval = 3000;
-      expect(source).toMatch(/const\s+pollInterval\s*=\s*3000/);
+      // 修复后：统一为 2000ms
+      expect(source).toMatch(/const\s+pollInterval\s*=\s*2000/);
     });
 
     it('feedback-module.ts 中 pollInterval 应为 2000ms', () => {
       const source = readSource('lib/modules/workflow-engine/feedback/feedback-module.ts');
-      // 第 403 行: const pollInterval = 2000;
       expect(source).toMatch(/const\s+pollInterval\s*=\s*2000/);
     });
 
-    it('两处 pollInterval 值不一致（已知问题）', () => {
+    it('两处 pollInterval 值已统一为 2000ms', () => {
       const approvalSource = readSource('lib/modules/workflow-engine/steps/approval.ts');
       const feedbackSource = readSource('lib/modules/workflow-engine/feedback/feedback-module.ts');
 
@@ -49,10 +48,9 @@ describe('S-HC: 硬编码值测试', () => {
       const approvalValue = Number(approvalMatch![1]);
       const feedbackValue = Number(feedbackMatch![1]);
 
-      // 断言：两处值确实不一致（这是我们要记录的问题）
-      expect(approvalValue).not.toBe(feedbackValue);
-      expect(approvalValue).toBe(3000);
-      expect(feedbackValue).toBe(2000);
+      // 修复后：两处值已统一
+      expect(approvalValue).toBe(feedbackValue);
+      expect(approvalValue).toBe(2000);
     });
   });
 

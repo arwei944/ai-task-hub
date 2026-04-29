@@ -38,22 +38,25 @@ export class ForEachStep implements StepHandler {
       };
 
       try {
-        const stepResult = await this.deps.executor.executeStep({
-          executionId: String(context._executionId ?? ''),
-          step: { ...subSteps[0], id: `foreach-${i}` },
-          contextManager: {
-            getAll: () => itemContext,
-            merge: (result: Record<string, unknown>) => Object.assign(itemContext, result),
-            resolveTemplateVars: (obj: Record<string, unknown>) => obj,
-            setExecutionMeta: () => {},
-            getSoloSessionId: () => itemContext._soloSessionId as string | undefined,
-            setSoloSessionId: (id: string) => { itemContext._soloSessionId = id; },
-          },
-          isCancelled: () => false,
-          parentStepId: String(context._stepId ?? ''),
-        });
+        // Execute all subSteps sequentially (not just subSteps[0])
+        for (const subStep of subSteps) {
+          await this.deps.executor.executeStep({
+            executionId: String(context._executionId ?? ''),
+            step: { ...subStep, id: `foreach-${i}-${subStep.id ?? 'step'}` },
+            contextManager: {
+              getAll: () => itemContext,
+              merge: (result: Record<string, unknown>) => Object.assign(itemContext, result),
+              resolveTemplateVars: (obj: Record<string, unknown>) => obj,
+              setExecutionMeta: () => {},
+              getSoloSessionId: () => itemContext._soloSessionId as string | undefined,
+              setSoloSessionId: (id: string) => { itemContext._soloSessionId = id; },
+            },
+            isCancelled: () => false,
+            parentStepId: String(context._stepId ?? ''),
+          });
+        }
 
-        results.push({ index: i, item: items[i], status: stepResult.status ?? 'completed' });
+        results.push({ index: i, item: items[i], status: 'completed' });
       } catch (err) {
         const errorMsg = err instanceof Error ? err.message : String(err);
         results.push({ index: i, item: items[i], status: 'failed', error: errorMsg });

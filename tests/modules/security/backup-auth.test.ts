@@ -1,12 +1,10 @@
 // ============================================================
-// C-04: Backup API - No Authentication (Security Vulnerability)
+// C-04: Backup API - Authentication Required
 // ============================================================
 //
-// These tests document the CURRENT behavior of /api/backup:
-// The endpoint has NO authentication protection.
-// Any unauthenticated request can export/import all data.
-//
-// This is a CRITICAL security vulnerability (C-04).
+// These tests verify that /api/backup requires Bearer token authentication.
+// Unauthenticated requests should return 401.
+// Authenticated requests should proceed normally.
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
@@ -61,7 +59,19 @@ function createUnauthenticatedRequest(url: string, body?: unknown): Request {
   return new Request(url, init) as Request;
 }
 
-describe('C-04: Backup API - No Authentication', () => {
+// Helper: create a mock Request WITH Bearer token
+function createAuthenticatedRequest(url: string, body?: unknown): Request {
+  const init: RequestInit = { method: body !== undefined ? 'POST' : 'GET' };
+  if (body !== undefined) {
+    init.body = JSON.stringify(body);
+    init.headers = { 'Content-Type': 'application/json', 'Authorization': 'Bearer valid-token' };
+  } else {
+    init.headers = { 'Authorization': 'Bearer valid-token' };
+  }
+  return new Request(url, init) as Request;
+}
+
+describe('C-04: Backup API - Authentication Required', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockFindMany.mockResolvedValue([]);
@@ -72,29 +82,24 @@ describe('C-04: Backup API - No Authentication', () => {
     vi.restoreAllMocks();
   });
 
-  // C-04-1: Unauthenticated GET request exports data
-  it('C-04-1: Unauthenticated GET request returns 200 (VULNERABILITY - no auth check)', async () => {
-    // This test documents the vulnerability: a GET request without any
-    // Authorization header still succeeds and returns all backup data.
+  // C-04-1: Unauthenticated GET request returns 401
+  it('C-04-1: Unauthenticated GET request returns 401', async () => {
     const request = createUnauthenticatedRequest('http://localhost:3000/api/backup');
 
     // Verify the request has no Authorization header
     expect(request.headers.get('Authorization')).toBeNull();
 
-    const response = await GET();
+    const response = await GET(request);
     const data = await response.json();
 
-    // VULNERABILITY: Should return 401/403, but currently returns 200
-    expect(response.status).toBe(200);
-    expect(data.success).toBe(true);
-    expect(data.tables).toBeDefined();
-    expect(data.recordCounts).toBeDefined();
+    // Should return 401 (authentication required)
+    expect(response.status).toBe(401);
+    expect(data.success).toBe(false);
+    expect(data.error).toContain('Authentication required');
   });
 
-  // C-04-2: Unauthenticated POST request imports data
-  it('C-04-2: Unauthenticated POST request returns 200 (VULNERABILITY - no auth check)', async () => {
-    // This test documents the vulnerability: a POST request without any
-    // Authorization header can still import data into the database.
+  // C-04-2: Unauthenticated POST request returns 401
+  it('C-04-2: Unauthenticated POST request returns 401', async () => {
     const body = {
       data: {
         User: [{ username: 'attacker', email: 'attacker@evil.com', passwordHash: 'stolen' }],
@@ -108,15 +113,49 @@ describe('C-04: Backup API - No Authentication', () => {
     const response = await POST(request);
     const data = await response.json();
 
-    // VULNERABILITY: Should return 401/403, but currently returns 200
+    // Should return 401 (authentication required)
+    expect(response.status).toBe(401);
+    expect(data.success).toBe(false);
+    expect(data.error).toContain('Authentication required');
+  });
+
+  // C-04-3: Authenticated GET request returns 200
+  it('C-04-3: Authenticated GET request returns 200 with backup data', async () => {
+    const request = createAuthenticatedRequest('http://localhost:3000/api/backup');
+
+    // Verify the request has Authorization header
+    expect(request.headers.get('Authorization')).toBe('Bearer valid-token');
+
+    const response = await GET(request);
+    const data = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(data.success).toBe(true);
+    expect(data.tables).toBeDefined();
+    expect(data.recordCounts).toBeDefined();
+  });
+
+  // C-04-4: Authenticated POST request returns 200
+  it('C-04-4: Authenticated POST request with valid data returns 200', async () => {
+    mockCreateMany.mockResolvedValue({ count: 2 });
+
+    const body = {
+      data: {
+        Tag: [{ name: 'bug', color: '#ff0000' }, { name: 'feature', color: '#00ff00' }],
+      },
+    };
+    const request = createAuthenticatedRequest('http://localhost:3000/api/backup', body);
+    const response = await POST(request);
+    const data = await response.json();
+
     expect(response.status).toBe(200);
     expect(data.success).toBe(true);
     expect(data.imported).toBeDefined();
   });
 
-  // C-04-3: POST with empty body
-  it('C-04-3: POST with empty body should return 400', async () => {
-    const request = createUnauthenticatedRequest('http://localhost:3000/api/backup', {});
+  // C-04-5: POST with empty body returns 400 (even with auth)
+  it('C-04-5: Authenticated POST with empty body should return 400', async () => {
+    const request = createAuthenticatedRequest('http://localhost:3000/api/backup', {});
 
     const response = await POST(request);
     const data = await response.json();
@@ -126,35 +165,15 @@ describe('C-04: Backup API - No Authentication', () => {
     expect(data.error).toContain('Invalid data format');
   });
 
-  // C-04-4: POST with non-object data (array)
-  it('C-04-4: POST with array as data should return 400', async () => {
-    const request = createUnauthenticatedRequest('http://localhost:3000/api/backup', {
-      data: [1, 2, 3],
-    });
-
-    const response = await POST(request);
-    const data = await response.json();
-
-    // Array is technically typeof === 'object' in JS, but the route checks
-    // `typeof data !== 'object'` which would pass for arrays.
-    // However, the route iterates Object.entries(data) which works on arrays too.
-    // The actual behavior depends on implementation.
-    // Based on source: `if (!data || typeof data !== 'object')` - arrays pass this check.
-    // So the request succeeds with 200, but imports nothing useful.
-    // This test documents the actual behavior.
-    expect(response.status).toBe(200);
-    expect(data.success).toBe(true);
-  });
-
-  // C-04-5: GET normal export returns all table data
-  it('C-04-5: GET normal export returns JSON with all table data', async () => {
+  // C-04-6: GET normal export returns all table data (authenticated)
+  it('C-04-6: Authenticated GET normal export returns JSON with all table data', async () => {
     mockFindMany
       .mockResolvedValueOnce([{ id: '1', username: 'admin' }])
       .mockResolvedValueOnce([{ id: '1', title: 'Test Task' }])
       .mockResolvedValue([]);
 
-    const request = createUnauthenticatedRequest('http://localhost:3000/api/backup');
-    const response = await GET();
+    const request = createAuthenticatedRequest('http://localhost:3000/api/backup');
+    const response = await GET(request);
     const data = await response.json();
 
     expect(response.status).toBe(200);
@@ -167,8 +186,8 @@ describe('C-04: Backup API - No Authentication', () => {
     expect(data.file).toBeDefined();
   });
 
-  // C-04-6: POST normal import with valid backup data
-  it('C-04-6: POST with valid backup data should import successfully', async () => {
+  // C-04-7: Authenticated POST with valid backup data imports successfully
+  it('C-04-7: Authenticated POST with valid backup data should import successfully', async () => {
     mockCreateMany.mockResolvedValue({ count: 2 });
 
     const body = {
@@ -176,7 +195,7 @@ describe('C-04: Backup API - No Authentication', () => {
         Tag: [{ name: 'bug', color: '#ff0000' }, { name: 'feature', color: '#00ff00' }],
       },
     };
-    const request = createUnauthenticatedRequest('http://localhost:3000/api/backup', body);
+    const request = createAuthenticatedRequest('http://localhost:3000/api/backup', body);
     const response = await POST(request);
     const data = await response.json();
 

@@ -177,6 +177,16 @@ export function createProjectToolHandlers(logger: ILogger) {
       try {
         const { projectId, title, description, phase, priority, status, parentTaskId, dueDate, tags, agentId, clientType } = args as any;
 
+        // Uniqueness check: prevent duplicate task titles within the same project
+        if (projectId && title) {
+          const existing = await prisma.task.findFirst({
+            where: { projectId: projectId as string, title: title as string },
+          });
+          if (existing) {
+            return { error: `Task "${title}" already exists in this project`, existingTaskId: existing.id };
+          }
+        }
+
         const task = await prisma.task.create({
           data: {
             title,
@@ -399,7 +409,10 @@ export function createProjectToolHandlers(logger: ILogger) {
 
         const phaseOrder = ['requirements', 'planning', 'architecture', 'implementation', 'testing', 'deployment', 'completed'];
         const currentPhaseIndex = phaseOrder.indexOf(project.phase);
-        const overallProgress = Math.round((currentPhaseIndex / (phaseOrder.length - 1)) * 100);
+        // Guard: unknown phase returns 0% instead of negative progress
+        const overallProgress = currentPhaseIndex >= 0
+          ? Math.round((currentPhaseIndex / (phaseOrder.length - 1)) * 100)
+          : 0;
 
         const taskStats = {
           total: tasks.length,

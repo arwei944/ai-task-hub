@@ -48,9 +48,10 @@ async function ensureAdmin(): Promise<AuthUser> {
       return userRepo.toAuthUser(existing);
     }
 
-    // Auto-create admin user
+    // Auto-create admin user with configurable password
     const bcrypt = await import('bcryptjs');
-    const passwordHash = await bcrypt.default.hash('admin', 10);
+    const adminPassword = process.env.ADMIN_PASSWORD || `admin_${crypto.randomUUID().slice(0, 8)}`;
+    const passwordHash = await bcrypt.default.hash(adminPassword, 10);
     const admin = await userRepo.create({
       username: 'admin',
       email: 'admin@ai-task-hub.local',
@@ -60,7 +61,11 @@ async function ensureAdmin(): Promise<AuthUser> {
     });
 
     const logger = new Logger('auth');
-    logger.info('Auto-created default admin user');
+    if (!process.env.ADMIN_PASSWORD) {
+      logger.warn(`Auto-created admin user with random password: ${adminPassword}. Set ADMIN_PASSWORD env var to customize.`);
+    } else {
+      logger.info('Auto-created default admin user with ADMIN_PASSWORD');
+    }
 
     return userRepo.toAuthUser(admin);
   })();

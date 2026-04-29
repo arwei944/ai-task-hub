@@ -6,11 +6,14 @@
  *
  * 源码安全机制:
  * 1. {{var}} 模板变量替换为 JSON.stringify(value)
- * 2. 白名单字符过滤: /[^=!<>""'\w\d.\s_-]/g
- *    - 允许: = ! < > " ' 字母 数字 . 空格 _ -
- *    - 拦截: () [] ` ; $ \ 及所有其他特殊字符
- * 3. 空表达式返回 false
- * 4. new Function() 在 "use strict" 下执行
+ * 2. 白名单字符过滤: /[^=!<>""'\w\d\s_-]/g
+ *    - 允许: = ! < > " ' 字母 数字 空格 _ -
+ *    - 拦截: () [] ` ; $ \ . 及所有其他特殊字符（点号已移除，防止对象链访问）
+ * 3. 危险标识符黑名单: process, global, globalThis, window, document,
+ *    require, import, eval, Function, constructor, __proto__, prototype, this, arguments
+ * 4. 表达式长度限制: 500 字符
+ * 5. 空表达式返回 false
+ * 6. new Function() 在 "use strict" 下执行
  */
 
 import { describe, it, expect } from 'vitest';
@@ -158,28 +161,27 @@ describe('C-03: new Function() 代码注入风险', () => {
   // C-03-5: 超长表达式
   // =========================================================================
   describe('C-03-5: 超长表达式', () => {
-    it('10000 字符的表达式不应崩溃，返回 boolean', async () => {
+    it('10000 字符的表达式不应崩溃，返回 false（超过 500 字符限制）', async () => {
       const step = createTestStep();
       // 构造一个 10000+ 字符的表达式
       // 使用白名单允许的字符: 字母、数字、空格
       const longExpr = 'a '.repeat(5000) + 'b'; // 10001 字符
       expect(longExpr.length).toBeGreaterThanOrEqual(10000);
 
-      // 超长表达式在 new Function() 中会因语法错误被 catch 捕获
+      // 超长表达式超过 500 字符限制，直接返回 false
       const result = await evaluate(step, longExpr);
-      // 无论结果是 false（语法错误）还是其他，都不应崩溃
-      expect(typeof result).toBe('boolean');
+      expect(result).toBe(false);
     });
 
-    it('超长恶意表达式不应执行', async () => {
+    it('超长恶意表达式不应执行（超过 500 字符限制）', async () => {
       const step = createTestStep();
       // 用白名单允许的字符构造超长表达式
       const longExpr = 'true || '.repeat(2500) + 'true';
       expect(longExpr.length).toBeGreaterThan(10000);
 
-      // 即使 || 不在白名单中，过滤后应变为安全内容
+      // 超过 500 字符限制，直接返回 false
       const result = await evaluate(step, longExpr);
-      expect(typeof result).toBe('boolean');
+      expect(result).toBe(false);
     });
   });
 
@@ -211,15 +213,13 @@ describe('C-03: new Function() 代码注入风险', () => {
   // C-03-7: 包含模板字面量
   // =========================================================================
   describe('C-03-7: 包含模板字面量', () => {
-    it('`${process.env.PATH}` - 反引号和$被过滤，但 process.env 仍可访问 [安全发现]', async () => {
+    it('`${process.env.PATH}` - 反引号和$被过滤，process 被黑名单拦截', async () => {
       const step = createTestStep();
       // 反引号 ` 和 $ 不在白名单中，会被过滤掉
-      // 但过滤后 process.env.PATH 仍然保留，!!process.env.PATH 为 true
-      // 这是一个安全发现：白名单未阻止对全局对象的属性访问
+      // process 在危险标识符黑名单中，被拦截返回 false
       const result = await evaluate(step, '`${process.env.PATH}`');
-      // 当前实现下返回 true（因为 process.env.PATH 是 truthy）
-      // 这意味着攻击者可以通过 process.env 泄露环境变量
-      expect(result).toBe(true);
+      // 修复后：黑名单拦截 process，返回 false
+      expect(result).toBe(false);
     });
 
     it('`${require("fs")}` 应被过滤（括号被移除）', async () => {
@@ -229,7 +229,7 @@ describe('C-03: new Function() 代码注入风险', () => {
       expect(result).toBe(false);
     });
 
-    it('`${1+1}` - 过滤后变成 "11"，!!11 为 true [安全发现]', async () => {
+    it('`${1+1}` - 过滤后变成 "11"，!!11 为 true', async () => {
       const step = createTestStep();
       // 反引号、$、+ 被过滤，剩余 "11"
       // !!11 为 true，但原始意图的运算并未执行
@@ -266,13 +266,12 @@ describe('C-03: new Function() 代码注入风险', () => {
 
     it('包含 Unicode 转义序列的表达式应被安全处理', async () => {
       const step = createTestStep();
-      // 尝试使用 Unicode 字符构造恶意代码
-      // \u0060 是反引号，过滤后被移除，剩余 process.env
+      // \u0060 是反引号，过滤后被移除，剩余 processenv
+      // 但 process 在危险标识符黑名单中，被拦截返回 false
       const expr = '\u0060process.env\u0060';
       const result = await evaluate(step, expr);
-      // 反引号被过滤后，process.env 仍为 truthy [安全发现]
-      // Unicode 反引号与普通反引号在 JS 字符串中是等价的
-      expect(result).toBe(true);
+      // 修复后：黑名单拦截 process，返回 false
+      expect(result).toBe(false);
     });
 
     it('包含方向控制字符的表达式应被安全处理', async () => {

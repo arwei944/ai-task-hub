@@ -78,10 +78,10 @@ describe('S-MCP: MCP 使用测试', () => {
   });
 
   // -------------------------------------------------------
-  // S-MCP-02: 同名任务可重复创建（验证当前行为）
+  // S-MCP-02: 同名任务不可重复创建（修复后行为）
   // -------------------------------------------------------
-  describe('S-MCP-02: 同名任务可重复创建', () => {
-    it('使用相同 title 和 projectId 创建两个任务应成功（当前行为不检查唯一性）', async () => {
+  describe('S-MCP-02: 同名任务不可重复创建', () => {
+    it('使用相同 title 和 projectId 创建两个任务时，第二个应返回错误（唯一性检查）', async () => {
       // 先创建一个项目
       const projectResult = await ctx.handlers.create_project({
         name: 'MCP Test Project',
@@ -104,7 +104,7 @@ describe('S-MCP: MCP 使用测试', () => {
       expect(task1.taskId).toBeDefined();
       expect(task1.title).toBe('重复任务标题');
 
-      // 创建同名第二个任务
+      // 创建同名第二个任务 - 应返回错误（唯一性检查）
       const task2 = await ctx.handlers.project_create_task({
         projectId,
         title: '重复任务标题',
@@ -113,12 +113,10 @@ describe('S-MCP: MCP 使用测试', () => {
         priority: 'high',
       }) as any;
 
-      // 当前行为：允许创建同名任务（不检查唯一性）
-      expect(task2.taskId).toBeDefined();
-      expect(task2.title).toBe('重复任务标题');
-
-      // 两个任务 ID 应不同
-      expect(task1.taskId).not.toBe(task2.taskId);
+      // 修复后行为：同名任务被拒绝
+      expect(task2.error).toBeDefined();
+      expect(task2.error).toContain('already exists');
+      expect(task2.existingTaskId).toBe(task1.taskId);
     });
   });
 

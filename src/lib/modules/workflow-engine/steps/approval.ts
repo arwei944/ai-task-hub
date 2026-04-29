@@ -1,5 +1,18 @@
 import type { StepHandler, StepHandlerDeps } from '../types';
 
+// Module-level PrismaClient cache for connection pooling
+let _approvalPrisma: InstanceType<typeof import('@/generated/prisma/client').PrismaClient> | null = null;
+
+async function getApprovalPrisma() {
+  if (_approvalPrisma) return _approvalPrisma;
+  const { PrismaClient } = await import('@/generated/prisma/client');
+  const { PrismaBetterSqlite3 } = await import('@prisma/adapter-better-sqlite3');
+  const dbPath = process.env.DATABASE_URL?.replace(/^file:/, '') ?? './prisma/dev.db';
+  const adapter = new PrismaBetterSqlite3({ url: dbPath });
+  _approvalPrisma = new PrismaClient({ adapter });
+  return _approvalPrisma;
+}
+
 /**
  * approval 步骤
  * 在工作流中嵌入人工审批节点
@@ -14,12 +27,7 @@ export class ApprovalStep implements StepHandler {
 
     // Phase B: 简单实现 - 通过数据库轮询等待审批
     // Phase C: 通过 SSE 实时推送
-    const { PrismaClient } = await import('@/generated/prisma/client');
-    const { PrismaBetterSqlite3 } = await import('@prisma/adapter-better-sqlite3');
-
-    const dbPath = process.env.DATABASE_URL?.replace(/^file:/, '') ?? './prisma/dev.db';
-    const adapter = new PrismaBetterSqlite3({ url: dbPath });
-    const prisma = new PrismaClient({ adapter });
+    const prisma = await getApprovalPrisma();
 
     // 创建审批检查点
     const checkpoint = await prisma.feedbackCheckpoint.create({
@@ -41,7 +49,7 @@ export class ApprovalStep implements StepHandler {
 
     // 等待审批
     const startTime = Date.now();
-    const pollInterval = 3000;
+    const pollInterval = 2000; // 统一为 2 秒轮询（与 feedback-module 一致）
 
     while (Date.now() - startTime < approvalTimeoutMs) {
       await new Promise(resolve => setTimeout(resolve, pollInterval));
@@ -66,7 +74,7 @@ export class ApprovalStep implements StepHandler {
             approvalStatus: 'modified',
             checkpointId: checkpoint.id,
             intervention: updated.intervention,
-            modifications: updated.intervention ? JSON.parse(updated.intervention) : undefined,
+            modifications: updated.intervention ? (() => { try { return JSON.parse(updated.intervention); } catch { return undefined; } })() : undefined,
           };
         case 'skipped':
           return {

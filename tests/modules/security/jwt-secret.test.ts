@@ -195,13 +195,12 @@ describe('C-01: JWT 密钥硬编码默认值', () => {
   });
 
   // C-01-5: JWT_SECRET 为空字符串时的行为
-  it('C-01-5: JWT_SECRET 为空字符串时应视为未设置，使用默认值', async () => {
+  it('C-01-5: JWT_SECRET 为空字符串时应视为未设置，warn 并使用默认值', async () => {
     process.env.JWT_SECRET = '';
 
     const authService = new AuthService(createMockUserRepo(), createMockLogger());
 
-    // 空字符串在 JS 中是 falsy，所以 `process.env.JWT_SECRET || DEFAULT_SECRET`
-    // 会回退到默认密钥
+    // 空字符串在 JS 中 trim 后为空，走 warn 路径，回退到默认密钥
     const defaultKey = new TextEncoder().encode(DEFAULT_SECRET);
     const token = await new SignJWT({
       userId: 'user-123',

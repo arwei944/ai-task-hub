@@ -14,33 +14,33 @@ import { WorkflowContextManager } from '@/lib/modules/workflow-engine/context';
 describe('S-BC: 边界条件测试', () => {
 
   // -------------------------------------------------------
-  // S-BC-01: phase='unknown' 时 overallProgress 不为负数
-  // 实际实现在 project-handlers.ts get_project_summary 中
-  // phaseOrder.indexOf('unknown') = -1 => overallProgress = -17
+  // S-BC-01: phase='unknown' 时 overallProgress 返回 0
+  // 修复后实现：unknown phase 返回 0 而非负数
   // -------------------------------------------------------
   describe('S-BC-01: phase=unknown 时 overallProgress 计算', () => {
-    it('当 phase 不在 phaseOrder 中时，indexOf 返回 -1，导致 overallProgress 为负数', () => {
-      // 模拟 get_project_summary 中的逻辑
+    it('当 phase 不在 phaseOrder 中时，overallProgress 返回 0（修复后行为）', () => {
+      // 模拟修复后的 get_project_summary 逻辑
       const phaseOrder = ['requirements', 'planning', 'architecture', 'implementation', 'testing', 'deployment', 'completed'];
       const unknownPhase = 'unknown';
       const currentPhaseIndex = phaseOrder.indexOf(unknownPhase);
-      const overallProgress = Math.round((currentPhaseIndex / (phaseOrder.length - 1)) * 100);
+      // 修复后：unknown phase 返回 0 而非负数
+      const overallProgress = currentPhaseIndex >= 0
+        ? Math.round((currentPhaseIndex / (phaseOrder.length - 1)) * 100)
+        : 0;
 
-      // 当前实现行为：overallProgress 为负数
       expect(currentPhaseIndex).toBe(-1);
-      expect(overallProgress).toBe(-17); // Math.round((-1 / 6) * 100) = -16.67 => -17
-
-      // 这是已知问题：phase 为未知值时 overallProgress 为负数
-      // 理想行为应为 0 或 NaN
+      expect(overallProgress).toBe(0);
     });
 
-    it('当 phase 为空字符串时，overallProgress 也为负数', () => {
+    it('当 phase 为空字符串时，overallProgress 也返回 0', () => {
       const phaseOrder = ['requirements', 'planning', 'architecture', 'implementation', 'testing', 'deployment', 'completed'];
       const currentPhaseIndex = phaseOrder.indexOf('');
-      const overallProgress = Math.round((currentPhaseIndex / (phaseOrder.length - 1)) * 100);
+      const overallProgress = currentPhaseIndex >= 0
+        ? Math.round((currentPhaseIndex / (phaseOrder.length - 1)) * 100)
+        : 0;
 
       expect(currentPhaseIndex).toBe(-1);
-      expect(overallProgress).toBe(-17);
+      expect(overallProgress).toBe(0);
     });
 
     it('当 phase 为 requirements 时，overallProgress 应为 0', () => {
@@ -123,11 +123,11 @@ describe('S-BC: 边界条件测试', () => {
   });
 
   // -------------------------------------------------------
-  // S-BC-04: foreach 配置 3 个子步骤，验证只执行第一个
+  // S-BC-04: foreach 配置多个子步骤，验证执行所有子步骤
   // -------------------------------------------------------
-  describe('S-BC-04: foreach 只执行第一个子步骤', () => {
-    it('ForEachStep 只使用 subSteps[0]，忽略后续子步骤', async () => {
-      // 通过读取源码验证：subSteps[0] 是唯一被引用的子步骤
+  describe('S-BC-04: foreach 执行所有子步骤', () => {
+    it('ForEachStep 执行所有 subSteps，而非仅 subSteps[0]', async () => {
+      // 通过读取源码验证：使用 for...of 循环遍历所有 subSteps
       const { readFileSync } = await import('fs');
       const { resolve, dirname } = await import('path');
       const { fileURLToPath } = await import('url');
@@ -135,17 +135,26 @@ describe('S-BC: 边界条件测试', () => {
       const __dirname = dirname(fileURLToPath(import.meta.url));
       const source = readFileSync(resolve(__dirname, '../../../src/lib/modules/workflow-engine/steps/foreach.ts'), 'utf-8');
 
-      // 验证只引用了 subSteps[0]
-      expect(source).toMatch(/subSteps\[0\]/);
+      // 验证使用 for...of 循环遍历 subSteps
+      expect(source).toMatch(/for\s*\(const\s+subStep\s+of\s+subSteps\)/);
 
-      // 验证没有引用 subSteps[1] 或 subSteps[2]
-      expect(source).not.toMatch(/subSteps\[1\]/);
-      expect(source).not.toMatch(/subSteps\[2\]/);
-      expect(source).not.toMatch(/subSteps\.forEach/);
-      expect(source).not.toMatch(/subSteps\.map/);
+      // 验证不再只引用 subSteps[0]（注释除外）
+      // 源码执行逻辑中不使用 subSteps[0]
+      const lines = source.split('\n').filter(l => !l.trim().startsWith('//'));
+      const codeOnly = lines.join('\n');
+      expect(codeOnly).not.toMatch(/subSteps\[0\]/);
+    });
 
-      // 验证没有 for 循环遍历 subSteps
-      expect(source).not.toMatch(/for\s*\(.*subSteps/);
+    it('ForEachStep 源码中 executeStep 调用使用 subStep 变量而非 subSteps[0]', async () => {
+      const { readFileSync } = await import('fs');
+      const { resolve, dirname } = await import('path');
+      const { fileURLToPath } = await import('url');
+
+      const __dirname = dirname(fileURLToPath(import.meta.url));
+      const source = readFileSync(resolve(__dirname, '../../../src/lib/modules/workflow-engine/steps/foreach.ts'), 'utf-8');
+
+      // 验证 step 参数使用 subStep 展开
+      expect(source).toMatch(/step:\s*\{\s*\.\.\.subStep/);
     });
   });
 
@@ -153,24 +162,7 @@ describe('S-BC: 边界条件测试', () => {
   // S-BC-05: intervention 非 JSON 时 JSON.parse 抛错
   // -------------------------------------------------------
   describe('S-BC-05: intervention 非 JSON 时 JSON.parse 抛错', () => {
-    it('approval.ts 中 modified 状态下 JSON.parse 非 JSON intervention 应抛错', () => {
-      // approval.ts:69 - modifications: updated.intervention ? JSON.parse(updated.intervention) : undefined
-      // 如果 intervention 是非 JSON 字符串，JSON.parse 会抛 SyntaxError
-
-      const validJson = '{"key": "value"}';
-      expect(() => JSON.parse(validJson)).not.toThrow();
-
-      const invalidJson = 'not a json string';
-      expect(() => JSON.parse(invalidJson)).toThrow(SyntaxError);
-
-      const emptyString = '';
-      expect(() => JSON.parse(emptyString)).toThrow(SyntaxError);
-
-      const randomText = 'just some random text with { braces';
-      expect(() => JSON.parse(randomText)).toThrow(SyntaxError);
-    });
-
-    it('approval.ts 中 modified 分支没有 try-catch 保护 JSON.parse', async () => {
+    it('approval.ts 中 modified 分支有 try-catch 保护 JSON.parse', async () => {
       const { readFileSync } = await import('fs');
       const { resolve, dirname } = await import('path');
       const { fileURLToPath } = await import('url');
@@ -181,15 +173,29 @@ describe('S-BC: 边界条件测试', () => {
       // 验证 JSON.parse(updated.intervention) 存在
       expect(source).toMatch(/JSON\.parse\(updated\.intervention\)/);
 
-      // 验证该分支没有 try-catch（在 case 'modified' 块内）
       // 提取 case 'modified' 到下一个 case 之间的代码
       const modifiedBlock = source.match(/case\s+'modified':([\s\S]*?)(?=case\s+'|$)/);
       expect(modifiedBlock).not.toBeNull();
 
       const blockCode = modifiedBlock![1];
-      // 该块内不应有 try-catch
-      expect(blockCode).not.toMatch(/try\s*\{/);
-      expect(blockCode).not.toMatch(/catch\s*\(/);
+      // 修复后：该块内有 try-catch 保护 JSON.parse
+      expect(blockCode).toMatch(/try\s*\{/);
+      expect(blockCode).toMatch(/catch/);
+    });
+
+    it('try-catch 保护下 JSON.parse 失败返回 undefined 而非抛错', () => {
+      // 模拟修复后的行为：try-catch 包裹 JSON.parse
+      const parseSafely = (input: string) => {
+        try { return JSON.parse(input); } catch { return undefined; }
+      };
+
+      // 有效 JSON 正常解析
+      expect(parseSafely('{"key": "value"}')).toEqual({ key: 'value' });
+
+      // 无效 JSON 返回 undefined 而非抛错
+      expect(parseSafely('not a json string')).toBeUndefined();
+      expect(parseSafely('')).toBeUndefined();
+      expect(parseSafely('just some random text')).toBeUndefined();
     });
   });
 

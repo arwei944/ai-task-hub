@@ -10,7 +10,7 @@ import type { TriggerType } from '../types';
  */
 export class TriggerDispatcher {
   private scheduledJobs = new Map<string, ReturnType<typeof setInterval>>();
-  private eventListeners: Array<{ unsubscribe: () => void }> = [];
+  private eventListeners: Array<{ workflowId: string; unsubscribe: () => void }> = [];
 
   constructor(
     private prisma: PrismaClient,
@@ -68,10 +68,12 @@ export class TriggerDispatcher {
       this.scheduledJobs.delete(workflowId);
     }
 
-    // 清理事件监听
+    // 清理事件监听 - 只移除该 workflow 的监听器
     this.eventListeners = this.eventListeners.filter(listener => {
-      if (listener.unsubscribe) {
-        listener.unsubscribe();
+      if (listener.workflowId === workflowId) {
+        if (listener.unsubscribe) {
+          listener.unsubscribe();
+        }
         return false;
       }
       return true;
@@ -213,7 +215,7 @@ export class TriggerDispatcher {
     });
 
     if (unsubscribe) {
-      this.eventListeners.push({ unsubscribe });
+      this.eventListeners.push({ workflowId, unsubscribe });
       this.logger?.info(`Registered event trigger for workflow ${workflowId}: ${config.eventType}`);
     }
   }

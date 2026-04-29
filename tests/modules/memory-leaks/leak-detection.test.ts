@@ -168,21 +168,21 @@ describe('W-ML-02: TriggerDispatcher trigger registration', () => {
     });
     expect(listenerCount).toBe(1);
 
-    // NOTE: registerWorkflowTrigger calls unregisterWorkflowTrigger first,
-    // which removes ALL eventListeners. So registering a second event trigger
-    // will first clear the first one, then add the new one.
-    // This is a known behavior of the current implementation.
+    // registerWorkflowTrigger calls unregisterWorkflowTrigger first,
+    // but now unregisterWorkflowTrigger only removes listeners matching the target workflowId.
+    // So registering a second event trigger will only clear wf-event-2's listeners (none yet),
+    // then add the new one for wf-event-2.
     await dispatcher.registerWorkflowTrigger({
       workflowId: 'wf-event-2',
       trigger: 'event',
       triggerConfig: JSON.stringify({ eventType: 'task.updated' }),
     });
-    // After the second register: unregister cleared listener (count=0), then added new (count=1)
-    expect(listenerCount).toBe(1);
+    // After the second register: wf-event-1's listener is still active, wf-event-2's listener added
+    expect(listenerCount).toBe(2);
 
-    // Unregister clears all event listeners (implementation detail)
+    // Unregister wf-event-2 only removes its listener (not wf-event-1's)
     await dispatcher.unregisterWorkflowTrigger('wf-event-2');
-    expect(listenerCount).toBe(0);
+    expect(listenerCount).toBe(1);
 
     // Verify no leaked listeners after shutdown
     dispatcher.shutdown();
