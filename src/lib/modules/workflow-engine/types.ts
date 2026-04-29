@@ -274,3 +274,51 @@ export interface ListExecutionsOptions {
   pageSize?: number;
   status?: ExecutionStatus;
 }
+
+// ==================== Improvement Loop ====================
+
+export interface ImprovementAnalysis {
+  period: { start: Date; end: Date };
+  totalCheckpoints: number;
+  approvalRate: number;
+  rejectionRate: number;
+  timeoutRate: number;
+  avgRating: number;
+  stepTypeStats: Array<{
+    stepType: string;
+    count: number;
+    avgDurationMs: number;
+    failureRate: number;
+    rejectionRate: number;
+    avgTokensUsed: number;
+  }>;
+  topErrorPatterns: Array<{ pattern: string; count: number }>;
+  highRiskSteps: Array<{ stepName: string; stepType: string; reason: string }>;
+}
+
+export interface ImprovementRecommendation {
+  id: string;
+  type: 'add_rule' | 'adjust_timeout' | 'add_retry' | 'change_feedback_mode' | 'optimize_prompt' | 'split_step';
+  targetStepType?: string;
+  description: string;
+  confidence: number;
+  action: Record<string, unknown>;
+  reasoning: string;
+}
+
+export interface ImprovementCycleResult {
+  analysis: ImprovementAnalysis;
+  recommendations: ImprovementRecommendation[];
+  appliedCount: number;
+  skippedCount: number;
+  timestamp: Date;
+}
+
+export interface ImprovementRecord {
+  id: string;
+  timestamp: Date;
+  workflowId?: string;
+  analysisSummary: string;
+  recommendationsCount: number;
+  appliedCount: number;
+}
