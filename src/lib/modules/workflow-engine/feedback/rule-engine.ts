@@ -94,4 +94,108 @@ export class FeedbackRuleEngine {
 
     return { action: 'proceed' };
   }
+
+  /**
+   * 评估单条规则（带执行结果，用于 post-execute 评估）
+   */
+  private evaluateRuleWithResult(
+    rule: {
+      name: string;
+      triggerType: string;
+      triggerConfig: string;
+      action: string;
+      scopeWorkflowId: string | null;
+      scopeStepType: string | null;
+    },
+    step: WorkflowStep,
+    context: WorkflowContext,
+    durationMs: number,
+    tokensUsed?: number,
+  ): RuleEvaluationResult {
+    let config: Record<string, unknown>;
+    try {
+      config = JSON.parse(rule.triggerConfig);
+    } catch {
+      return { action: 'proceed' };
+    }
+
+    // 检查作用域
+    if (rule.scopeStepType && rule.scopeStepType !== step.type) {
+      return { action: 'proceed' };
+    }
+
+    switch (rule.triggerType) {
+      case 'step_type': {
+        const targetTypes = config.stepTypes as string[] | undefined;
+        if (targetTypes && targetTypes.includes(step.type)) {
+          return {
+            action: rule.action as RuleEvaluationResult['action'],
+            reason: `Rule "${rule.name}" matched step type "${step.type}"`,
+          };
+        }
+        break;
+      }
+
+      case 'always': {
+        return {
+          action: rule.action as RuleEvaluationResult['action'],
+          reason: `Rule "${rule.name}" always triggers`,
+        };
+      }
+
+      case 'duration': {
+        const thresholdMs = Number(config.thresholdMs) || 30000;
+        if (durationMs > thresholdMs) {
+          return {
+            action: rule.action as RuleEvaluationResult['action'],
+            reason: `Rule "${rule.name}" triggered: step "${step.name}" duration ${durationMs}ms exceeded threshold ${thresholdMs}ms`,
+          };
+        }
+        break;
+      }
+
+      case 'token_cost': {
+        const thresholdTokens = Number(config.thresholdTokens) || 10000;
+        if (tokensUsed !== undefined && tokensUsed > thresholdTokens) {
+          return {
+            action: rule.action as RuleEvaluationResult['action'],
+            reason: `Rule "${rule.name}" triggered: step "${step.name}" token cost ${tokensUsed} exceeded threshold ${thresholdTokens}`,
+          };
+        }
+        break;
+      }
+    }
+
+    return { action: 'proceed' };
+  }
+
+  /**
+   * 执行后评估（基于执行结果）
+   */
+  async evaluatePostExecute(params: {
+    step: WorkflowStep;
+    context: WorkflowContext;
+    executionId: string;
+    durationMs: number;
+    tokensUsed?: number;
+  }): Promise<RuleEvaluationResult> {
+    const rules = await this.prisma.feedbackRule.findMany({
+      where: { isActive: true },
+    });
+
+    for (const rule of rules) {
+      const result = this.evaluateRuleWithResult(
+        rule,
+        params.step,
+        params.context,
+        params.durationMs,
+        params.tokensUsed,
+      );
+      if (result.action !== 'proceed') {
+        return result;
+      }
+    }
+
+    return { action: 'proceed' };
+  }
 }

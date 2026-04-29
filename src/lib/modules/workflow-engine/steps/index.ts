@@ -6,6 +6,9 @@ import { SendNotificationStep } from './send-notification';
 import { WaitStep } from './wait';
 import { ParallelGroupStep } from './parallel-group';
 import { ConditionStep } from './condition';
+import { InvokeAgentStep } from './invoke-agent';
+import { ForEachStep } from './foreach';
+import { ApprovalStep } from './approval';
 
 export type { StepHandlerDeps } from '../types';
 
@@ -37,9 +40,12 @@ StepRegistry.register('send-notification', (deps) => new SendNotificationStep(de
 StepRegistry.register('wait', () => new WaitStep());
 StepRegistry.register('parallel-group', (deps) => new ParallelGroupStep(deps));
 StepRegistry.register('condition', (deps) => new ConditionStep(deps));
+StepRegistry.register('invoke-agent', (deps) => new InvokeAgentStep(deps));
+StepRegistry.register('foreach', (deps) => new ForEachStep(deps));
+StepRegistry.register('approval', (deps) => new ApprovalStep(deps));
 
 // Placeholder step types for Phase B/C
-const placeholderTypes = ['foreach', 'invoke-agent', 'http-request', 'transform', 'approval'];
+const placeholderTypes = ['http-request', 'transform'];
 for (const type of placeholderTypes) {
   StepRegistry.register(type, () => ({
     async execute() {

@@ -182,6 +182,36 @@ export class WorkflowExecutor {
       const durationMs = Date.now() - startTime;
       const errorMsg = error instanceof Error ? error.message : String(error);
 
+      // 重试逻辑
+      const retryPolicy = step.config.retryPolicy as { max?: number; backoff?: string; delayMs?: number } | undefined;
+      const maxRetries = retryPolicy?.max ?? 0;
+      const currentRetry = (stepExec.retryCount ?? 0);
+
+      if (maxRetries > 0 && currentRetry < maxRetries) {
+        const backoff = retryPolicy?.backoff ?? 'exponential';
+        const baseDelay = retryPolicy?.delayMs ?? 1000;
+        let delay = baseDelay;
+
+        if (backoff === 'exponential') {
+          delay = baseDelay * Math.pow(2, currentRetry);
+        } else if (backoff === 'linear') {
+          delay = baseDelay * (currentRetry + 1);
+        }
+
+        this.logger?.info(`Retrying step ${step.name} (attempt ${currentRetry + 2}/${maxRetries + 1}) after ${delay}ms`);
+
+        await new Promise(resolve => setTimeout(resolve, delay));
+
+        // 更新重试计数
+        await this.prisma.workflowStepExecution.update({
+          where: { id: stepExec.id },
+          data: { retryCount: currentRetry + 1 },
+        });
+
+        // 递归重试
+        return this.executeStep({ executionId, step, contextManager, isCancelled, parentStepId });
+      }
+
       this.logger?.warn(`Step ${step.name} failed: ${errorMsg}`);
 
       await this.completeStepExecution(stepExec.id, 'failed', undefined, errorMsg, durationMs);
