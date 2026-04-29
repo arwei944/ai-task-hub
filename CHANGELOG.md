@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.5.0] - 2026-04-29
+
+### 🔄 重大变更
+
+- **单管理员免登录模式** — 移除注册/登录流程，打开即用
+  - 首次访问自动创建管理员账号 (admin/admin)
+  - tRPC context 层自动认证，所有 protectedProcedure/adminProcedure 直接通过
+  - 移除 AuthGuard 组件，所有页面直接渲染
+  - tRPC client 不再需要发送 Authorization header
+  - REST API (backup/sse/export/webhook) 移除认证检查
+  - 首页 "登录" 按钮改为 "进入仪表盘"
+
+### 🔧 优化
+
+- 简化认证架构，减少不必要的 JWT 验证开销
+- REST API 响应更快（无 auth 中间件延迟）
+
 ## [1.4.0] - 2026-04-29
 
 ### ✨ 新功能

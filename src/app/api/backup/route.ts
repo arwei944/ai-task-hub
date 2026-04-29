@@ -7,37 +7,13 @@
 //
 
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@/generated/prisma/client';
-import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
 import { getPrisma } from '@/lib/db';
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
 import { join } from 'path';
-import { AuthService } from '@/lib/modules/auth/auth.service';
-import { UserRepository } from '@/lib/modules/auth/user.repository';
-import { Logger } from '@/lib/core/logger';
 
 export const dynamic = 'force-dynamic';
 
-function getAuthService(): AuthService {
-  const logger = new Logger('auth');
-  const dbPath = process.env.DATABASE_URL?.replace(/^file:/, '') ?? './data/dev.db';
-  const adapter = new PrismaBetterSqlite3({ url: dbPath });
-  const prisma = new PrismaClient({ adapter });
-  const userRepo = new UserRepository(prisma);
-  return new AuthService(userRepo, logger);
-}
-
-async function requireAdmin(request: Request): Promise<{ userId: string } | NextResponse> {
-  const authService = getAuthService();
-  const user = await authService.getUserFromRequest(request);
-  if (!user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-  if (user.role !== 'admin') {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-  }
-  return { userId: user.id };
-}
+// No auth required - single admin mode
 
 // Tables to export (in dependency order)
 const TABLES = [
@@ -50,11 +26,7 @@ const TABLES = [
 /**
  * GET /api/backup - Export all data
  */
-export async function GET(request: Request) {
-  // Auth check
-  const authResult = await requireAdmin(request);
-  if (authResult instanceof NextResponse) return authResult;
-
+export async function GET() {
   try {
     const prisma = getPrisma();
     const backup: Record<string, unknown[]> = {};
@@ -75,7 +47,6 @@ export async function GET(request: Request) {
 
     await prisma.$disconnect();
 
-    // Save to file
     const backupDir = join(process.cwd(), 'backups');
     if (!existsSync(backupDir)) {
       mkdirSync(backupDir, { recursive: true });
@@ -103,10 +74,6 @@ export async function GET(request: Request) {
  * Body: { data: Record<string, any[]> }
  */
 export async function POST(request: Request) {
-  // Auth check
-  const authResult = await requireAdmin(request);
-  if (authResult instanceof NextResponse) return authResult;
-
   try {
     const body = await request.json();
     const { data } = body as { data: Record<string, unknown[]> };
@@ -134,7 +101,6 @@ export async function POST(request: Request) {
           continue;
         }
 
-        // Clean records (remove id, timestamps for insert)
         const cleaned = records.map((r: any) => {
           const { id, createdAt, updatedAt, _count, ...rest } = r;
           return rest;

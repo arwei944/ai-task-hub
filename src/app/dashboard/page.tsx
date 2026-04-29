@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { trpc } from '@/lib/trpc/client';
 import { useSSE } from '@/lib/hooks/use-sse';
-import { AuthGuard } from '@/components/auth-guard';
 
 interface StatusCount {
   todo: number;
@@ -39,11 +38,7 @@ interface DailyTrend {
 }
 
 export default function DashboardPage() {
-  return (
-    <AuthGuard>
-      <DashboardContent />
-    </AuthGuard>
-  );
+  return <DashboardContent />;
 }
 
 function DashboardContent() {

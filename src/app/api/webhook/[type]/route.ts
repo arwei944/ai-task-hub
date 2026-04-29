@@ -26,17 +26,8 @@ import { NotionAdapter } from '@/lib/modules/integration-notion/notion.adapter';
 import { WebhookAdapter } from '@/lib/modules/integration-webhook/webhook.adapter';
 import { TelegramAdapter } from '@/lib/modules/integration-telegram/telegram.adapter';
 import { WeChatAdapter } from '@/lib/modules/integration-wechat/wechat.adapter';
-import { AuthService } from '@/lib/modules/auth/auth.service';
-import { UserRepository } from '@/lib/modules/auth/user.repository';
 
-function getAuthService(): AuthService {
-  const logger = new Logger('auth');
-  const dbPath = process.env.DATABASE_URL?.replace(/^file:/, '') ?? './data/dev.db';
-  const adapter = new PrismaBetterSqlite3({ url: dbPath });
-  const prisma = new PrismaClient({ adapter });
-  const userRepo = new UserRepository(prisma);
-  return new AuthService(userRepo, logger);
-}
+// No auth required - single admin mode
 
 let _service: IntegrationService | null = null;
 
@@ -72,13 +63,6 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ type: string }> },
 ) {
-  // Auth check
-  const authService = getAuthService();
-  const user = await authService.getUserFromRequest(request);
-  if (!user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
   const { type } = await params;
   const logger = new Logger('webhook-receiver');
 

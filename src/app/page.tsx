@@ -34,17 +34,16 @@ export default function HomePage() {
               AT
             </div>
             <h1 className="text-xl font-bold">AI Task Hub</h1>
-            <Badge variant="secondary">v1.4.0</Badge>
+            <Badge variant="secondary">v1.5.0</Badge>
           </div>
           <div className="flex items-center gap-3">
             <a
-              href="/login"
+              href="/dashboard"
               className="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
             >
-              登录
+              进入仪表盘
             </a>
           </div>
-          <Badge variant="outline">v1.4.0 - 全功能版本</Badge>
         </div>
       </header>
 
@@ -60,10 +59,16 @@ export default function HomePage() {
           </p>
           <div className="flex gap-4 justify-center">
             <a
-              href="/login"
+              href="/dashboard"
               className="inline-flex items-center justify-center rounded-lg bg-primary px-6 py-3 text-base font-medium text-primary-foreground shadow hover:bg-primary/90 transition-colors"
             >
-              开始使用
+              进入仪表盘
+            </a>
+            <a
+              href="/about"
+              className="inline-flex items-center justify-center rounded-lg border px-6 py-3 text-base font-medium shadow hover:bg-accent transition-colors"
+            >
+              关于项目
             </a>
           </div>
           <div className="flex gap-4 justify-center pt-2">
@@ -173,7 +178,7 @@ export default function HomePage() {
       {/* Footer */}
       <footer className="border-t mt-12">
         <div className="container mx-auto px-6 py-4 text-center text-sm text-muted-foreground">
-          AI Task Hub v1.4.0 · Modular Kernel Architecture · All Modules Complete
+          AI Task Hub v1.5.0 · Modular Kernel Architecture · All Modules Complete
         </div>
       </footer>
     </div>
