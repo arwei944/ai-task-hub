@@ -15,12 +15,8 @@ export default class WorkflowEngineModule implements Module {
     },
 
     enable: async (context: ModuleContext) => {
-      const { PrismaClient } = await import('@/generated/prisma/client');
-      const { PrismaBetterSqlite3 } = await import('@prisma/adapter-better-sqlite3');
-
-      const dbPath = process.env.DATABASE_URL?.replace(/^file:/, '') ?? './prisma/dev.db';
-      const adapter = new PrismaBetterSqlite3({ url: dbPath });
-      const prisma = new PrismaClient({ adapter });
+      const { getPrisma } = await import('@/lib/db');
+      const prisma = getPrisma();
 
       // Create core services
       const { SOLOBridge } = await import('./solo/solo-bridge');

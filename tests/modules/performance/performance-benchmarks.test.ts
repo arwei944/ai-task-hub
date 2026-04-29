@@ -85,8 +85,13 @@ describe('W-PF-01: ForEachStep serial execution performance', () => {
 
     await expect(step.execute(config, context)).rejects.toThrow('ForEach failed at index 5');
 
-    // Should have only attempted 6 items (0-5)
-    expect(mockExecutor.executeStep).toHaveBeenCalledTimes(6);
+    // With concurrency=5, first batch processes items 0-4, second batch processes 5-9
+    // failFast throws at index 5, so batch 2 fails via Promise.all
+    // Total calls: 5 (batch 1) + up to 5 (batch 2, but Promise.all rejects on first failure)
+    const callCount = mockExecutor.executeStep.mock.calls.length;
+    // Should be at least 6 (items 0-5) but may include more from the same batch
+    expect(callCount).toBeGreaterThanOrEqual(6);
+    expect(callCount).toBeLessThanOrEqual(10);
   });
 });
 

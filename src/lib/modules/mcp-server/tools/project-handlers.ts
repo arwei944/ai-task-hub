@@ -159,6 +159,7 @@ export function createProjectToolHandlers(logger: ILogger) {
         const projects = await prisma.project.findMany({
           where,
           orderBy: { updatedAt: 'desc' },
+          take: 50,
           include: {
             _count: { select: { tasks: true, activities: true } },
             creator: { select: { id: true, name: true, clientType: true } },
@@ -297,6 +298,7 @@ export function createProjectToolHandlers(logger: ILogger) {
         const tasks = await prisma.task.findMany({
           where,
           orderBy: { createdAt: 'desc' },
+          take: 100,
           include: {
             tags: { include: { tag: true } },
             _count: { select: { subTasks: true } },

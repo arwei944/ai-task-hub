@@ -41,17 +41,27 @@ export async function GET(request: Request) {
     const backup: Record<string, unknown[]> = {};
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
 
-    for (const table of TABLES) {
-      try {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const records = await (prisma as any)[table.charAt(0).toLowerCase() + table.slice(1)].findMany();
-        backup[table] = records.map((r: any) => {
-          const { _count, ...rest } = r;
-          return rest;
-        });
-      } catch {
-        backup[table] = [];
-      }
+    // Query all tables in parallel
+    const tableResults = await Promise.all(
+      TABLES.map(async (table) => {
+        try {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const records = await (prisma as any)[table.charAt(0).toLowerCase() + table.slice(1)].findMany();
+          return {
+            table,
+            records: records.map((r: any) => {
+              const { _count, ...rest } = r;
+              return rest;
+            }),
+          };
+        } catch {
+          return { table, records: [] };
+        }
+      }),
+    );
+
+    for (const { table, records } of tableResults) {
+      backup[table] = records;
     }
 
     await prisma.$disconnect();

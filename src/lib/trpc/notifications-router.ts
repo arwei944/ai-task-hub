@@ -4,16 +4,13 @@ import { NotificationRepository } from '@/lib/modules/notifications/notification
 import { WebPushService } from '@/lib/modules/notifications/web-push.service';
 import type { PushSubscriptionLike } from '@/lib/modules/notifications/web-push.service';
 import { Logger } from '@/lib/core/logger';
-import { PrismaClient } from '@/generated/prisma/client';
-import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
+import { getPrisma } from '@/lib/db';
 
 let _repo: NotificationRepository | null = null;
 
 function getRepo() {
   if (_repo) return _repo;
-  const dbPath = process.env.DATABASE_URL?.replace(/^file:/, '') ?? './prisma/dev.db';
-  const adapter = new PrismaBetterSqlite3({ url: dbPath });
-  const prisma = new PrismaClient({ adapter });
+  const prisma = getPrisma();
   _repo = new NotificationRepository(prisma);
   return _repo;
 }

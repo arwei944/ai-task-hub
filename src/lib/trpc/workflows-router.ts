@@ -8,17 +8,14 @@ import { TaskDependencyRepository } from '@/lib/modules/task-core/task-dependenc
 import { TaskProgressService } from '@/lib/modules/task-core/task-progress.service';
 import { EventBus } from '@/lib/core/event-bus';
 import { Logger } from '@/lib/core/logger';
-import { PrismaClient } from '@/generated/prisma/client';
-import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
+import { getPrisma } from '@/lib/db';
 
 // Lazy-initialized service (for server-side only)
 let _workflowService: WorkflowService | null = null;
 
 function getWorkflowService(): WorkflowService {
   if (_workflowService) return _workflowService;
-  const dbPath = process.env.DATABASE_URL?.replace(/^file:/, '') ?? './prisma/dev.db';
-  const adapter = new PrismaBetterSqlite3({ url: dbPath });
-  const prisma = new PrismaClient({ adapter });
+  const prisma = getPrisma();
   const logger = new Logger('workflow-engine');
   const eventBus = new EventBus();
   const taskRepo = new TaskRepository(prisma);

@@ -4,8 +4,7 @@ import { Logger } from '@/lib/core/logger';
 import { EventBus } from '@/lib/core/event-bus';
 import { ModuleRegistry } from '@/lib/core/registry';
 import { DIContainer } from '@/lib/core/di-container';
-import { PrismaClient } from '@/generated/prisma/client';
-import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
+import { getPrisma } from '@/lib/db';
 import { ModuleVersionRepository } from '@/lib/modules/module-updater/module-version.repository';
 import { AppVersionRepository } from '@/lib/modules/module-updater/app-version.repository';
 import { ModuleUpdaterService } from '@/lib/modules/module-updater/module-updater.service';
@@ -16,9 +15,7 @@ let _updaterService: ModuleUpdaterService | null = null;
 function getServices() {
   if (_updaterService) return { updaterService: _updaterService };
 
-  const dbPath = process.env.DATABASE_URL?.replace(/^file:/, '') ?? './prisma/dev.db';
-  const adapter = new PrismaBetterSqlite3({ url: dbPath });
-  const prisma = new PrismaClient({ adapter });
+  const prisma = getPrisma();
   const eventBus = new EventBus();
   const container = new DIContainer();
   const registry = new ModuleRegistry(eventBus, container);

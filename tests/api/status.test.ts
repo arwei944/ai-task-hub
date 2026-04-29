@@ -189,12 +189,13 @@ describe('GET /api/status', () => {
     expect(data.environment).toBe('development');
   });
 
-  it('should disconnect prisma after health check', async () => {
+  it('should use shared prisma instance (no disconnect on global singleton)', async () => {
     process.env.OPENAI_API_KEY = 'sk-test';
 
     await GET();
 
-    expect(mockPrismaDisconnect).toHaveBeenCalledTimes(1);
+    // Global singleton getPrisma() should NOT disconnect after each request
+    expect(mockPrismaDisconnect).toHaveBeenCalledTimes(0);
   });
 
   it('should return valid JSON structure', async () => {

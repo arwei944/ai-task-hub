@@ -3,20 +3,13 @@ import type { AuthUser } from '@/lib/modules/auth/types';
 import { AuthService } from '@/lib/modules/auth/auth.service';
 import { UserRepository } from '@/lib/modules/auth/user.repository';
 import { Logger } from '@/lib/core/logger';
-import { PrismaClient } from '@/generated/prisma/client';
-import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
+import { getPrisma } from '@/lib/db';
 import { AppErrorCode, errorCodeToMessage } from '@/lib/core/errors';
 
 // Lazy-initialized auth service
 let _authService: AuthService | null = null;
 let _userRepo: UserRepository | null = null;
 let _ensureAdminPromise: Promise<AuthUser> | null = null;
-
-function getPrisma(): PrismaClient {
-  const dbPath = process.env.DATABASE_URL?.replace(/^file:/, '') ?? './prisma/dev.db';
-  const adapter = new PrismaBetterSqlite3({ url: dbPath });
-  return new PrismaClient({ adapter });
-}
 
 function getUserRepo(): UserRepository {
   if (_userRepo) return _userRepo;

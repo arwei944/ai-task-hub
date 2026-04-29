@@ -13,8 +13,7 @@ import { Logger } from '@/lib/core/logger';
 import { IntegrationService } from '@/lib/modules/integration-core/integration.service';
 import { IntegrationRepository, WebhookRepository } from '@/lib/modules/integration-core/integration.repository';
 import { EventBus } from '@/lib/core/event-bus';
-import { PrismaClient } from '@/generated/prisma/client';
-import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
+import { getPrisma } from '@/lib/db';
 import { TaskRepository } from '@/lib/modules/task-core/task.repository';
 import { TaskHistoryRepository } from '@/lib/modules/task-core/task-history.repository';
 import { TaskDependencyRepository } from '@/lib/modules/task-core/task-dependency.repository';
@@ -36,9 +35,7 @@ function getService(): IntegrationService {
 
   const logger = new Logger('webhook-receiver');
   const eventBus = new EventBus();
-  const dbPath = process.env.DATABASE_URL?.replace(/^file:/, '') ?? './prisma/dev.db';
-  const adapter = new PrismaBetterSqlite3({ url: dbPath });
-  const prisma = new PrismaClient({ adapter });
+  const prisma = getPrisma();
 
   const integrationRepo = new IntegrationRepository(prisma);
   const webhookRepo = new WebhookRepository(prisma);

@@ -51,12 +51,7 @@ export class ImprovementLoop {
       checkpointWhere.executionId = params.workflowId;
     }
 
-    const checkpoints = await this.prisma.feedbackCheckpoint.findMany({
-      where: checkpointWhere,
-      orderBy: { createdAt: 'desc' },
-    });
-
-    // 查询 StepFeedback 记录
+    // 查询 FeedbackCheckpoint 和 StepFeedback 记录（并行）
     const stepFeedbackWhere: Record<string, unknown> = {
       createdAt: { gte: startDate },
     };
@@ -64,10 +59,18 @@ export class ImprovementLoop {
       stepFeedbackWhere.executionId = params.workflowId;
     }
 
-    const stepFeedbacks = await this.prisma.stepFeedback.findMany({
-      where: stepFeedbackWhere,
-      orderBy: { createdAt: 'desc' },
-    });
+    const [checkpoints, stepFeedbacks] = await Promise.all([
+      this.prisma.feedbackCheckpoint.findMany({
+        where: checkpointWhere,
+        orderBy: { createdAt: 'desc' },
+        take: 500,
+      }),
+      this.prisma.stepFeedback.findMany({
+        where: stepFeedbackWhere,
+        orderBy: { createdAt: 'desc' },
+        take: 500,
+      }),
+    ]);
 
     // 获取步骤指标
     const allStepMetrics = this.observability.getStepMetrics();

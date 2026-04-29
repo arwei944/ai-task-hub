@@ -18,8 +18,7 @@ import { taskCoreMcpTools } from '@/lib/modules/mcp-server/tools/task-core-tools
 import { aiEngineMcpTools } from '@/lib/modules/mcp-server/tools/ai-engine-tools';
 import { projectMcpTools } from '@/lib/modules/mcp-server/tools/project-tools';
 import { createProjectToolHandlers } from '@/lib/modules/mcp-server/tools/project-handlers';
-import { PrismaClient } from '@/generated/prisma/client';
-import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
+import { getPrisma } from '@/lib/db';
 import { NextRequest } from 'next/server';
 import { z } from 'zod';
 
@@ -94,10 +93,7 @@ async function initializeSharedTools() {
   const eventBus = new EventBus();
 
   // Initialize database
-  const dbPath = process.env.DATABASE_URL?.replace(/^file:/, '') ?? './prisma/dev.db';
-  logger.info(`Database path: ${dbPath}`);
-  const adapter = new PrismaBetterSqlite3({ url: dbPath });
-  const prisma = new PrismaClient({ adapter });
+  const prisma = getPrisma();
   logger.info('Prisma client initialized');
 
   // Register task-core services
