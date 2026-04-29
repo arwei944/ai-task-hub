@@ -1,4 +1,5 @@
 import type { StepHandler, StepHandlerDeps } from '../types';
+
 export class UpdateStatusStep implements StepHandler {
   constructor(private deps: StepHandlerDeps) {}
   async execute(config: Record<string, unknown>, context: Record<string, unknown>) {
