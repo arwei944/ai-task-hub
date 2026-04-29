@@ -29,9 +29,9 @@ describe('TaskProgressService', () => {
   // --- 进度计算 ---
   describe('recalculateParentProgress', () => {
     it('should calculate average progress of subtasks', async () => {
-      const parent = await taskRepo.create({ title: 'Parent', progress: 0 });
-      await taskRepo.create({ title: 'Child 1', parentTaskId: parent.id, progress: 100 });
-      await taskRepo.create({ title: 'Child 2', parentTaskId: parent.id, progress: 0 });
+      const parent = await taskRepo.create({ title: 'Parent', progress: 0 } as any);
+      await taskRepo.create({ title: 'Child 1', parentTaskId: parent.id, progress: 100 } as any);
+      await taskRepo.create({ title: 'Child 2', parentTaskId: parent.id, progress: 0 } as any);
 
       await progressService.recalculateParentProgress(parent.id);
       const updated = await taskRepo.findById(parent.id);
@@ -39,10 +39,10 @@ describe('TaskProgressService', () => {
     });
 
     it('should calculate progress with three subtasks', async () => {
-      const parent = await taskRepo.create({ title: 'Parent', progress: 0 });
-      await taskRepo.create({ title: 'Child 1', parentTaskId: parent.id, progress: 100 });
-      await taskRepo.create({ title: 'Child 2', parentTaskId: parent.id, progress: 50 });
-      await taskRepo.create({ title: 'Child 3', parentTaskId: parent.id, progress: 0 });
+      const parent = await taskRepo.create({ title: 'Parent', progress: 0 } as any);
+      await taskRepo.create({ title: 'Child 1', parentTaskId: parent.id, progress: 100 } as any);
+      await taskRepo.create({ title: 'Child 2', parentTaskId: parent.id, progress: 50 } as any);
+      await taskRepo.create({ title: 'Child 3', parentTaskId: parent.id, progress: 0 } as any);
 
       await progressService.recalculateParentProgress(parent.id);
       const updated = await taskRepo.findById(parent.id);
@@ -50,9 +50,9 @@ describe('TaskProgressService', () => {
     });
 
     it('should round progress to integer', async () => {
-      const parent = await taskRepo.create({ title: 'Parent', progress: 0 });
-      await taskRepo.create({ title: 'Child 1', parentTaskId: parent.id, progress: 33 });
-      await taskRepo.create({ title: 'Child 2', parentTaskId: parent.id, progress: 66 });
+      const parent = await taskRepo.create({ title: 'Parent', progress: 0 } as any);
+      await taskRepo.create({ title: 'Child 1', parentTaskId: parent.id, progress: 33 } as any);
+      await taskRepo.create({ title: 'Child 2', parentTaskId: parent.id, progress: 66 } as any);
 
       await progressService.recalculateParentProgress(parent.id);
       const updated = await taskRepo.findById(parent.id);
@@ -60,9 +60,9 @@ describe('TaskProgressService', () => {
     });
 
     it('should not update parent if progress has not changed', async () => {
-      const parent = await taskRepo.create({ title: 'Parent', progress: 50 });
-      await taskRepo.create({ title: 'Child 1', parentTaskId: parent.id, progress: 50 });
-      await taskRepo.create({ title: 'Child 2', parentTaskId: parent.id, progress: 50 });
+      const parent = await taskRepo.create({ title: 'Parent', progress: 50 } as any);
+      await taskRepo.create({ title: 'Child 1', parentTaskId: parent.id, progress: 50 } as any);
+      await taskRepo.create({ title: 'Child 2', parentTaskId: parent.id, progress: 50 } as any);
 
       const debugSpy = vi.spyOn(logger, 'debug');
       await progressService.recalculateParentProgress(parent.id);
@@ -71,7 +71,7 @@ describe('TaskProgressService', () => {
     });
 
     it('should do nothing when there are no subtasks', async () => {
-      const parent = await taskRepo.create({ title: 'Parent', progress: 0 });
+      const parent = await taskRepo.create({ title: 'Parent', progress: 0 } as any);
       await progressService.recalculateParentProgress(parent.id);
       const updated = await taskRepo.findById(parent.id);
       expect(updated!.progress).toBe(0);
@@ -81,9 +81,9 @@ describe('TaskProgressService', () => {
   // --- 自动完成检测 ---
   describe('auto-complete detection', () => {
     it('should auto-complete parent when all subtasks are done', async () => {
-      const parent = await taskRepo.create({ title: 'Parent', status: 'in_progress', progress: 0 });
-      await taskRepo.create({ title: 'Child 1', parentTaskId: parent.id, status: 'done', progress: 100 });
-      await taskRepo.create({ title: 'Child 2', parentTaskId: parent.id, status: 'done', progress: 100 });
+      const parent = await taskRepo.create({ title: 'Parent', status: 'in_progress', progress: 0 } as any);
+      await taskRepo.create({ title: 'Child 1', parentTaskId: parent.id, status: 'done', progress: 100 } as any);
+      await taskRepo.create({ title: 'Child 2', parentTaskId: parent.id, status: 'done', progress: 100 } as any);
 
       await progressService.recalculateParentProgress(parent.id);
       const updated = await taskRepo.findById(parent.id);
@@ -92,9 +92,9 @@ describe('TaskProgressService', () => {
     });
 
     it('should not auto-complete parent when not all subtasks are done', async () => {
-      const parent = await taskRepo.create({ title: 'Parent', status: 'in_progress', progress: 0 });
-      await taskRepo.create({ title: 'Child 1', parentTaskId: parent.id, status: 'done', progress: 100 });
-      await taskRepo.create({ title: 'Child 2', parentTaskId: parent.id, status: 'in_progress', progress: 50 });
+      const parent = await taskRepo.create({ title: 'Parent', status: 'in_progress', progress: 0 } as any);
+      await taskRepo.create({ title: 'Child 1', parentTaskId: parent.id, status: 'done', progress: 100 } as any);
+      await taskRepo.create({ title: 'Child 2', parentTaskId: parent.id, status: 'in_progress', progress: 50 } as any);
 
       await progressService.recalculateParentProgress(parent.id);
       const updated = await taskRepo.findById(parent.id);
@@ -102,8 +102,8 @@ describe('TaskProgressService', () => {
     });
 
     it('should not change status if parent is already done', async () => {
-      const parent = await taskRepo.create({ title: 'Parent', status: 'done', progress: 100 });
-      await taskRepo.create({ title: 'Child 1', parentTaskId: parent.id, status: 'done', progress: 100 });
+      const parent = await taskRepo.create({ title: 'Parent', status: 'done', progress: 100 } as any);
+      await taskRepo.create({ title: 'Child 1', parentTaskId: parent.id, status: 'done', progress: 100 } as any);
 
       await progressService.recalculateParentProgress(parent.id);
       const updated = await taskRepo.findById(parent.id);
@@ -111,8 +111,8 @@ describe('TaskProgressService', () => {
     });
 
     it('should log info when auto-completing', async () => {
-      const parent = await taskRepo.create({ title: 'Parent', status: 'in_progress', progress: 0 });
-      await taskRepo.create({ title: 'Child 1', parentTaskId: parent.id, status: 'done', progress: 100 });
+      const parent = await taskRepo.create({ title: 'Parent', status: 'in_progress', progress: 0 } as any);
+      await taskRepo.create({ title: 'Child 1', parentTaskId: parent.id, status: 'done', progress: 100 } as any);
 
       const infoSpy = vi.spyOn(logger, 'info');
       await progressService.recalculateParentProgress(parent.id);
@@ -126,10 +126,10 @@ describe('TaskProgressService', () => {
   // --- 递归更新 ---
   describe('recursive parent update', () => {
     it('should recursively update grandparent progress', async () => {
-      const grandparent = await taskRepo.create({ title: 'Grandparent', progress: 0 });
-      const parent = await taskRepo.create({ title: 'Parent', parentTaskId: grandparent.id, progress: 0 });
-      await taskRepo.create({ title: 'Child 1', parentTaskId: parent.id, progress: 100 });
-      await taskRepo.create({ title: 'Child 2', parentTaskId: parent.id, progress: 0 });
+      const grandparent = await taskRepo.create({ title: 'Grandparent', progress: 0 } as any);
+      const parent = await taskRepo.create({ title: 'Parent', parentTaskId: grandparent.id, progress: 0 } as any);
+      await taskRepo.create({ title: 'Child 1', parentTaskId: parent.id, progress: 100 } as any);
+      await taskRepo.create({ title: 'Child 2', parentTaskId: parent.id, progress: 0 } as any);
 
       await progressService.recalculateParentProgress(parent.id);
 

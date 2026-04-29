@@ -197,8 +197,8 @@ describe('FeishuAdapter', () => {
 
     await adapter.pushTask({ title: 'Done', status: 'done' });
 
-    const createCall = fetchSpy.mock.calls.find((c: any) => !c[0].includes('tenant_access_token'));
-    const body = JSON.parse(createCall[1].body);
+    const createCall = fetchSpy.mock.calls.find((c: any) => !c[0].includes('tenant_access_token'))!;
+    const body = JSON.parse(createCall![1]!.body as string);
     expect(body.completed).toBe(true);
   });
 

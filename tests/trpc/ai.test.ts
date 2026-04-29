@@ -61,7 +61,7 @@ class MockAIAdapter implements IAIModelAdapter {
     return '{"result": "mock"}';
   }
 
-  async structured<T>(messages: ChatMessage[], schema: { parse: (data: any) => T }): Promise<T> {
+  async structured<T>(messages: ChatMessage[], schema: { name?: string; description?: string; schema?: Record<string, unknown>; parse: (data: any) => T }): Promise<T> {
     const text = await this.chat(messages);
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     const parsed = jsonMatch ? JSON.parse(jsonMatch[0]) : {};

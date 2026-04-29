@@ -50,11 +50,12 @@ describe('WorkflowValidator', () => {
       expect(result.errors).toContain('Workflow must have at least one step');
     });
 
-    it('should fail when steps is undefined', () => {
-      // NOTE: The validator calls detectCircularReferences even when steps is undefined,
-      // which causes a crash. This is a source code bug - it should guard against undefined steps.
+    it('should fail when steps is undefined (not crash)', () => {
+      // After fix: validator guards against undefined steps in detectCircularReferences
       const dto = makeDTO({ steps: undefined as any });
-      expect(() => validateWorkflow(dto)).toThrow();
+      const result = validateWorkflow(dto);
+      expect(result.valid).toBe(false);
+      expect(result.errors.some(e => e.includes('at least one step'))).toBe(true);
     });
   });
 

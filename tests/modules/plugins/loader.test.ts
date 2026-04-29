@@ -76,6 +76,7 @@ describe('PluginLoader', () => {
     await loader.install({
       name: 'test-plugin',
       displayName: 'Test Plugin',
+      version: '1.0.0',
       entryPoint: './plugins/test/index.ts',
     });
 
@@ -83,6 +84,7 @@ describe('PluginLoader', () => {
       loader.install({
         name: 'test-plugin',
         displayName: 'Test Plugin 2',
+        version: '1.0.0',
         entryPoint: './plugins/test/index.ts',
       }),
     ).rejects.toThrow('已安装');
@@ -95,6 +97,7 @@ describe('PluginLoader', () => {
     await loader.install({
       name: 'test-plugin',
       displayName: 'Test',
+      version: '1.0.0',
       entryPoint: './plugins/test/index.ts',
     });
 
@@ -107,8 +110,8 @@ describe('PluginLoader', () => {
   // --- 列表 ---
 
   it('should list all installed plugins', async () => {
-    await loader.install({ name: 'plugin-a', displayName: 'Plugin A', entryPoint: './a' });
-    await loader.install({ name: 'plugin-b', displayName: 'Plugin B', entryPoint: './b' });
+    await loader.install({ name: 'plugin-a', displayName: 'Plugin A', version: '1.0.0', entryPoint: './a' });
+    await loader.install({ name: 'plugin-b', displayName: 'Plugin B', version: '1.0.0', entryPoint: './b' });
 
     const plugins = await loader.list();
     expect(plugins.length).toBe(2);
@@ -126,6 +129,7 @@ describe('PluginLoader', () => {
       name: 'test-plugin',
       displayName: 'Test Plugin',
       description: 'A test plugin',
+      version: '1.0.0',
       entryPoint: './plugins/test/index.ts',
     });
 
@@ -145,6 +149,7 @@ describe('PluginLoader', () => {
     await loader.install({
       name: 'test-plugin',
       displayName: 'Test',
+      version: '1.0.0',
       entryPoint: './plugins/test/index.ts',
     });
 
@@ -156,6 +161,7 @@ describe('PluginLoader', () => {
     await loader.install({
       name: 'test-plugin',
       displayName: 'Test',
+      version: '1.0.0',
       entryPoint: './plugins/test/index.ts',
     });
 
@@ -165,7 +171,7 @@ describe('PluginLoader', () => {
   });
 
   it('should emit plugin.enabled event', async () => {
-    await loader.install({ name: 'test-plugin', displayName: 'Test', entryPoint: './test' });
+    await loader.install({ name: 'test-plugin', displayName: 'Test', version: '1.0.0', entryPoint: './test' });
     await loader.disable('test-plugin');
 
     const eventSpy = vi.fn();
@@ -176,7 +182,7 @@ describe('PluginLoader', () => {
   });
 
   it('should emit plugin.disabled event', async () => {
-    await loader.install({ name: 'test-plugin', displayName: 'Test', entryPoint: './test' });
+    await loader.install({ name: 'test-plugin', displayName: 'Test', version: '1.0.0', entryPoint: './test' });
 
     const eventSpy = vi.fn();
     eventBus.on('plugin.disabled', eventSpy);
@@ -191,6 +197,7 @@ describe('PluginLoader', () => {
     await loader.install({
       name: 'test-plugin',
       displayName: 'Test',
+      version: '1.0.0',
       entryPoint: './plugins/test/index.ts',
     });
 
@@ -200,7 +207,7 @@ describe('PluginLoader', () => {
   });
 
   it('should emit plugin.uninstalled event', async () => {
-    await loader.install({ name: 'test-plugin', displayName: 'Test', entryPoint: './test' });
+    await loader.install({ name: 'test-plugin', displayName: 'Test', version: '1.0.0', entryPoint: './test' });
 
     const eventSpy = vi.fn();
     eventBus.on('plugin.uninstalled', eventSpy);
@@ -215,6 +222,7 @@ describe('PluginLoader', () => {
     await loader.install({
       name: 'test-plugin',
       displayName: 'Test',
+      version: '1.0.0',
       entryPoint: './plugins/test/index.ts',
       settingsSchema: { type: 'object' },
     });

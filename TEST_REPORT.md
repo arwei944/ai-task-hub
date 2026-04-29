@@ -1,6 +1,6 @@
 # AI Task Hub v1.8.0 测试报告
 
-**测试时间**: 2026-04-29 17:49
+**测试时间**: 2026-04-29 18:17（初始 17:49，修复后更新）
 **测试环境**: Node.js / pnpm 10.33.2 / SQLite (better-sqlite3) / Vitest
 **测试人**: SOLO AI
 
@@ -16,14 +16,14 @@
 | 失败 | 0 |
 | 跳过 | 0 |
 | 通过率 | 100% |
-| 总耗时 | 61.58s |
+| 总耗时 | 65.84s |
 
 ## 2. 编译检查
 
 | 检查项 | 状态 | 详情 |
 |--------|------|------|
 | TypeScript 类型检查（源码） | ✅ | src/ 目录 0 个类型错误 |
-| TypeScript 类型检查（测试） | ⚠️ | tests/ 目录 10 个类型错误（PluginManifest 缺 version、task-core.test.ts 类型不匹配） |
+| TypeScript 类型检查（测试） | ✅ | tests/ 目录 0 个类型错误（已修复） |
 | Next.js 构建 | ✅ | 编译成功 10.8s，静态页面 24/24 生成成功 |
 | Prisma Schema 验证 | ✅ | 数据库同步成功，所有模型创建正常 |
 | Prisma Client 生成 | ✅ | 无错误 |
@@ -194,20 +194,20 @@
 
 ## 6. 发现的问题
 
-### 🔴 严重问题 (Critical)
+### 🔴 严重问题 (Critical) — ✅ 已全部修复
 
-| # | 模块 | 问题描述 | 复现步骤 | 建议修复 |
-|---|------|---------|---------|---------|
-| 1 | TaskRepository | `findMany` 状态过滤 bug：当指定 `status: ['in_progress']` 但不包含 `'deleted'` 时，状态过滤条件会被 `{ not: 'deleted' }` 覆盖，导致状态过滤完全失效 | 调用 `findMany({ status: ['in_progress'] })`，返回结果包含所有非 deleted 状态的任务 | 修复 `task.repository.ts` 第 47-54 行的条件逻辑，将 `not: 'deleted'` 与 `in: status` 合并而非覆盖 |
-| 2 | WorkflowEngine | `ConditionStep.evaluateExpression()` 使用 `"use strict"` + `with()` 语句，在严格模式下会抛 SyntaxError，导致所有条件表达式始终返回 `false` | 在工作流中使用 condition 步骤，任何表达式都返回 false | 移除 `"use strict"` 或改用 `new Function()` 替代 `with()` 语句 |
-
-### 🟡 一般问题 (Warning)
-
-| # | 模块 | 问题描述 | 影响 | 建议修复 |
+| # | 模块 | 问题描述 | 状态 | 修复方案 |
 |---|------|---------|------|---------|
-| 1 | WorkflowValidator | `validate()` 在 `steps` 为 `undefined` 时调用 `detectCircularReferences()` 会崩溃（缺少空值守卫） | 传入空步骤的工作流定义会导致未捕获异常 | 在调用 `detectCircularReferences()` 前添加 `if (!steps)` 守卫 |
-| 2 | 测试文件 | `tests/modules/plugins/plugin-loader.test.ts` 有 8 处 PluginManifest 缺少 `version` 字段的类型错误 | 测试代码类型不安全，但不影响运行时 | 在测试中补全 `version: '1.0.0'` 字段 |
-| 3 | 测试文件 | `tests/modules/task-core/task-core.test.ts` 有 2 处类型不匹配（number vs void） | 测试代码类型不安全，但不影响运行时 | 修正测试中的类型断言 |
+| 1 | TaskRepository | `findMany` 状态过滤 bug：当指定 `status: ['in_progress']` 但不包含 `'deleted'` 时，状态过滤条件会被 `{ not: 'deleted' }` 覆盖 | ✅ 已修复 | 修复 `task.repository.ts` 第 46-54 行，使用 `notIn` 合并而非覆盖 |
+| 2 | WorkflowEngine | `ConditionStep.evaluateExpression()` 使用 `"use strict"` + `with()` 语句，在严格模式下会抛 SyntaxError，导致所有条件表达式始终返回 `false` | ✅ 已修复 | 改用 `new Function(...keys, expr)` 参数展开方式替代 `with()` |
+
+### 🟡 一般问题 (Warning) — ✅ 已全部修复
+
+| # | 模块 | 问题描述 | 状态 | 修复方案 |
+|---|------|---------|------|---------|
+| 1 | WorkflowValidator | `validate()` 在 `steps` 为 `undefined` 时调用 `detectCircularReferences()` 会崩溃 | ✅ 已修复 | 添加 `if (dto.steps && dto.steps.length > 0)` 守卫 |
+| 2 | 测试文件 | 多个测试文件存在 PluginManifest 缺少 `version` 字段等类型错误（120+ 处） | ✅ 已修复 | 补全 `version: '1.0.0'`、`Request` → `NextRequest`、`as any` 断言等 |
+| 3 | 测试文件 | event-bus/task-core.test.ts 回调返回值类型不匹配 | ✅ 已修复 | 用花括号包裹 push 语句避免返回值泄漏 |
 
 ### 🔵 建议优化 (Suggestion)
 
@@ -239,13 +239,13 @@
 
 ### 总结
 
-AI Task Hub v1.8.0 整体代码质量良好，**1107 个测试用例全部通过**，所有 47 个模块均被测试覆盖。源码 TypeScript 类型检查零错误，Next.js 构建成功。发现 2 个严重 bug（TaskRepository 状态过滤逻辑错误、ConditionStep 严格模式兼容性问题）和 3 个一般问题需要关注。
+AI Task Hub v1.8.0 整体代码质量良好，**1107 个测试用例全部通过**，所有 47 个模块均被测试覆盖。源码和测试代码 TypeScript 类型检查零错误，Next.js 构建成功。测试发现的 2 个严重 bug 和 3 个一般问题**已全部修复并验证**。
 
 ### 优先修复建议
 
-1. **🔴 立即修复** `task.repository.ts` 的 `findMany` 状态过滤 bug — 影响任务列表查询的正确性
-2. **🔴 立即修复** `ConditionStep.evaluateExpression()` 的 `with()` + strict mode 冲突 — 导致条件步骤完全失效
-3. **🟡 尽快修复** `WorkflowValidator` 的空值守卫 — 防止运行时崩溃
+1. ~~🔴 立即修复 `task.repository.ts` 的 `findMany` 状态过滤 bug~~ ✅ 已修复
+2. ~~🔴 立即修复 `ConditionStep.evaluateExpression()` 的 `with()` + strict mode 冲突~~ ✅ 已修复
+3. ~~🟡 尽快修复 `WorkflowValidator` 的空值守卫~~ ✅ 已修复
 
 ### 后续测试建议
 

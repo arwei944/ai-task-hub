@@ -170,7 +170,7 @@ describe('GET /api/status', () => {
   });
 
   it('should include environment info', async () => {
-    process.env.NODE_ENV = 'test';
+    (process as any).env.NODE_ENV = 'test';
     process.env.OPENAI_API_KEY = 'sk-test';
 
     const response = await GET();
@@ -180,7 +180,7 @@ describe('GET /api/status', () => {
   });
 
   it('should default environment to development', async () => {
-    delete process.env.NODE_ENV;
+    delete (process as any).env.NODE_ENV;
     process.env.OPENAI_API_KEY = 'sk-test';
 
     const response = await GET();

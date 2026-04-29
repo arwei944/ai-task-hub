@@ -108,8 +108,8 @@ describe('tasks.get', () => {
 
     expect(result).toBeDefined();
     expect(result!._count).toBeDefined();
-    expect(result!._count.subTasks).toBe(0);
-    expect(result!._count.history).toBe(0);
+    expect(result!._count!.subTasks).toBe(0);
+    expect(result!._count!.history).toBe(0);
   });
 });
 

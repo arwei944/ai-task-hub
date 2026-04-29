@@ -178,8 +178,8 @@ describe('TaskService', () => {
       expect(history.length).toBeGreaterThanOrEqual(1);
       const titleChange = history.find((h: any) => h.field === 'title');
       expect(titleChange).toBeDefined();
-      expect(titleChange.oldValue).toBe('Original');
-      expect(titleChange.newValue).toBe('New Title');
+      expect(titleChange!.oldValue).toBe('Original');
+      expect(titleChange!.newValue).toBe('New Title');
     });
   });
 

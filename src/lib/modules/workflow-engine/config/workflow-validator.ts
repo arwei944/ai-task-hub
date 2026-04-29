@@ -71,8 +71,10 @@ export class WorkflowValidator {
     }
 
     // Check for circular references in step conditions
-    const circularErrors = this.detectCircularReferences(dto.steps);
-    errors.push(...circularErrors);
+    if (dto.steps && dto.steps.length > 0) {
+      const circularErrors = this.detectCircularReferences(dto.steps);
+      errors.push(...circularErrors);
+    }
 
     return {
       valid: errors.length === 0,

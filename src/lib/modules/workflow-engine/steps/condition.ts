@@ -43,11 +43,11 @@ export class ConditionStep implements StepHandler {
     if (!safeExpr) return false;
 
     try {
-      const fn = new Function('__ctx__', `
-        "use strict";
-        with(__ctx__) { return !!(${safeExpr}); }
-      `);
-      return fn(context) === true;
+      // Build a safe evaluation scope without using `with()` (incompatible with strict mode)
+      const keys = Object.keys(context);
+      const values = Object.values(context);
+      const fn = new Function(...keys, `"use strict"; return !!(${safeExpr});`);
+      return fn(...values) === true;
     } catch {
       return false;
     }

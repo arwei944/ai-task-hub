@@ -30,11 +30,13 @@ describe('plugins.list', () => {
     await ctx.pluginLoader.install({
       name: 'plugin-1',
       displayName: 'Plugin One',
+      version: '1.0.0',
       entryPoint: './plugins/hello-world/index.ts',
     });
     await ctx.pluginLoader.install({
       name: 'plugin-2',
       displayName: 'Plugin Two',
+      version: '1.0.0',
       entryPoint: './plugins/hello-world/index.ts',
     });
 
@@ -46,11 +48,13 @@ describe('plugins.list', () => {
     await ctx.pluginLoader.install({
       name: 'first',
       displayName: 'First',
+      version: '1.0.0',
       entryPoint: './plugins/hello-world/index.ts',
     });
     await ctx.pluginLoader.install({
       name: 'second',
       displayName: 'Second',
+      version: '1.0.0',
       entryPoint: './plugins/hello-world/index.ts',
     });
 
@@ -90,6 +94,7 @@ describe('plugins.install', () => {
     const result = await ctx.pluginLoader.install({
       name: 'new-plugin',
       displayName: 'New Plugin',
+      version: '1.0.0',
       entryPoint: './plugins/hello-world/index.ts',
     });
 
@@ -119,6 +124,7 @@ describe('plugins.install', () => {
     await ctx.pluginLoader.install({
       name: 'dup-plugin',
       displayName: 'Dup',
+      version: '1.0.0',
       entryPoint: './plugins/hello-world/index.ts',
     });
 
@@ -126,6 +132,7 @@ describe('plugins.install', () => {
       ctx.pluginLoader.install({
         name: 'dup-plugin',
         displayName: 'Dup Again',
+        version: '1.0.0',
         entryPoint: './plugins/hello-world/index.ts',
       }),
     ).rejects.toThrow();
@@ -135,6 +142,7 @@ describe('plugins.install', () => {
     await ctx.pluginLoader.install({
       name: 'persist-plugin',
       displayName: 'Persist',
+      version: '1.0.0',
       entryPoint: './plugins/hello-world/index.ts',
     });
 
@@ -149,6 +157,7 @@ describe('plugins.enable', () => {
     await ctx.pluginLoader.install({
       name: 'enable-test',
       displayName: 'Enable Test',
+      version: '1.0.0',
       entryPoint: './plugins/hello-world/index.ts',
     });
     await ctx.pluginLoader.disable('enable-test');
@@ -164,6 +173,7 @@ describe('plugins.disable', () => {
     await ctx.pluginLoader.install({
       name: 'disable-test',
       displayName: 'Disable Test',
+      version: '1.0.0',
       entryPoint: './plugins/hello-world/index.ts',
     });
     const result = await ctx.pluginLoader.disable('disable-test');
@@ -175,6 +185,7 @@ describe('plugins.disable', () => {
     await ctx.pluginLoader.install({
       name: 'db-disable',
       displayName: 'DB Disable',
+      version: '1.0.0',
       entryPoint: './plugins/hello-world/index.ts',
     });
     await ctx.pluginLoader.disable('db-disable');
@@ -189,6 +200,7 @@ describe('plugins.uninstall', () => {
     await ctx.pluginLoader.install({
       name: 'uninstall-test',
       displayName: 'Uninstall Test',
+      version: '1.0.0',
       entryPoint: './plugins/hello-world/index.ts',
     });
 
@@ -207,6 +219,7 @@ describe('plugins.updateSettings', () => {
     await ctx.pluginLoader.install({
       name: 'settings-test',
       displayName: 'Settings Test',
+      version: '1.0.0',
       entryPoint: './plugins/hello-world/index.ts',
     });
 
@@ -227,6 +240,7 @@ describe('plugins.getCustomTools', () => {
     await ctx.pluginLoader.install({
       name: 'tools-test',
       displayName: 'Tools Test',
+      version: '1.0.0',
       entryPoint: './plugins/hello-world/index.ts',
     });
 

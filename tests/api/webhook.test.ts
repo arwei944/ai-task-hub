@@ -3,6 +3,7 @@
 // ============================================================
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { NextRequest } from 'next/server';
 
 // Mock all the heavy dependencies as classes
 const mockHandleWebhook = vi.fn();
@@ -112,16 +113,16 @@ function createMockWebhookRequest(
   type: string,
   body: unknown,
   headers: Record<string, string> = {},
-): { request: Request; params: { type: string } } {
+): { request: NextRequest; params: { type: string } } {
   const url = `http://localhost:3000/api/webhook/${type}`;
-  const request = new Request(url, {
+  const request = new NextRequest(url, {
     method: 'POST',
     body: JSON.stringify(body),
     headers: {
       'Content-Type': 'application/json',
       ...headers,
     },
-  }) as Request;
+  });
 
   return {
     request,
@@ -253,11 +254,11 @@ describe('POST /api/webhook/[type]', () => {
 
   it('should return 500 when payload is invalid JSON', async () => {
     const url = 'http://localhost:3000/api/webhook/github';
-    const request = new Request(url, {
+    const request = new NextRequest(url, {
       method: 'POST',
       body: 'not valid json {{{',
       headers: { 'Content-Type': 'application/json' },
-    }) as Request;
+    });
 
     const response = await POST(request, {
       params: Promise.resolve({ type: 'github' }),

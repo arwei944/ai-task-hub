@@ -170,7 +170,7 @@ describe('NotionAdapter', () => {
     const since = new Date('2026-01-01');
     await adapter.pullTasks({ since });
 
-    const body = JSON.parse(fetchSpy.mock.calls[0][1].body);
+    const body = JSON.parse(fetchSpy.mock.calls[0]![1]!.body as string);
     expect(body.filter).toBeDefined();
     expect(body.filter.timestamp).toBe('last_edited_time');
   });
@@ -228,8 +228,8 @@ describe('NotionAdapter', () => {
 
     await adapter.pushTask({ title: 'Test', status: 'in_progress' });
 
-    const createCall = fetchSpy.mock.calls.find((c: any) => c[1]?.method === 'POST');
-    const body = JSON.parse(createCall[1].body);
+    const createCall = fetchSpy.mock.calls.find((c: any) => c[1]?.method === 'POST')!;
+    const body = JSON.parse(createCall![1]!.body as string);
     expect(body.properties.Status.select.name).toBe('In Progress');
   });
 
@@ -244,8 +244,8 @@ describe('NotionAdapter', () => {
 
     await adapter.pushTask({ title: 'Test', priority: 'high' });
 
-    const createCall = fetchSpy.mock.calls.find((c: any) => c[1]?.method === 'POST');
-    const body = JSON.parse(createCall[1].body);
+    const createCall = fetchSpy.mock.calls.find((c: any) => c[1]?.method === 'POST')!;
+    const body = JSON.parse(createCall![1]!.body as string);
     expect(body.properties.Priority.select.name).toBe('High');
   });
 

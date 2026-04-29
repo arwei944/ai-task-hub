@@ -73,6 +73,7 @@ describe('PluginLoader', () => {
       await loader.install({
         name: 'test-plugin',
         displayName: 'Test Plugin',
+        version: '1.0.0',
         entryPoint: './plugins/test/index.ts',
       });
 
@@ -80,6 +81,7 @@ describe('PluginLoader', () => {
         loader.install({
           name: 'test-plugin',
           displayName: 'Test Plugin 2',
+          version: '1.0.0',
           entryPoint: './plugins/test/index.ts',
         }),
       ).rejects.toThrow('已安装');
@@ -91,11 +93,13 @@ describe('PluginLoader', () => {
       await loader.install({
         name: 'plugin-a',
         displayName: 'Plugin A',
+        version: '1.0.0',
         entryPoint: './plugins/a/index.ts',
       });
       await loader.install({
         name: 'plugin-b',
         displayName: 'Plugin B',
+        version: '1.0.0',
         entryPoint: './plugins/b/index.ts',
       });
 
@@ -114,6 +118,7 @@ describe('PluginLoader', () => {
       await loader.install({
         name: 'test-plugin',
         displayName: 'Test',
+        version: '1.0.0',
         entryPoint: './plugins/test/index.ts',
       });
 
@@ -125,6 +130,7 @@ describe('PluginLoader', () => {
       await loader.install({
         name: 'test-plugin',
         displayName: 'Test',
+        version: '1.0.0',
         entryPoint: './plugins/test/index.ts',
       });
 
@@ -139,6 +145,7 @@ describe('PluginLoader', () => {
       await loader.install({
         name: 'test-plugin',
         displayName: 'Test',
+        version: '1.0.0',
         entryPoint: './plugins/test/index.ts',
       });
 
@@ -154,6 +161,7 @@ describe('PluginLoader', () => {
         name: 'test-plugin',
         displayName: 'Test Plugin',
         description: 'A test plugin',
+        version: '1.0.0',
         entryPoint: './plugins/test/index.ts',
       });
 

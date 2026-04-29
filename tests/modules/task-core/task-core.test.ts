@@ -132,8 +132,8 @@ describe('TaskCoreModule', () => {
 
     it('should emit events on task operations', async () => {
       const events: any[] = [];
-      services.eventBus.on('task.created', (e) => events.push(e));
-      services.eventBus.on('task.status_changed', (e) => events.push(e));
+      services.eventBus.on('task.created', (e) => { events.push(e); });
+      services.eventBus.on('task.status_changed', (e) => { events.push(e); });
 
       const task = await services.taskService.createTask({ title: 'Event Test' });
       await services.taskService.updateStatus(task.id, 'in_progress');

@@ -66,7 +66,7 @@ describe('GET /api/backup', () => {
 
   it('should return 200 with backup data structure', async () => {
     const request = createMockRequest('http://localhost:3000/api/backup');
-    const response = await GET(request);
+    const response = await GET();
     const data = await response.json();
 
     expect(response.status).toBe(200);
@@ -82,7 +82,7 @@ describe('GET /api/backup', () => {
     mockFindMany.mockResolvedValue([]);
 
     const request = createMockRequest('http://localhost:3000/api/backup');
-    const response = await GET(request);
+    const response = await GET();
     const data = await response.json();
 
     const expectedTables = [
@@ -97,7 +97,7 @@ describe('GET /api/backup', () => {
     mockFindMany.mockResolvedValue([]);
 
     const request = createMockRequest('http://localhost:3000/api/backup');
-    const response = await GET(request);
+    const response = await GET();
     const data = await response.json();
 
     for (const count of Object.values(data.recordCounts)) {
@@ -112,7 +112,7 @@ describe('GET /api/backup', () => {
       .mockResolvedValue([]);
 
     const request = createMockRequest('http://localhost:3000/api/backup');
-    const response = await GET(request);
+    const response = await GET();
     const data = await response.json();
 
     expect(data.recordCounts.User).toBe(1);
@@ -126,7 +126,7 @@ describe('GET /api/backup', () => {
     ]);
 
     const request = createMockRequest('http://localhost:3000/api/backup');
-    const response = await GET(request);
+    const response = await GET();
     const data = await response.json();
 
     expect(fs.writeFileSync).toHaveBeenCalled();
@@ -140,7 +140,7 @@ describe('GET /api/backup', () => {
     mockFindMany.mockResolvedValue([]);
 
     const request = createMockRequest('http://localhost:3000/api/backup');
-    await GET(request);
+    await GET();
 
     expect(fs.writeFileSync).toHaveBeenCalledTimes(1);
     const filePath = (fs.writeFileSync as any).mock.calls[0][0];
@@ -163,7 +163,7 @@ describe('GET /api/backup', () => {
       .mockResolvedValue([]);
 
     const request = createMockRequest('http://localhost:3000/api/backup');
-    const response = await GET(request);
+    const response = await GET();
     const data = await response.json();
 
     expect(response.status).toBe(200);
@@ -174,7 +174,7 @@ describe('GET /api/backup', () => {
     mockFindMany.mockResolvedValue([]);
 
     const request = createMockRequest('http://localhost:3000/api/backup');
-    await GET(request);
+    await GET();
 
     expect(mockDisconnect).toHaveBeenCalledTimes(1);
   });
@@ -186,7 +186,7 @@ describe('GET /api/backup', () => {
     });
 
     const request = createMockRequest('http://localhost:3000/api/backup');
-    const response = await GET(request);
+    const response = await GET();
     const data = await response.json();
 
     expect(response.status).toBe(500);

@@ -117,7 +117,7 @@ describe('Step Handlers', () => {
     // so evaluateExpression always returns false. This is a known source code issue.
     // Tests reflect the actual behavior.
 
-    it('should return false branch due to strict mode with() limitation', async () => {
+    it('should evaluate expression correctly (with() bug fixed)', async () => {
       const deps: StepHandlerDeps = { prisma: {}, taskService: {} };
       const step = new ConditionStep(deps);
 
@@ -129,10 +129,10 @@ describe('Step Handlers', () => {
         {},
       );
 
-      // with() in strict mode throws, so expression evaluates to false
-      expect(result.conditionResult).toBe(false);
-      expect(result.branch).toBe('else');
-      expect(result.branchSteps).toEqual(elseSteps);
+      // After fix: expression 'true' should evaluate to true
+      expect(result.conditionResult).toBe(true);
+      expect(result.branch).toBe('then');
+      expect(result.branchSteps).toEqual(thenSteps);
     });
 
     it('should return false for false expression', async () => {
@@ -152,7 +152,7 @@ describe('Step Handlers', () => {
       expect(result.branchSteps).toEqual(elseSteps);
     });
 
-    it('should return false for template variable expressions (strict mode with() limitation)', async () => {
+    it('should evaluate template variable expressions correctly (with() bug fixed)', async () => {
       const deps: StepHandlerDeps = { prisma: {}, taskService: {} };
       const step = new ConditionStep(deps);
 
@@ -161,8 +161,8 @@ describe('Step Handlers', () => {
         { status: 'active' },
       );
 
-      // with() in strict mode throws, so expression always evaluates to false
-      expect(result.conditionResult).toBe(false);
+      // After fix: template variables are resolved and expression evaluates correctly
+      expect(result.conditionResult).toBe(true);
     });
 
     it('should return false for unresolvable expressions', async () => {
@@ -189,14 +189,14 @@ describe('Step Handlers', () => {
       expect(result.branchStepCount).toBe(0);
     });
 
-    it('should return false for default expression (strict mode with() limitation)', async () => {
+    it('should evaluate default expression correctly (with() bug fixed)', async () => {
       const deps: StepHandlerDeps = { prisma: {}, taskService: {} };
       const step = new ConditionStep(deps);
 
       const result = await step.execute({}, {});
 
-      // Default expression is 'true', but with() in strict mode throws
-      expect(result.conditionResult).toBe(false);
+      // Default expression is 'true', should evaluate to true after fix
+      expect(result.conditionResult).toBe(true);
     });
   });
 

@@ -3,6 +3,7 @@
 // ============================================================
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { NextRequest } from 'next/server';
 
 // Mock PrismaBetterSqlite3 as a class
 vi.mock('@prisma/adapter-better-sqlite3', () => ({
@@ -32,8 +33,8 @@ vi.mock('@/lib/core/logger', () => ({
 
 import { GET } from '@/app/api/export/tasks/route';
 
-function createMockRequest(url: string): Request {
-  return new Request(url, { method: 'GET' }) as Request;
+function createMockRequest(url: string): NextRequest {
+  return new NextRequest(url, { method: 'GET' });
 }
 
 describe('GET /api/export/tasks', () => {

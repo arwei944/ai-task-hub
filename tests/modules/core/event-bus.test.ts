@@ -84,18 +84,18 @@ describe('EventBus', () => {
   describe('priority ordering', () => {
     it('should call higher priority handlers first', () => {
       const order: number[] = [];
-      bus.on('test', () => order.push(0), { priority: 0 });
-      bus.on('test', () => order.push(10), { priority: 10 });
-      bus.on('test', () => order.push(5), { priority: 5 });
-      bus.on('test', () => order.push(-1), { priority: -1 });
+      bus.on('test', () => { order.push(0); }, { priority: 0 });
+      bus.on('test', () => { order.push(10); }, { priority: 10 });
+      bus.on('test', () => { order.push(5); }, { priority: 5 });
+      bus.on('test', () => { order.push(-1); }, { priority: -1 });
       bus.emit(makeEvent('test'));
       expect(order).toEqual([10, 5, 0, -1]);
     });
 
     it('should default priority to 0 when not specified', () => {
       const order: number[] = [];
-      bus.on('test', () => order.push(0));
-      bus.on('test', () => order.push(1), { priority: 1 });
+      bus.on('test', () => { order.push(0); });
+      bus.on('test', () => { order.push(1); }, { priority: 1 });
       bus.emit(makeEvent('test'));
       expect(order).toEqual([1, 0]);
     });
@@ -124,9 +124,9 @@ describe('EventBus', () => {
 
     it('should respect priority ordering among wildcard handlers', () => {
       const order: string[] = [];
-      bus.on('*', () => order.push('wildcard-low'), { priority: 0 });
-      bus.on('test', () => order.push('specific-high'), { priority: 10 });
-      bus.on('*', () => order.push('wildcard-high'), { priority: 5 });
+      bus.on('*', () => { order.push('wildcard-low'); }, { priority: 0 });
+      bus.on('test', () => { order.push('specific-high'); }, { priority: 10 });
+      bus.on('*', () => { order.push('wildcard-high'); }, { priority: 5 });
       bus.emit(makeEvent('test'));
       // Specific handlers fire first, then wildcards sorted by priority
       expect(order).toEqual(['specific-high', 'wildcard-high', 'wildcard-low']);

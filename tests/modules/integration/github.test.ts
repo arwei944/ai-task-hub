@@ -181,7 +181,7 @@ describe('GitHubAdapter', () => {
 
     await adapter.pushTask({ title: 'Done task', status: 'done' });
 
-    const body = JSON.parse(fetchSpy.mock.calls[0][1].body);
+    const body = JSON.parse(fetchSpy.mock.calls[0]![1]!.body as string);
     expect(body.state).toBe('closed');
   });
 

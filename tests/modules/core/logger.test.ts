@@ -7,16 +7,16 @@ describe('Logger', () => {
   beforeEach(() => {
     logger = new Logger('test');
     clearRequestContext();
-    delete process.env.LOG_FORMAT;
-    delete process.env.NODE_ENV;
-    delete process.env.LOG_LEVEL;
+    delete (process as any).env.LOG_FORMAT;
+    delete (process as any).env.NODE_ENV;
+    delete (process as any).env.LOG_LEVEL;
   });
 
   afterEach(() => {
     clearRequestContext();
-    delete process.env.LOG_FORMAT;
-    delete process.env.NODE_ENV;
-    delete process.env.LOG_LEVEL;
+    delete (process as any).env.LOG_FORMAT;
+    delete (process as any).env.NODE_ENV;
+    delete (process as any).env.LOG_LEVEL;
   });
 
   // --- 子日志器创建 ---
@@ -97,7 +97,7 @@ describe('Logger', () => {
     });
 
     it('should output JSON when NODE_ENV=production', () => {
-      process.env.NODE_ENV = 'production';
+      (process as any).env.NODE_ENV = 'production';
       const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
       logger.info('prod message');
       expect(logSpy).toHaveBeenCalled();
@@ -121,7 +121,7 @@ describe('Logger', () => {
   // --- debug 条件输出 ---
   describe('debug', () => {
     it('should output debug in development mode', () => {
-      process.env.NODE_ENV = 'development';
+      (process as any).env.NODE_ENV = 'development';
       const spy = vi.spyOn(console, 'debug').mockImplementation(() => {});
       logger.debug('debug msg');
       expect(spy).toHaveBeenCalledTimes(1);
@@ -137,8 +137,8 @@ describe('Logger', () => {
     });
 
     it('should not output debug in production without LOG_LEVEL', () => {
-      process.env.NODE_ENV = 'production';
-      delete process.env.LOG_LEVEL;
+      (process as any).env.NODE_ENV = 'production';
+      delete (process as any).env.LOG_LEVEL;
       const spy = vi.spyOn(console, 'debug').mockImplementation(() => {});
       logger.debug('debug msg');
       expect(spy).not.toHaveBeenCalled();
