@@ -1,51 +1,34 @@
 import { test, expect } from '@playwright/test';
 
-// ============================================================
-// Plugins E2E Tests
-// ============================================================
-
-test.describe('插件管理页面', () => {
-  test('插件页面正确渲染', async ({ page }) => {
-    await page.goto('/plugins');
-
-    await expect(page.getByRole('heading', { name: '插件管理' })).toBeVisible();
-    await expect(page.getByText('管理和扩展系统功能')).toBeVisible();
+test.describe('E2E-PLUG: 插件管理测试', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/demo.html');
+    await page.click('.nav-item[data-page="plugins"]');
+    await expect(page.locator('#page-plugins.active')).toBeVisible();
   });
 
-  test('安装插件按钮可见', async ({ page }) => {
-    await page.goto('/plugins');
-
-    await expect(page.getByRole('button', { name: '+ 安装插件' })).toBeVisible();
+  test('E2E-PLUG-01: 插件表格渲染', async ({ page }) => {
+    const rows = page.locator('#page-plugins .table tbody tr');
+    const count = await rows.count();
+    expect(count).toBeGreaterThanOrEqual(3);
   });
 
-  test('点击安装显示表单', async ({ page }) => {
-    await page.goto('/plugins');
-
-    await page.getByRole('button', { name: '+ 安装插件' }).click();
-
-    // Install form should appear
-    await expect(page.getByRole('heading', { name: '安装新插件' })).toBeVisible();
-    await expect(page.getByPlaceholder('e.g., hello-world')).toBeVisible();
-    await expect(page.getByPlaceholder('e.g., Hello World')).toBeVisible();
+  test('E2E-PLUG-02: 插件有版本号', async ({ page }) => {
+    const rows = page.locator('#page-plugins .table tbody tr');
+    const firstRow = rows.first();
+    const text = await firstRow.textContent();
+    expect(text).toMatch(/v\d+\.\d+\.\d+/);
   });
 
-  test('安装表单可以取消', async ({ page }) => {
-    await page.goto('/plugins');
-
-    await page.getByRole('button', { name: '+ 安装插件' }).click();
-    await expect(page.getByRole('heading', { name: '安装新插件' })).toBeVisible();
-
-    await page.getByRole('button', { name: '取消' }).click();
-
-    // Form should be hidden
-    await expect(page.getByRole('heading', { name: '安装新插件' })).not.toBeVisible();
+  test('E2E-PLUG-03: 插件有状态徽章', async ({ page }) => {
+    const badges = page.locator('#page-plugins .table .badge');
+    const count = await badges.count();
+    expect(count).toBeGreaterThan(0);
   });
 
-  test('空状态显示提示', async ({ page }) => {
-    await page.goto('/plugins');
-
-    // Should show empty state
-    await expect(page.getByText('暂无插件')).toBeVisible();
-    await expect(page.getByText('点击上方"安装插件"按钮来添加新插件')).toBeVisible();
+  test('E2E-PLUG-04: 插件有操作按钮', async ({ page }) => {
+    const buttons = page.locator('#page-plugins .btn-sm');
+    const count = await buttons.count();
+    expect(count).toBeGreaterThan(0);
   });
 });

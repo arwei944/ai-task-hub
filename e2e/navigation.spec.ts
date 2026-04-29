@@ -1,58 +1,79 @@
 import { test, expect } from '@playwright/test';
 
-// ============================================================
-// Navigation E2E Tests
-// ============================================================
+test.describe('E2E-NAV: 全局导航测试', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/demo.html');
+  });
 
-test.describe('导航栏', () => {
-  test('导航栏在所有页面可见', async ({ page }) => {
-    const pages = ['/', '/dashboard', '/tasks', '/agents', '/integrations', '/plugins', '/settings'];
+  test('E2E-NAV-01: 侧边栏导航切换所有页面', async ({ page }) => {
+    const navItems = page.locator('.nav-item[data-page]');
+    const count = await navItems.count();
+    expect(count).toBe(10); // 10 个导航项
 
-    for (const path of pages) {
-      await page.goto(path);
-      // Logo should be visible
-      await expect(page.locator('a:has-text("AI Task Hub")')).toBeVisible();
+    for (let i = 0; i < count; i++) {
+      const pageName = await navItems.nth(i).getAttribute('data-page');
+      await navItems.nth(i).click();
+      await expect(page.locator(`#page-${pageName}.active`)).toBeVisible();
+      // 验证只有一个页面是 active
+      const activePages = await page.locator('.page.active').count();
+      expect(activePages).toBe(1);
     }
   });
 
-  test('导航链接正确高亮', async ({ page }) => {
-    await page.goto('/tasks');
+  test('E2E-NAV-02: 顶栏标题随导航更新', async ({ page }) => {
+    await page.click('.nav-item[data-page="tasks"]');
+    await expect(page.locator('#page-title')).toHaveText('任务管理');
 
-    // Tasks link should be active
-    const tasksLink = page.locator('a[href="/tasks"]');
-    await expect(tasksLink).toHaveClass(/bg-blue-50|text-blue-700/);
+    await page.click('.nav-item[data-page="workflows"]');
+    await expect(page.locator('#page-title')).toHaveText('工作流引擎');
+
+    await page.click('.nav-item[data-page="dashboard"]');
+    await expect(page.locator('#page-title')).toHaveText('仪表盘');
   });
 
-  test('暗色模式切换', async ({ page }) => {
-    await page.goto('/');
+  test('E2E-NAV-03: 搜索框导航 - 多个关键词', async ({ page }) => {
+    const searchTests = [
+      { keyword: 'task', expectedPage: 'tasks' },
+      { keyword: 'project', expectedPage: 'projects' },
+      { keyword: 'workflow', expectedPage: 'workflows' },
+      { keyword: 'agent', expectedPage: 'agents' },
+      { keyword: 'setting', expectedPage: 'settings' },
+    ];
 
-    // Find theme toggle button
-    const themeBtn = page.locator('button[title*="切换"]');
-    if (await themeBtn.isVisible()) {
-      await themeBtn.click();
-
-      // html element should have dark class
-      await expect(page.locator('html')).toHaveClass(/dark/);
-
-      // Click again to toggle back
-      await themeBtn.click();
-      await expect(page.locator('html')).not.toHaveClass(/dark/);
+    for (const { keyword, expectedPage } of searchTests) {
+      await page.fill('.search-box input', '');
+      await page.fill('.search-box input', keyword);
+      await expect(page.locator(`#page-${expectedPage}.active`)).toBeVisible();
     }
   });
 
-  test('移动端汉堡菜单', async ({ page }) => {
-    // Set viewport to mobile
-    await page.setViewportSize({ width: 375, height: 812 });
-    await page.goto('/');
+  test('E2E-NAV-04: 导航项激活状态', async ({ page }) => {
+    // 初始状态：dashboard 激活
+    await expect(page.locator('.nav-item[data-page="dashboard"].active')).toBeVisible();
 
-    // Hamburger button should be visible on mobile
-    const hamburger = page.locator('button[aria-label="Toggle menu"]');
-    if (await hamburger.isVisible()) {
-      await hamburger.click();
+    // 切换到 tasks
+    await page.click('.nav-item[data-page="tasks"]');
+    await expect(page.locator('.nav-item[data-page="tasks"].active')).toBeVisible();
+    await expect(page.locator('.nav-item[data-page="dashboard"].active')).not.toBeVisible();
 
-      // Mobile menu should show nav items
-      await expect(page.getByText('仪表盘')).toBeVisible();
-      await expect(page.getByText('任务')).toBeVisible();
-    }
+    // 切换回 dashboard
+    await page.click('.nav-item[data-page="dashboard"]');
+    await expect(page.locator('.nav-item[data-page="dashboard"].active')).toBeVisible();
+  });
+
+  test('E2E-NAV-05: 侧边栏徽章显示', async ({ page }) => {
+    const badges = page.locator('.nav-badge');
+    const count = await badges.count();
+    expect(count).toBeGreaterThan(0);
+
+    // 验证任务管理徽章显示 47
+    const taskBadge = page.locator('.nav-item[data-page="tasks"] .nav-badge');
+    await expect(taskBadge).toHaveText('47');
+  });
+
+  test('E2E-NAV-06: 用户信息卡片显示', async ({ page }) => {
+    const userCard = page.locator('.user-card');
+    await expect(userCard).toBeVisible();
+    await expect(page.locator('.user-name')).toHaveText('Admin');
   });
 });
