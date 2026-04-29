@@ -25,6 +25,10 @@ else
   echo "Database found at /data/dev.db"
 fi
 
+# Always sync schema to ensure tables exist (handles first run + schema updates)
+echo "Syncing database schema..."
+npx prisma db push --accept-data-loss 2>&1 || echo "Schema sync warning (non-fatal)"
+
 # Verify critical files
 echo "Checking files..."
 test -f /app/node_modules/better-sqlite3/build/Release/better_sqlite3.node && echo "✓ better-sqlite3 OK" || echo "✗ better-sqlite3 MISSING"
