@@ -13,6 +13,7 @@ import type {
   CheckpointType,
 } from '../types';
 import { FeedbackRuleEngine } from './rule-engine';
+import { getSSEService } from '@/lib/modules/realtime/sse.service';
 
 /**
  * 反馈模块
@@ -185,6 +186,76 @@ export class FeedbackModule {
   }): Promise<PostFeedbackAction> {
     const { executionId, step, result, durationMs, stepExecutionId } = params;
 
+    // 提取 tokensUsed
+    const tokensUsed = result._tokensUsed !== undefined
+      ? Number(result._tokensUsed)
+      : undefined;
+
+    // 使用规则引擎评估执行后结果
+    const ruleResult = await this.ruleEngine.evaluatePostExecute({
+      step,
+      context: {},
+      executionId,
+      durationMs,
+      tokensUsed,
+    });
+
+    if (ruleResult.action === 'block') {
+      // 创建 pending 检查点，等待审批
+      const checkpoint = await this.createCheckpoint({
+        executionId,
+        step,
+        checkpointType: 'post_execute',
+        status: 'pending',
+        approvalMode: 'auto',
+        stepOutput: JSON.stringify(result),
+        intervention: ruleResult.reason,
+        intervenedBy: 'auto_rule',
+      });
+
+      return {
+        action: 'block',
+        reason: ruleResult.reason,
+        suggestions: ['Rule engine blocked execution, awaiting approval'],
+      };
+    }
+
+    if (ruleResult.action === 'notify') {
+      // 创建 approved 检查点并发出 SSE 事件
+      const checkpoint = await this.createCheckpoint({
+        executionId,
+        step,
+        checkpointType: 'post_execute',
+        status: 'approved',
+        approvalMode: 'auto',
+        stepOutput: JSON.stringify(result),
+        intervention: ruleResult.reason,
+        intervenedBy: 'auto_rule',
+      });
+
+      try {
+        const { getSSEService } = await import('@/lib/modules/realtime/sse.service');
+        getSSEService().broadcast('feedback', {
+          type: 'checkpoint.created',
+          data: {
+            checkpointId: checkpoint.id,
+            executionId,
+            stepId: step.id,
+            stepName: step.name,
+            checkpointType: 'post_execute',
+            reason: ruleResult.reason,
+          },
+        });
+      } catch {
+        // SSE service unavailable, silently continue
+      }
+
+      return {
+        action: 'proceed',
+        reason: ruleResult.reason,
+      };
+    }
+
     // 创建后置检查点
     await this.createCheckpoint({
       executionId,
@@ -195,12 +266,8 @@ export class FeedbackModule {
       stepOutput: JSON.stringify(result),
     });
 
-    // 简单质量评估
-    if (durationMs > 60000) {
-      return {
-        action: 'proceed',
-        reason: `步骤执行时间较长: ${(durationMs / 1000).toFixed(1)}s`,
-      };
+    if (ruleResult.action === 'skip') {
+      return { action: 'proceed', reason: ruleResult.reason };
     }
 
     return { action: 'proceed' };
@@ -245,12 +312,62 @@ export class FeedbackModule {
     step: WorkflowStep;
     context: WorkflowContext;
   }): Promise<SoloReflection> {
-    // Phase A: 简单自省逻辑
-    // Phase B: 通过 SOLO Bridge 调用 SOLO 进行深度自省
+    const { step, context, executionId } = params;
 
-    const { step, context } = params;
+    // 构建反思提示词
+    const reflectionPrompt = [
+      `You are performing a risk assessment for a workflow step.`,
+      `Step ID: ${step.id}`,
+      `Step Name: ${step.name}`,
+      `Step Type: ${step.type}`,
+      `Feedback Mode: ${step.config.feedbackMode ?? 'auto'}`,
+      `Context keys: ${Object.keys(context).join(', ')}`,
+      ``,
+      `Please assess the risk level of executing this step.`,
+      `Respond in JSON format with these fields:`,
+      `- riskLevel: "low", "medium", or "high"`,
+      `- confidence: a number between 0 and 1`,
+      `- reasoning: a brief explanation of your assessment`,
+    ].join('\n');
 
-    // 基于步骤类型和上下文的简单风险评估
+    // 尝试通过 SOLO Bridge 调用 SOLO 进行深度自省
+    try {
+      const soloResult = await this.soloBridge.call({
+        prompt: reflectionPrompt,
+        stepId: step.id,
+        executionId,
+        stepName: step.name,
+        callMode: step.soloCallMode,
+        subAgentType: step.soloSubAgent ?? 'explore',
+        context: { ...context, _reflection: true },
+        timeoutMs: 30000,
+      });
+
+      if (soloResult.success && soloResult.data) {
+        const data = typeof soloResult.data === 'string'
+          ? JSON.parse(soloResult.data)
+          : soloResult.data;
+
+        // 解析 SOLO 响应
+        const riskLevel = ['low', 'medium', 'high'].includes(data.riskLevel)
+          ? data.riskLevel as 'low' | 'medium' | 'high'
+          : 'low';
+        const confidence = typeof data.confidence === 'number'
+          ? Math.min(1, Math.max(0, data.confidence))
+          : 0.5;
+        const reasoning = typeof data.reasoning === 'string'
+          ? data.reasoning
+          : 'SOLO reflection completed';
+
+        return { riskLevel, confidence, reasoning };
+      }
+    } catch (error) {
+      this.logger?.warn('SOLO Bridge reflection failed, using fallback logic', {
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+
+    // 回退：简单自省逻辑
     let riskLevel: 'low' | 'medium' | 'high' = 'low';
     let confidence = 0.8;
 
@@ -267,7 +384,7 @@ export class FeedbackModule {
     return {
       riskLevel,
       confidence,
-      reasoning: `Step type "${step.type}" with mode "${step.config.feedbackMode ?? 'auto'}" assessed as ${riskLevel} risk`,
+      reasoning: `Step type "${step.type}" with mode "${step.config.feedbackMode ?? 'auto'}" assessed as ${riskLevel} risk (fallback)`,
     };
   }
 
@@ -340,7 +457,7 @@ export class FeedbackModule {
     intervention?: string;
     intervenedBy?: string;
   }) {
-    return this.prisma.feedbackCheckpoint.create({
+    const checkpoint = await this.prisma.feedbackCheckpoint.create({
       data: {
         executionId: params.executionId,
         stepId: params.step.id,
@@ -355,5 +472,32 @@ export class FeedbackModule {
         intervenedBy: params.intervenedBy,
       },
     });
+
+    // 广播 SSE 事件
+    try {
+      const sseService = getSSEService();
+      const eventType = params.checkpointType === 'pre_execute'
+        ? 'checkpoint.created'
+        : 'checkpoint.completed';
+
+      sseService.broadcast('feedback', {
+        type: eventType,
+        data: {
+          checkpointId: checkpoint.id,
+          executionId: params.executionId,
+          stepId: params.step.id,
+          stepName: params.step.name,
+          stepType: params.step.type,
+          checkpointType: params.checkpointType,
+          status: params.status,
+          approvalMode: params.approvalMode,
+          intervention: params.intervention,
+        },
+      });
+    } catch {
+      // SSE service unavailable, silently continue
+    }
+
+    return checkpoint;
   }
 }

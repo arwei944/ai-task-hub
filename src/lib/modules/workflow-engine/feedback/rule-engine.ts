@@ -111,6 +111,7 @@ export class FeedbackRuleEngine {
     context: WorkflowContext,
     durationMs: number,
     tokensUsed?: number,
+    errorMessage?: string,
   ): RuleEvaluationResult {
     let config: Record<string, unknown>;
     try {
@@ -164,6 +165,26 @@ export class FeedbackRuleEngine {
         }
         break;
       }
+
+      case 'error': {
+        const errorPatterns = config.errorPatterns as string[] | undefined;
+        if (errorPatterns && errorMessage) {
+          for (const pattern of errorPatterns) {
+            try {
+              const regex = new RegExp(pattern);
+              if (regex.test(errorMessage)) {
+                return {
+                  action: rule.action as RuleEvaluationResult['action'],
+                  reason: `Rule "${rule.name}" triggered: error message matched pattern "${pattern}"`,
+                };
+              }
+            } catch {
+              // Invalid regex pattern, skip
+            }
+          }
+        }
+        break;
+      }
     }
 
     return { action: 'proceed' };
@@ -178,6 +199,7 @@ export class FeedbackRuleEngine {
     executionId: string;
     durationMs: number;
     tokensUsed?: number;
+    errorMessage?: string;
   }): Promise<RuleEvaluationResult> {
     const rules = await this.prisma.feedbackRule.findMany({
       where: { isActive: true },
@@ -190,6 +212,7 @@ export class FeedbackRuleEngine {
         params.context,
         params.durationMs,
         params.tokensUsed,
+        params.errorMessage,
       );
       if (result.action !== 'proceed') {
         return result;

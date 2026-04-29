@@ -1,4 +1,5 @@
 import type { StepHandler, StepHandlerDeps } from '../types';
+import { getSSEService } from '@/lib/modules/realtime/sse.service';
 
 export class SendNotificationStep implements StepHandler {
   constructor(private deps: StepHandlerDeps) {}
@@ -14,8 +15,21 @@ export class SendNotificationStep implements StepHandler {
       return context[varName] !== undefined ? String(context[varName]) : '';
     });
 
+    const notification = { channel, title, message, level, sentAt: new Date().toISOString() };
+
+    // 通过 SSE 广播通知，使工作流通知实时可见
+    try {
+      const sseService = getSSEService();
+      sseService.broadcast('notifications', {
+        type: 'notification.new',
+        data: notification,
+      });
+    } catch {
+      // SSE service unavailable, silently continue
+    }
+
     return {
-      lastNotification: { channel, title, message, level, sentAt: new Date().toISOString() },
+      lastNotification: notification,
     };
   }
 }
