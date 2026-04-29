@@ -2,9 +2,9 @@
 
 import { useState } from 'react';
 import {
-  Brain, Github, ExternalLink, Layers, Zap, Shield, Puzzle,
+  Brain, ExternalLink, Layers, Zap, Shield, Puzzle,
   Bot, Globe, Database, Code2, Server, Cpu, ChevronDown, ChevronUp,
-  Heart, BookOpen, Rocket,
+  Heart, BookOpen, Rocket, GitFork,
 } from 'lucide-react';
 
 const VERSION = '1.4.0';
@@ -90,7 +90,7 @@ export default function AboutPage() {
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 px-4 py-2 bg-white/15 hover:bg-white/25 rounded-lg text-sm font-medium transition-colors backdrop-blur"
             >
-              <Github className="w-4 h-4" />
+              <GitFork className="w-4 h-4" />
               GitHub
               <ExternalLink className="w-3 h-3" />
             </a>
