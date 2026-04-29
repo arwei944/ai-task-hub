@@ -34,7 +34,7 @@ export default function HomePage() {
               AT
             </div>
             <h1 className="text-xl font-bold">AI Task Hub</h1>
-            <Badge variant="secondary">v1.0.1</Badge>
+            <Badge variant="secondary">v1.4.0</Badge>
           </div>
           <div className="flex items-center gap-3">
             <a
@@ -44,7 +44,7 @@ export default function HomePage() {
               登录
             </a>
           </div>
-          <Badge variant="outline">v1.0.1 - 全功能版本</Badge>
+          <Badge variant="outline">v1.4.0 - 全功能版本</Badge>
         </div>
       </header>
 
@@ -173,7 +173,7 @@ export default function HomePage() {
       {/* Footer */}
       <footer className="border-t mt-12">
         <div className="container mx-auto px-6 py-4 text-center text-sm text-muted-foreground">
-          AI Task Hub v1.0.1 · Modular Kernel Architecture · All Modules Complete
+          AI Task Hub v1.4.0 · Modular Kernel Architecture · All Modules Complete
         </div>
       </footer>
     </div>

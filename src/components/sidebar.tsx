@@ -19,6 +19,7 @@ import {
   ChevronRight,
   Brain,
   FolderKanban,
+  Info,
 } from 'lucide-react';
 import { ThemeToggle } from './theme-toggle';
 import { LanguageSwitcher } from './language-switcher';
@@ -45,6 +46,7 @@ const secondaryNavItems: NavItem[] = [
   { href: '/agent-workflows', label: 'Agent 工作流', icon: Workflow },
   { href: '/dashboard-settings', label: '仪表盘设置', icon: SlidersHorizontal },
   { href: '/api-docs', label: 'API 文档', icon: BookOpen },
+  { href: '/about', label: '关于', icon: Info },
   { href: '/settings', label: '设置', icon: Settings },
 ];
 

@@ -1,5 +1,24 @@
 # Changelog
 
+## [1.4.0] - 2026-04-29
+
+### ✨ 新功能
+
+- **关于页面** — 全新项目信息展示页
+  - 项目简介与核心特性展示
+  - 技术栈详情（Next.js 16 / tRPC v11 / Prisma 7 / React 19）
+  - 模块化架构说明（EventBus / DIContainer / ModuleRegistry）
+  - 版本历史与更新日志
+  - 开源协议与联系方式
+- **侧边栏导航** — 新增"关于"入口
+
+### 🔧 优化
+
+- **HF Spaces 持久化存储** — 数据库路径迁移到 /data（HF Bucket 挂载点）
+  - Dockerfile.hf / start.sh / entrypoint.sh 全部适配
+  - 启动时自动 prisma db push 确保表结构同步
+  - 容器重启后数据不再丢失
+
 ## [1.3.1] - 2026-04-28
 
 ### 🐛 修复
