@@ -109,6 +109,24 @@ model TaskHistory {
   @@index([createdAt])
 }
 
+// ==================== Workflow Trigger Log ====================
+
+model WorkflowTriggerLog {
+  id          String   @id @default(uuid())
+  workflowId  String
+  triggerType String   // manual | webhook | schedule | event | github-issue | approval
+  payload     String?  // JSON
+  success     Boolean  @default(true)
+  error       String?
+  createdAt   DateTime @default(now())
+
+  workflow    Workflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+
+  @@index([workflowId])
+  @@index([triggerType])
+  @@index([createdAt])
+}
+
 // ==================== Tag ====================
 
 model Tag {
@@ -428,6 +446,7 @@ model Workflow {
   timeoutMs         Int      @default(300000)
   soloConfig        String?  // JSON: SOLO 默认调用配置
   executions        WorkflowExecution[]
+  triggerLogs       WorkflowTriggerLog[]
   @@index([isActive])
   @@index([createdBy])
 }

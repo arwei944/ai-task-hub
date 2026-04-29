@@ -173,6 +173,14 @@ export interface StepHandler {
   execute(config: Record<string, unknown>, context: WorkflowContext): Promise<StepResult>;
 }
 
+/** 步骤处理器依赖注入 */
+export interface StepHandlerDeps {
+  prisma: any;
+  taskService: any;
+  soloBridge?: any;
+  executor?: any;
+}
+
 // ==================== Retry Policy ====================
 
 export interface RetryPolicy {

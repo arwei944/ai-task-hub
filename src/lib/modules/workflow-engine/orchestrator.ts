@@ -7,6 +7,7 @@ import type { FeedbackModule } from './feedback/feedback-module';
 import type { ConcurrencyController } from './concurrency';
 import type { Observability } from './observability';
 import type { WorkflowContextManager } from './context';
+import { WorkflowContextManager as WCM } from './context';
 import type { WorkflowExecutor } from './executor';
 import type { WorkflowStep, ExecutionStatus, RetryPolicy } from './types';
 
@@ -16,6 +17,7 @@ import type { WorkflowStep, ExecutionStatus, RetryPolicy } from './types';
  */
 export class WorkflowOrchestrator {
   private runningExecutions = new Map<string, boolean>();
+  private triggerDispatcher?: any;
 
   constructor(
     private prisma: PrismaClient,
@@ -125,6 +127,10 @@ export class WorkflowOrchestrator {
     return count;
   }
 
+  setTriggerDispatcher(dispatcher: any): void {
+    this.triggerDispatcher = dispatcher;
+  }
+
   /**
    * 内部：运行执行
    */
@@ -137,7 +143,7 @@ export class WorkflowOrchestrator {
     await this.concurrencyController.acquire();
 
     try {
-      const contextManager = new WorkflowContextManager(variables);
+      const contextManager = new WCM(variables);
       const isCancelled = () => !this.runningExecutions.get(executionId);
 
       // 设置超时

@@ -7,12 +7,7 @@ import { WaitStep } from './wait';
 import { ParallelGroupStep } from './parallel-group';
 import { ConditionStep } from './condition';
 
-export interface StepHandlerDeps {
-  prisma: any;
-  taskService: any;
-  soloBridge?: any;
-  executor?: any;
-}
+export type { StepHandlerDeps } from '../types';
 
 class StepRegistryClass {
   private factories = new Map<string, (deps: StepHandlerDeps) => StepHandler>();

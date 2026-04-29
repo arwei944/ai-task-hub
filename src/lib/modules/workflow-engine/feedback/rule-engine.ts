@@ -40,6 +40,7 @@ export class FeedbackRuleEngine {
    */
   private evaluateRule(
     rule: {
+      name: string;
       triggerType: string;
       triggerConfig: string;
       action: string;

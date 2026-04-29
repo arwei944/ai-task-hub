@@ -75,10 +75,8 @@ export const workflowsRouter = createTRPCRouter({
     )
     .mutation(async ({ input, ctx }) => {
       const service = getWorkflowService();
-      return service.createWorkflow({
-        ...input,
-        createdBy: ctx.user.id,
-      });
+      const dto = { ...input, createdBy: ctx.user.id };
+      return service.createWorkflow(dto as any);
     }),
 
   // Update workflow
@@ -110,7 +108,7 @@ export const workflowsRouter = createTRPCRouter({
     .mutation(async ({ input }) => {
       const service = getWorkflowService();
       const { id, ...dto } = input;
-      return service.updateWorkflow(id, dto);
+      return service.updateWorkflow(id, dto as any);
     }),
 
   // Delete workflow (admin only)
@@ -183,4 +181,11 @@ export const workflowsRouter = createTRPCRouter({
       const { workflowId, ...options } = input;
       return service.listExecutions(workflowId, options);
     }),
+
+  trigger: protectedProcedure.input(z.object({
+    workflowId: z.string(),
+  })).mutation(async ({ input, ctx }) => {
+    const service = getWorkflowService();
+    return service.runWorkflow(input.workflowId, ctx.user.id);
+  }),
 });

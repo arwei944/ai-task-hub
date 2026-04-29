@@ -318,7 +318,7 @@ function WorkflowsTab() {
         steps: validSteps.map((s) => ({
           id: s.id,
           name: s.name.trim(),
-          type: s.type,
+          type: s.type as 'create-task' | 'update-status' | 'ai-analyze' | 'send-notification' | 'wait' | 'parallel-group' | 'condition' | 'foreach' | 'invoke-agent' | 'http-request' | 'transform' | 'approval',
           config: {},
         })),
       });
