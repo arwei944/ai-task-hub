@@ -115,6 +115,38 @@ export interface SOLOCallRecord {
   completedAt?: Date;
 }
 
+// ==================== Observability Metrics ====================
+
+export interface StepMetricRecord {
+  id: string;
+  executionId: string;
+  stepId: string;
+  stepName: string;
+  stepType: string;
+  status: string;
+  durationMs: number;
+  tokensUsed?: number;
+  error?: string;
+  timestamp: Date;
+  retryCount?: number;
+}
+
+export interface ExecutionMetricRecord {
+  id: string;
+  executionId: string;
+  workflowId: string;
+  workflowName: string;
+  status: string;
+  triggerType: string;
+  totalSteps: number;
+  completedSteps: number;
+  failedSteps: number;
+  durationMs: number;
+  totalTokensUsed?: number;
+  startedAt: Date;
+  completedAt?: Date;
+}
+
 export interface SOLOBridgeConfig {
   defaultMode: SOLOCallMode;
   mcpEndpoint?: string;
