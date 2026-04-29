@@ -9,11 +9,27 @@ echo "ENV: PORT=$PORT"
 echo "CWD: $(pwd)"
 echo ""
 
+# Ensure persistent data directory exists
+mkdir -p /data
+
+# Initialize database if not exists
+if [ ! -f /data/dev.db ]; then
+  echo "Initializing database on persistent storage..."
+  node -e "
+    const Database = require('better-sqlite3');
+    const db = new Database('/data/dev.db');
+    db.close();
+    console.log('Database file created at /data/dev.db');
+  " 2>&1
+else
+  echo "Database found at /data/dev.db"
+fi
+
 # Verify critical files
 echo "Checking files..."
 test -f /app/node_modules/better-sqlite3/build/Release/better_sqlite3.node && echo "✓ better-sqlite3 OK" || echo "✗ better-sqlite3 MISSING"
 test -d /app/src/generated/prisma && echo "✓ Prisma client OK" || echo "✗ Prisma client MISSING"
-test -f /app/data/dev.db && echo "✓ Database OK" || echo "✗ Database MISSING"
+test -f /data/dev.db && echo "✓ Database OK" || echo "✗ Database MISSING"
 test -d /app/.next && echo "✓ Next.js build OK" || echo "✗ Next.js build MISSING"
 echo ""
 
@@ -22,7 +38,7 @@ echo "Testing database..."
 node -e "
 try {
   const Database = require('better-sqlite3');
-  const db = new Database('/app/data/dev.db');
+  const db = new Database('/data/dev.db');
   const tables = db.prepare(\"SELECT name FROM sqlite_master WHERE type='table'\").all();
   console.log('✓ DB connected, tables:', tables.map(t => t.name).join(', '));
   db.close();
