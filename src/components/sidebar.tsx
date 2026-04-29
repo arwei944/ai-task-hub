@@ -22,6 +22,7 @@ import {
   Info,
   MessageSquare,
   GitBranch,
+  Activity,
 } from 'lucide-react';
 import { ThemeToggle } from './theme-toggle';
 import { LanguageSwitcher } from './language-switcher';
@@ -37,6 +38,7 @@ const mainNavItems: NavItem[] = [
   { href: '/dashboard', label: '仪表盘', icon: LayoutDashboard },
   { href: '/feedback', label: '反馈中心', icon: MessageSquare },
   { href: '/workflows', label: '工作流管理', icon: GitBranch },
+  { href: '/observability', label: '可观测性', icon: Activity },
   { href: '/tasks', label: '任务', icon: CheckSquare },
   { href: '/agents', label: '智能体', icon: Bot },
   { href: '/workspaces', label: '工作区', icon: Building2 },

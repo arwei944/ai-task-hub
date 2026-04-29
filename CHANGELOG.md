@@ -1,5 +1,49 @@
 # Changelog
 
+## [1.8.0] - 2026-04-29
+
+### 🚀 Phase C: 智能化 — 策略即代码 + 可观测性 + 反馈闭环
+
+#### 策略即代码 (C-1)
+- **WORKFLOW.md 解析器** — 从 Markdown 文件解析工作流定义为 CreateWorkflowDTO
+- **工作流验证器** — 验证 DTO 完整性：步骤类型、重试策略、并发限制、循环引用检测
+
+#### 工作空间隔离 (C-2)
+- **IsolationLevel** — 三级隔离：none / context / full
+- **WorkspaceManager** — 创建/获取/销毁隔离工作区，per-workspace 上下文隔离
+- **IsolatedContextWrapper** — context 级别读写隔离，向后兼容
+
+#### 可观测性层 (C-3)
+- **内存指标存储** — stepMetrics / soloCallHistory / executionHistory（上限 10000 条）
+- **查询方法** — getStepMetrics / getSOLOCallHistory / getExecutionMetrics
+- **统计方法** — getWorkflowStats / getGlobalStats
+- **执行生命周期** — recordExecutionStart / recordExecutionEnd
+
+#### 并发控制器 (C-4)
+- **Per-workflow 并发限制** — 每个工作流独立计数
+- **优先级队列** — 0-5 优先级，高优先级先出队
+- **获取超时** — 可选 timeoutMs，超时自动清理
+
+#### 反馈驱动改进闭环 (C-5)
+- **ImprovementLoop** — SOLO 自动分析反馈数据并生成优化建议
+- **analyzeFeedbackPatterns** — 分析审批率/拒绝率/失败率/错误模式
+- **generateRecommendations** — SOLO 驱动的 6 种改进建议类型
+- **applyRecommendation** — 自动创建 FeedbackRule
+- **runImprovementCycle** — 完整分析→建议→应用管线
+
+#### 标准模块注册 (C-7)
+- **WorkflowEngineModule** — 实现 Module 接口，locked=true
+- 12 个服务注册到 DI 容器
+- 依赖 task-core 模块
+
+#### 可观测性前端面板 (C-6)
+- **/observability 页面** — 4 统计卡片 + 3 Tab 视图
+- 最近执行 / 步骤性能 / SOLO 调用历史表格
+- tRPC 4 个查询过程（mock 数据）
+- 侧边栏新增"可观测性"入口
+
+---
+
 ## [1.7.0] - 2026-04-29
 
 ### 🚀 Phase B: 触发器系统 + 高级步骤 + 通知集成
