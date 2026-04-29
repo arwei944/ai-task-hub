@@ -45,6 +45,9 @@ export type FeedbackAction = 'proceed' | 'block' | 'notify' | 'skip' | 'retry' |
 /** 工作流执行状态 */
 export type ExecutionStatus = 'pending' | 'running' | 'completed' | 'failed' | 'cancelled';
 
+/** 工作区隔离级别 */
+export type IsolationLevel = 'none' | 'context' | 'full';
+
 /** 步骤执行状态 */
 export type StepExecutionStatus = 'pending' | 'running' | 'completed' | 'failed' | 'skipped' | 'cancelled';
 
