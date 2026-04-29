@@ -11,9 +11,7 @@ import { Logger } from '@/lib/core/logger';
 import { PrismaClient } from '@/generated/prisma/client';
 import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
 
-// Lazy-initialized service (for server-side only)
 let _workflowService: WorkflowService | null = null;
-
 function getWorkflowService(): WorkflowService {
   if (_workflowService) return _workflowService;
   const dbPath = process.env.DATABASE_URL?.replace(/^file:/, '') ?? './prisma/dev.db';
@@ -31,122 +29,33 @@ function getWorkflowService(): WorkflowService {
 }
 
 const stepSchema = z.object({
-  id: z.string(),
-  name: z.string(),
-  type: z.enum(['create-task', 'update-status', 'ai-analyze', 'send-notification', 'wait']),
+  id: z.string(), name: z.string(),
+  type: z.enum(['create-task', 'update-status', 'ai-analyze', 'send-notification', 'wait', 'parallel-group', 'condition', 'foreach', 'invoke-agent', 'http-request', 'transform', 'approval']),
   config: z.record(z.string(), z.unknown()),
   onError: z.enum(['continue', 'fail']).optional(),
+  feedbackMode: z.enum(['auto', 'notify', 'block', 'smart']).optional(),
+  soloSubAgent: z.enum(['explore', 'plan', 'general_purpose']).optional(),
+  soloCallMode: z.enum(['mcp', 'rest', 'pull']).optional(),
+  timeoutMs: z.number().optional(),
+  condition: z.object({ expression: z.string(), thenSteps: z.array(z.any()).optional(), elseSteps: z.array(z.any()).optional() }).optional(),
+  steps: z.array(z.any()).optional(),
+});
+
+const workflowConfigSchema = z.object({
+  retryPolicy: z.object({ max: z.number(), backoff: z.enum(['fixed', 'exponential', 'linear']), delayMs: z.number() }).optional(),
+  concurrencyLimit: z.number().min(1).max(20).optional(),
+  timeoutMs: z.number().optional(),
+  soloConfig: z.object({ defaultMode: z.enum(['mcp', 'rest', 'pull']).optional(), defaultSubAgent: z.enum(['explore', 'plan', 'general_purpose']).optional(), defaultTimeoutMs: z.number().optional() }).optional(),
 });
 
 export const workflowsRouter = createTRPCRouter({
-  // Create workflow
-  create: protectedProcedure
-    .input(
-      z.object({
-        name: z.string().min(1),
-        description: z.string().optional(),
-        trigger: z.string().optional(),
-        triggerConfig: z.string().optional(),
-        steps: z.array(stepSchema).min(1),
-        variables: z.record(z.string(), z.unknown()).optional(),
-      }),
-    )
-    .mutation(async ({ input, ctx }) => {
-      const service = getWorkflowService();
-      return service.createWorkflow({
-        ...input,
-        createdBy: ctx.user.id,
-      });
-    }),
-
-  // Update workflow
-  update: protectedProcedure
-    .input(
-      z.object({
-        id: z.string(),
-        name: z.string().optional(),
-        description: z.string().optional(),
-        trigger: z.string().optional(),
-        triggerConfig: z.string().optional(),
-        steps: z.array(stepSchema).optional(),
-        variables: z.record(z.string(), z.unknown()).optional(),
-        isActive: z.boolean().optional(),
-      }),
-    )
-    .mutation(async ({ input }) => {
-      const service = getWorkflowService();
-      const { id, ...dto } = input;
-      return service.updateWorkflow(id, dto);
-    }),
-
-  // Delete workflow (admin only)
-  delete: adminProcedure
-    .input(z.object({ id: z.string() }))
-    .mutation(async ({ input }) => {
-      const service = getWorkflowService();
-      return service.deleteWorkflow(input.id);
-    }),
-
-  // Get single workflow
-  get: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .query(async ({ input }) => {
-      const service = getWorkflowService();
-      return service.getWorkflow(input.id);
-    }),
-
-  // List workflows
-  list: protectedProcedure
-    .input(
-      z.object({
-        page: z.number().min(1).optional(),
-        pageSize: z.number().min(1).max(100).optional(),
-        isActive: z.boolean().optional(),
-        createdBy: z.string().optional(),
-      }),
-    )
-    .query(async ({ input }) => {
-      const service = getWorkflowService();
-      return service.listWorkflows(input);
-    }),
-
-  // Trigger workflow execution
-  run: protectedProcedure
-    .input(z.object({ workflowId: z.string() }))
-    .mutation(async ({ input, ctx }) => {
-      const service = getWorkflowService();
-      return service.runWorkflow(input.workflowId, ctx.user.id);
-    }),
-
-  // Cancel execution
-  cancel: protectedProcedure
-    .input(z.object({ executionId: z.string() }))
-    .mutation(async ({ input }) => {
-      const service = getWorkflowService();
-      return service.cancelExecution(input.executionId);
-    }),
-
-  // Get execution details
-  getExecution: protectedProcedure
-    .input(z.object({ executionId: z.string() }))
-    .query(async ({ input }) => {
-      const service = getWorkflowService();
-      return service.getExecution(input.executionId);
-    }),
-
-  // List executions for a workflow
-  listExecutions: protectedProcedure
-    .input(
-      z.object({
-        workflowId: z.string(),
-        page: z.number().min(1).optional(),
-        pageSize: z.number().min(1).max(100).optional(),
-        status: z.string().optional(),
-      }),
-    )
-    .query(async ({ input }) => {
-      const service = getWorkflowService();
-      const { workflowId, ...options } = input;
-      return service.listExecutions(workflowId, options);
-    }),
+  create: protectedProcedure.input(z.object({ name: z.string().min(1), description: z.string().optional(), trigger: z.string().optional(), triggerConfig: z.string().optional(), steps: z.array(stepSchema).min(1), variables: z.record(z.string(), z.unknown()).optional() }).merge(workflowConfigSchema)).mutation(async ({ input, ctx }) => { const service = getWorkflowService(); return service.createWorkflow({ ...input, createdBy: ctx.user.id }); }),
+  update: protectedProcedure.input(z.object({ id: z.string(), name: z.string().optional(), description: z.string().optional(), trigger: z.string().optional(), triggerConfig: z.string().optional(), steps: z.array(stepSchema).optional(), variables: z.record(z.string(), z.unknown()).optional(), isActive: z.boolean().optional() }).merge(workflowConfigSchema)).mutation(async ({ input }) => { const service = getWorkflowService(); const { id, ...dto } = input; return service.updateWorkflow(id, dto); }),
+  delete: adminProcedure.input(z.object({ id: z.string() })).mutation(async ({ input }) => { const service = getWorkflowService(); return service.deleteWorkflow(input.id); }),
+  get: protectedProcedure.input(z.object({ id: z.string() })).query(async ({ input }) => { const service = getWorkflowService(); return service.getWorkflow(input.id); }),
+  list: protectedProcedure.input(z.object({ page: z.number().min(1).optional(), pageSize: z.number().min(1).max(100).optional(), isActive: z.boolean().optional(), createdBy: z.string().optional() })).query(async ({ input }) => { const service = getWorkflowService(); return service.listWorkflows(input); }),
+  run: protectedProcedure.input(z.object({ workflowId: z.string() })).mutation(async ({ input, ctx }) => { const service = getWorkflowService(); return service.runWorkflow(input.workflowId, ctx.user.id); }),
+  cancel: protectedProcedure.input(z.object({ executionId: z.string() })).mutation(async ({ input }) => { const service = getWorkflowService(); return service.cancelExecution(input.executionId); }),
+  getExecution: protectedProcedure.input(z.object({ executionId: z.string() })).query(async ({ input }) => { const service = getWorkflowService(); return service.getExecution(input.executionId); }),
+  listExecutions: protectedProcedure.input(z.object({ workflowId: z.string(), page: z.number().min(1).optional(), pageSize: z.number().min(1).max(100).optional(), status: z.string().optional() })).query(async ({ input }) => { const service = getWorkflowService(); const { workflowId, ...options } = input; return service.listExecutions(workflowId, options); }),
 });
