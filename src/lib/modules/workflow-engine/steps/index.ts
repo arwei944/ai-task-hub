@@ -14,25 +14,13 @@ export type { StepHandlerDeps } from '../types';
 
 class StepRegistryClass {
   private factories = new Map<string, (deps: StepHandlerDeps) => StepHandler>();
-
-  register(type: string, factory: (deps: StepHandlerDeps) => StepHandler): void {
-    this.factories.set(type, factory);
-  }
-
-  getHandler(type: string, deps: StepHandlerDeps): StepHandler | undefined {
-    const factory = this.factories.get(type);
-    if (!factory) return undefined;
-    return factory(deps);
-  }
-
-  getRegisteredTypes(): string[] {
-    return Array.from(this.factories.keys());
-  }
+  register(type: string, factory: (deps: StepHandlerDeps) => StepHandler): void { this.factories.set(type, factory); }
+  getHandler(type: string, deps: StepHandlerDeps): StepHandler | undefined { const factory = this.factories.get(type); if (!factory) return undefined; return factory(deps); }
+  getRegisteredTypes(): string[] { return Array.from(this.factories.keys()); }
 }
 
 export const StepRegistry = new StepRegistryClass();
 
-// Register built-in step handlers
 StepRegistry.register('create-task', (deps) => new CreateTaskStep(deps));
 StepRegistry.register('update-status', (deps) => new UpdateStatusStep(deps));
 StepRegistry.register('ai-analyze', (deps) => new AIAnalyzeStep(deps));
@@ -44,12 +32,5 @@ StepRegistry.register('invoke-agent', (deps) => new InvokeAgentStep(deps));
 StepRegistry.register('foreach', (deps) => new ForEachStep(deps));
 StepRegistry.register('approval', (deps) => new ApprovalStep(deps));
 
-// Placeholder step types for Phase B/C
 const placeholderTypes = ['http-request', 'transform'];
-for (const type of placeholderTypes) {
-  StepRegistry.register(type, () => ({
-    async execute() {
-      throw new Error(`Step type "${type}" is not yet implemented (planned for Phase B/C)`);
-    },
-  }));
-}
+for (const type of placeholderTypes) { StepRegistry.register(type, () => ({ async execute() { throw new Error(`Step type "${type}" is not yet implemented`); } })); }
