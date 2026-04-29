@@ -13,10 +13,18 @@ import { workflowsRouter } from './workflows-router';
 import { feedbackRouter } from './feedback-router';
 
 export const appRouter = createTRPCRouter({
-  auth: authRouter, tasks: tasksRouter, ai: aiRouter, agents: agentsRouter,
-  integrations: integrationsRouter, notifications: notificationsRouter, updater: updaterRouter,
-  stats: statsRouter, plugins: pluginsRouter, workspaces: workspacesRouter,
-  workflows: workflowsRouter, feedback: feedbackRouter,
+  auth: authRouter,
+  tasks: tasksRouter,
+  ai: aiRouter,
+  agents: agentsRouter,
+  integrations: integrationsRouter,
+  notifications: notificationsRouter,
+  updater: updaterRouter,
+  stats: statsRouter,
+  plugins: pluginsRouter,
+  workspaces: workspacesRouter,
+  workflows: workflowsRouter,
+  feedback: feedbackRouter,
 });
 
 export type AppRouter = typeof appRouter;
