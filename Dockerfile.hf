@@ -10,7 +10,7 @@ RUN apk add --no-cache libc6-compat python3 make g++ wget
 
 WORKDIR /app
 
-ENV DATABASE_URL=file:/app/data/dev.db
+ENV DATABASE_URL=file:/data/dev.db
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
 ENV PORT=7860
@@ -26,9 +26,9 @@ RUN test -f node_modules/better-sqlite3/build/Release/better_sqlite3.node || (ec
 
 # Generate Prisma + init DB
 RUN npx prisma generate && \
-    mkdir -p /app/data && \
+    mkdir -p /data && \
     npx prisma db push --accept-data-loss 2>&1 && \
-    test -f /app/data/dev.db || (echo "FATAL: DB creation failed" && exit 1)
+    test -f /data/dev.db || (echo "FATAL: DB creation failed" && exit 1)
 
 # Build Next.js
 RUN npx next build
