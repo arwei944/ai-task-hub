@@ -25,14 +25,17 @@ export const feedbackRouter = createTRPCRouter({
       const where: Record<string, unknown> = {};
       if (input?.status) where.status = input.status;
       if (input?.executionId) where.executionId = input.executionId;
+
       const [items, total] = await Promise.all([
         prisma.feedbackCheckpoint.findMany({
-          where, orderBy: { createdAt: 'desc' },
+          where,
+          orderBy: { createdAt: 'desc' },
           skip: ((input?.page ?? 1) - 1) * (input?.pageSize ?? 20),
           take: input?.pageSize ?? 20,
         }),
         prisma.feedbackCheckpoint.count({ where }),
       ]);
+
       return { items, total, page: input?.page ?? 1, pageSize: input?.pageSize ?? 20 };
     }),
 
@@ -49,8 +52,12 @@ export const feedbackRouter = createTRPCRouter({
       return prisma.feedbackCheckpoint.update({
         where: { id: input.checkpointId },
         data: {
-          status: input.action, intervenedBy: 'user', intervention: input.intervention,
-          rating: input.rating, feedback: input.feedback, resolvedAt: new Date(),
+          status: input.action,
+          intervenedBy: 'user',
+          intervention: input.intervention,
+          rating: input.rating,
+          feedback: input.feedback,
+          resolvedAt: new Date(),
         },
       });
     }),
@@ -62,9 +69,13 @@ export const feedbackRouter = createTRPCRouter({
 
   createRule: adminProcedure
     .input(z.object({
-      name: z.string().min(1), triggerType: z.string(), triggerConfig: z.string(),
-      action: z.string(), actionConfig: z.string().optional(),
-      scopeWorkflowId: z.string().optional(), scopeStepType: z.string().optional(),
+      name: z.string().min(1),
+      triggerType: z.string(),
+      triggerConfig: z.string(),
+      action: z.string(),
+      actionConfig: z.string().optional(),
+      scopeWorkflowId: z.string().optional(),
+      scopeStepType: z.string().optional(),
     }))
     .mutation(async ({ input }) => {
       const prisma = getPrisma();

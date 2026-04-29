@@ -7,45 +7,51 @@ datasource db {
   provider = "sqlite"
 }
 
+// ==================== User ====================
+
 model User {
   id            String   @id @default(uuid())
   username      String   @unique
   email         String   @unique
   passwordHash  String
   displayName   String?
-  role          String   @default("user")
+  role          String   @default("user") // admin, user, agent
   avatar        String?
   isActive      Boolean  @default(true)
   lastLoginAt   DateTime?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+
   @@index([username])
   @@index([email])
   @@index([role])
   @@index([isActive])
 }
 
+// ==================== Task ====================
+
 model Task {
   id          String   @id @default(uuid())
   title       String
   description String?
-  status      String   @default("todo")
-  priority    String   @default("medium")
-  progress    Int      @default(0)
+  status      String   @default("todo") // todo, in_progress, done, closed, deleted
+  priority    String   @default("medium") // urgent, high, medium, low
+  progress    Int      @default(0) // 0-100
   type        String   @default("general")
-  phase       String   @default("implementation")
-  source      String   @default("manual")
+  phase       String   @default("implementation") // requirements, planning, architecture, implementation, testing, deployment, review
+  source      String   @default("manual") // trae, cursor, windsurf, manual, ai, import, mcp
   sourceRef   String?
   assignee    String?
-  creator     String?
+  creator     String?  // agentId or userId
   parentTaskId String?
-  projectId   String?
+  projectId   String?  // 所属项目
   dueDate     DateTime?
   startedAt   DateTime?
   completedAt DateTime?
-  metadata    String?
+  metadata    String? // JSON string
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
   project      Project?           @relation(fields: [projectId], references: [id], onDelete: SetNull)
   parentTask   Task?              @relation("SubTasks", fields: [parentTaskId], references: [id])
   subTasks     Task[]             @relation("SubTasks")
@@ -54,59 +60,101 @@ model Task {
   history      TaskHistory[]
   tags         TaskTag[]
   activities   ActivityLog[]
-  @@index([status]) @@index([priority]) @@index([type]) @@index([creator]) @@index([parentTaskId]) @@index([dueDate]) @@index([createdAt]) @@index([status, createdAt]) @@index([status, priority]) @@index([assignee, status]) @@index([projectId]) @@index([phase]) @@index([source])
+
+  @@index([status])
+  @@index([priority])
+  @@index([type])
+  @@index([creator])
+  @@index([parentTaskId])
+  @@index([dueDate])
+  @@index([createdAt])
+  @@index([status, createdAt])
+  @@index([status, priority])
+  @@index([assignee, status])
+  @@index([projectId])
+  @@index([phase])
+  @@index([source])
 }
+
+// ==================== Task Dependency ====================
 
 model TaskDependency {
   id          String @id @default(uuid())
   taskId      String
   dependsOnId String
   createdAt   DateTime @default(now())
+
   task      Task @relation("TaskDependsOn", fields: [taskId], references: [id])
   dependsOn Task @relation("TaskDependentOf", fields: [dependsOnId], references: [id])
-  @@unique([taskId, dependsOnId]) @@index([taskId]) @@index([dependsOnId])
+
+  @@unique([taskId, dependsOnId])
+  @@index([taskId])
+  @@index([dependsOnId])
 }
+
+// ==================== Task History ====================
 
 model TaskHistory {
   id        String   @id @default(uuid())
   taskId    String
-  field     String
+  field     String   // status, priority, progress, title, description, etc.
   oldValue  String?
   newValue  String?
-  actor     String?
+  actor     String?  // user or agent id
   createdAt DateTime @default(now())
+
   task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
-  @@index([taskId]) @@index([createdAt])
+
+  @@index([taskId])
+  @@index([createdAt])
 }
+
+// ==================== Workflow Trigger Log ====================
 
 model WorkflowTriggerLog {
   id          String   @id @default(uuid())
   workflowId  String
-  triggerType String
-  payload     String?
+  triggerType String   // manual | webhook | schedule | event | github-issue | approval
+  payload     String?  // JSON
   success     Boolean  @default(true)
   error       String?
   createdAt   DateTime @default(now())
+
   workflow    Workflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
-  @@index([workflowId]) @@index([triggerType]) @@index([createdAt])
+
+  @@index([workflowId])
+  @@index([triggerType])
+  @@index([createdAt])
 }
+
+// ==================== Tag ====================
 
 model Tag {
   id     String @id @default(uuid())
   name   String @unique
   color  String @default("#6B7280")
   createdAt DateTime @default(now())
+
   tasks TaskTag[]
+
   @@index([name])
 }
+
+// ==================== Task Tag ====================
 
 model TaskTag {
   taskId String
   tagId  String
+
   task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
   tag  Tag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
-  @@id([taskId, tagId]) @@index([taskId]) @@index([tagId])
+
+  @@id([taskId, tagId])
+  @@index([taskId])
+  @@index([tagId])
 }
+
+// ==================== AI Audit Log ====================
 
 model AIAuditLog {
   id         String   @id @default(uuid())
@@ -119,108 +167,154 @@ model AIAuditLog {
   success    Boolean
   error      String?
   createdAt  DateTime @default(now())
-  @@index([processor]) @@index([createdAt])
+
+  @@index([processor])
+  @@index([createdAt])
 }
+
+// ==================== Agent ====================
 
 model Agent {
   id          String   @id @default(uuid())
   name        String
   description String?
   apiKey      String   @unique
-  clientType  String   @default("mcp")
-  clientVersion String?
-  capabilities String?
-  permissionLevel String @default("agent")
+  clientType  String   @default("mcp") // trae, cursor, windsurf, vscode, claude, chatgpt, mcp, api
+  clientVersion String? // e.g., "Trae 1.2.0"
+  capabilities String? // JSON string: ["task_crud", "ai_extract", ...]
+  permissionLevel String @default("agent") // "user" (最高权限) | "agent" (创建者隔离+全局只读)
   isActive    Boolean  @default(true)
   lastSeenAt  DateTime?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
   operations  AgentOperation[]
   projects    Project[]
   activities   ActivityLog[]
-  @@index([apiKey]) @@index([isActive]) @@index([clientType]) @@index([createdAt])
+
+  @@index([apiKey])
+  @@index([isActive])
+  @@index([clientType])
+  @@index([createdAt])
 }
+
+// ==================== Agent Operation ====================
 
 model AgentOperation {
   id        String   @id @default(uuid())
   agentId   String
-  action    String
-  target    String?
-  details   String?
+  action    String   // create_task, update_task, delete_task, extract_tasks, etc.
+  target    String?  // task ID or other resource identifier
+  details   String?  // JSON string with operation details
   success   Boolean  @default(true)
   error     String?
   createdAt DateTime @default(now())
+
   agent Agent @relation(fields: [agentId], references: [id], onDelete: Cascade)
-  @@index([agentId]) @@index([action]) @@index([createdAt])
+
+  @@index([agentId])
+  @@index([action])
+  @@index([createdAt])
 }
+
+// ==================== Integration ====================
 
 model Integration {
   id          String   @id @default(uuid())
-  type        String
+  type        String   // github, feishu, notion, webhook
   name        String
   description String?
-  config      String
+  config      String   // JSON string with platform-specific config (tokens, URLs, etc.)
   isActive    Boolean  @default(true)
   lastSyncAt  DateTime?
-  syncStatus  String   @default("idle")
+  syncStatus  String   @default("idle") // idle, syncing, error
   lastError   String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
   webhooks    Webhook[]
-  @@index([type]) @@index([isActive]) @@index([createdAt])
+
+  @@index([type])
+  @@index([isActive])
+  @@index([createdAt])
 }
+
+// ==================== Webhook ====================
 
 model Webhook {
   id            String   @id @default(uuid())
   integrationId String?
   name          String
-  url           String
-  secret        String?
-  events        String?
+  url           String   // External URL to receive webhooks
+  secret        String?  // HMAC secret for verification
+  events        String?  // JSON string: ["push", "issues", ...]
   isActive      Boolean  @default(true)
   lastTriggered DateTime?
   triggerCount  Int      @default(0)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+
   integration Integration? @relation(fields: [integrationId], references: [id], onDelete: SetNull)
-  @@index([integrationId]) @@index([isActive]) @@index([createdAt])
+
+  @@index([integrationId])
+  @@index([isActive])
+  @@index([createdAt])
 }
+
+// ==================== Notification ====================
 
 model Notification {
   id          String   @id @default(uuid())
-  type        String
+  type        String   // task_created, task_overdue, task_status_changed, agent_operation, etc.
   title       String
   message     String
-  level       String   @default("info")
-  channel     String   @default("system")
+  level       String   @default("info") // info, warning, error, success
+  channel     String   @default("system") // system, webhook, browser_push, email, telegram, wechat
   isRead      Boolean  @default(false)
-  metadata    String?
+  metadata    String?  // JSON string with additional context
   createdAt   DateTime @default(now())
-  @@index([type]) @@index([isRead]) @@index([createdAt]) @@index([level])
+
+  @@index([type])
+  @@index([isRead])
+  @@index([createdAt])
+  @@index([level])
 }
+
+// ==================== App Version ====================
 
 model AppVersion {
   id          String   @id @default(uuid())
-  version     String   @unique
-  channel     String   @default("stable")
-  releaseNotes String?
-  checksum    String?
+  version     String   @unique // e.g., "1.2.3"
+  channel     String   @default("stable") // stable, beta, canary
+  releaseNotes String? // Markdown changelog
+  checksum    String?  // SHA256 for integrity check
   isCurrent   Boolean  @default(false)
   publishedAt DateTime @default(now())
-  @@index([channel]) @@index([isCurrent]) @@index([publishedAt])
+
+  @@index([channel])
+  @@index([isCurrent])
+  @@index([publishedAt])
 }
+
+// ==================== Module Version ====================
 
 model ModuleVersion {
   id          String   @id @default(uuid())
-  moduleId    String
-  version     String
-  previousVersion String?
-  changelog   String?
-  status      String   @default("active")
-  configSnapshot String?
+  moduleId    String   // e.g., "integration-telegram"
+  version     String   // e.g., "1.2.0"
+  previousVersion String? // Previous version for rollback
+  changelog   String?  // What changed
+  status      String   @default("active") // active, rollback, archived
+  configSnapshot String? // JSON: module config at this version
   deployedAt  DateTime @default(now())
-  @@index([moduleId]) @@index([version]) @@index([status]) @@index([deployedAt])
+
+  @@index([moduleId])
+  @@index([version])
+  @@index([status])
+  @@index([deployedAt])
 }
+
+// ==================== Plugin ====================
 
 model Plugin {
   id          String   @id @default(uuid())
@@ -231,14 +325,18 @@ model Plugin {
   author      String?
   homepage    String?
   license     String?
-  entryPoint  String
-  config      String?
+  entryPoint  String   // Plugin entry file path or module identifier
+  config      String?  // JSON: plugin configuration
   isEnabled   Boolean  @default(true)
-  settings    String?
+  settings    String?  // JSON: user-customizable settings
   installedAt DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  @@index([name]) @@index([isEnabled])
+
+  @@index([name])
+  @@index([isEnabled])
 }
+
+// ==================== Workspace ====================
 
 model Workspace {
   id          String   @id @default(uuid())
@@ -246,63 +344,90 @@ model Workspace {
   description String?
   slug        String   @unique
   icon        String?
-  owner       String
-  settings    String?
+  owner       String   // User ID
+  settings    String?  // JSON: workspace settings
   isDefault   Boolean  @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
   members     WorkspaceMember[]
-  @@index([owner]) @@index([slug])
+
+  @@index([owner])
+  @@index([slug])
 }
 
 model WorkspaceMember {
   id          String   @id @default(uuid())
   workspaceId String
   userId      String
-  role        String   @default("member")
+  role        String   @default("member") // owner, admin, member, viewer
   joinedAt    DateTime @default(now())
+
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  @@unique([workspaceId, userId]) @@index([workspaceId]) @@index([userId])
+
+  @@unique([workspaceId, userId])
+  @@index([workspaceId])
+  @@index([userId])
 }
+
+// ==================== Project ====================
 
 model Project {
   id          String   @id @default(uuid())
   name        String
   description String?
-  status      String   @default("active")
-  phase       String   @default("requirements")
-  priority    String   @default("medium")
-  techStack   String?
-  repository  String?
-  creatorId   String?
-  creatorType String   @default("agent")
-  metadata    String?
+  status      String   @default("active") // active, completed, archived, paused
+  phase       String   @default("requirements") // requirements, planning, architecture, implementation, testing, deployment, completed
+  priority    String   @default("medium") // urgent, high, medium, low
+  techStack   String?  // JSON: ["Next.js", "Prisma", "tRPC"]
+  repository  String?  // GitHub/GitLab URL
+  creatorId   String?  // Agent ID or User ID
+  creatorType String   @default("agent") // agent, user
+  metadata    String?  // JSON: project settings, config, etc.
   startedAt   DateTime?
   completedAt DateTime?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
   tasks       Task[]
   activities  ActivityLog[]
   creator     Agent?  @relation(fields: [creatorId], references: [id], onDelete: SetNull)
-  @@index([status]) @@index([phase]) @@index([priority]) @@index([creatorId]) @@index([createdAt])
+
+  @@index([status])
+  @@index([phase])
+  @@index([priority])
+  @@index([creatorId])
+  @@index([createdAt])
 }
+
+// ==================== Activity Log ====================
+// Records every action by agents/users - the timeline of the project
 
 model ActivityLog {
   id          String   @id @default(uuid())
   projectId   String?
   taskId      String?
   agentId     String?
-  action      String
-  phase       String?
-  title       String
-  details     String?
-  metadata    String?
+  action      String   // project_created, task_created, task_updated, phase_changed, requirement_added, architecture_chosen, code_committed, etc.
+  phase       String?  // requirements, planning, architecture, implementation, testing, deployment
+  title       String   // Human-readable summary
+  details     String?  // JSON: full context of the action
+  metadata    String?  // JSON: extra data (diff, file list, etc.)
   createdAt   DateTime @default(now())
+
   project     Project?  @relation(fields: [projectId], references: [id], onDelete: SetNull)
   task        Task?     @relation(fields: [taskId], references: [id], onDelete: SetNull)
   agent       Agent?    @relation(fields: [agentId], references: [id], onDelete: SetNull)
-  @@index([projectId]) @@index([taskId]) @@index([agentId]) @@index([action]) @@index([phase]) @@index([createdAt])
+
+  @@index([projectId])
+  @@index([taskId])
+  @@index([agentId])
+  @@index([action])
+  @@index([phase])
+  @@index([createdAt])
 }
+
+// ==================== Workflow ====================
 
 model Workflow {
   id            String   @id @default(uuid())
@@ -316,13 +441,14 @@ model Workflow {
   createdBy     String?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
-  retryPolicy       String?
+  retryPolicy       String?  // JSON: { max: 3, backoff: "exponential", delayMs: 1000 }
   concurrencyLimit  Int      @default(5)
   timeoutMs         Int      @default(300000)
-  soloConfig        String?
+  soloConfig        String?  // JSON: SOLO 默认调用配置
   executions        WorkflowExecution[]
   triggerLogs       WorkflowTriggerLog[]
-  @@index([isActive]) @@index([createdBy])
+  @@index([isActive])
+  @@index([createdBy])
 }
 
 model WorkflowExecution {
@@ -342,7 +468,9 @@ model WorkflowExecution {
   workflow         Workflow  @relation(fields: [workflowId], references: [id], onDelete: Cascade)
   stepExecutions     WorkflowStepExecution[]
   feedbackCheckpoints FeedbackCheckpoint[]
-  @@index([workflowId]) @@index([status]) @@index([createdAt])
+  @@index([workflowId])
+  @@index([status])
+  @@index([createdAt])
 }
 
 model WorkflowStepExecution {
@@ -366,8 +494,11 @@ model WorkflowStepExecution {
   soloSubAgent      String?
   createdAt   DateTime @default(now())
   execution   WorkflowExecution @relation(fields: [executionId], references: [id], onDelete: Cascade)
-  @@index([executionId]) @@index([status])
+  @@index([executionId])
+  @@index([status])
 }
+
+// ==================== Feedback Checkpoint ====================
 
 model FeedbackCheckpoint {
   id              String   @id @default(uuid())
@@ -375,47 +506,63 @@ model FeedbackCheckpoint {
   stepId          String
   stepName        String
   stepType        String
-  checkpointType  String   @default("pre_execute")
-  status          String   @default("pending")
-  approvalMode    String   @default("auto")
+  checkpointType  String   @default("pre_execute") // pre_execute | post_execute | timeout | error | manual
+  status          String   @default("pending") // pending | approved | rejected | skipped | modified | timeout_expired
+  approvalMode    String   @default("auto") // auto | notify | block | smart
   contextSnapshot String?
   stepOutput      String?
   soloCallRecord  String?
-  intervenedBy    String?
+  intervenedBy    String?  // "user" | "solo" | "auto_rule"
   intervention    String?
   rating          Int?
   feedback        String?
   createdAt       DateTime @default(now())
   resolvedAt      DateTime?
+
   execution       WorkflowExecution @relation(fields: [executionId], references: [id])
-  @@index([executionId]) @@index([status]) @@index([checkpointType]) @@index([createdAt])
+
+  @@index([executionId])
+  @@index([status])
+  @@index([checkpointType])
+  @@index([createdAt])
 }
+
+// ==================== Feedback Rule ====================
 
 model FeedbackRule {
   id              String   @id @default(uuid())
   name            String
-  triggerType     String
-  triggerConfig   String
-  action          String
+  triggerType     String   // step_type | duration | token_cost | rating | error_rate | always
+  triggerConfig   String   // JSON
+  action          String   // block | notify | skip | modify | escalate
   actionConfig    String?
   scopeWorkflowId String?
   scopeStepType   String?
   isActive        Boolean  @default(true)
-  createdBy       String?
+  createdBy       String?  // "user" | "solo"
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
-  @@index([isActive]) @@index([triggerType]) @@index([scopeWorkflowId])
+
+  @@index([isActive])
+  @@index([triggerType])
+  @@index([scopeWorkflowId])
 }
+
+// ==================== Step Feedback ====================
 
 model StepFeedback {
   id                String   @id @default(uuid())
   executionId       String
   stepExecutionId   String
-  rating            Int
-  tags              String?
+  rating            Int      // 1-5
+  tags              String?  // JSON array
   comment           String?
-  soloReflection    String?
-  improvementAction String?
+  soloReflection    String?  // JSON
+  improvementAction String?  // JSON
   createdAt         DateTime @default(now())
-  @@index([executionId]) @@index([stepExecutionId]) @@index([rating]) @@index([createdAt])
+
+  @@index([executionId])
+  @@index([stepExecutionId])
+  @@index([rating])
+  @@index([createdAt])
 }

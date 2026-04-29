@@ -43,6 +43,7 @@ export class ImprovementLoop {
       startDate: startDate.toISOString(),
     });
 
+    // 查询 FeedbackCheckpoint 记录
     const checkpointWhere: Record<string, unknown> = {
       createdAt: { gte: startDate },
     };
@@ -55,6 +56,7 @@ export class ImprovementLoop {
       orderBy: { createdAt: 'desc' },
     });
 
+    // 查询 StepFeedback 记录
     const stepFeedbackWhere: Record<string, unknown> = {
       createdAt: { gte: startDate },
     };
@@ -67,8 +69,10 @@ export class ImprovementLoop {
       orderBy: { createdAt: 'desc' },
     });
 
+    // 获取步骤指标
     const allStepMetrics = this.observability.getStepMetrics();
 
+    // 计算基本统计
     const totalCheckpoints = checkpoints.length;
     const approvedCount = checkpoints.filter(c => c.status === 'approved').length;
     const rejectedCount = checkpoints.filter(c => c.status === 'rejected').length;
@@ -78,11 +82,13 @@ export class ImprovementLoop {
     const rejectionRate = totalCheckpoints > 0 ? rejectedCount / totalCheckpoints : 0;
     const timeoutRate = totalCheckpoints > 0 ? timeoutCount / totalCheckpoints : 0;
 
+    // 计算平均评分
     const ratedCheckpoints = checkpoints.filter(c => c.rating != null && c.rating > 0);
     const avgRating = ratedCheckpoints.length > 0
       ? ratedCheckpoints.reduce((sum, c) => sum + (c.rating ?? 0), 0) / ratedCheckpoints.length
       : 0;
 
+    // 按步骤类型分组统计
     const stepTypeMap = new Map<string, {
       count: number;
       totalDurationMs: number;
@@ -96,24 +102,34 @@ export class ImprovementLoop {
       const stepType = cp.stepType ?? 'unknown';
       if (!stepTypeMap.has(stepType)) {
         stepTypeMap.set(stepType, {
-          count: 0, totalDurationMs: 0, failureCount: 0,
-          rejectionCount: 0, totalTokens: 0, tokensCount: 0,
+          count: 0,
+          totalDurationMs: 0,
+          failureCount: 0,
+          rejectionCount: 0,
+          totalTokens: 0,
+          tokensCount: 0,
         });
       }
       const stats = stepTypeMap.get(stepType)!;
       stats.count++;
+
       if (cp.status === 'rejected') {
         stats.rejectionCount++;
       }
     }
 
+    // 从可观测性指标中补充 duration 和 token 信息
     const filteredMetrics = allStepMetrics.filter(m => m.timestamp >= startDate);
     for (const metric of filteredMetrics) {
       const stepType = metric.stepType;
       if (!stepTypeMap.has(stepType)) {
         stepTypeMap.set(stepType, {
-          count: 0, totalDurationMs: 0, failureCount: 0,
-          rejectionCount: 0, totalTokens: 0, tokensCount: 0,
+          count: 0,
+          totalDurationMs: 0,
+          failureCount: 0,
+          rejectionCount: 0,
+          totalTokens: 0,
+          tokensCount: 0,
         });
       }
       const stats = stepTypeMap.get(stepType)!;
@@ -127,6 +143,7 @@ export class ImprovementLoop {
       }
     }
 
+    // 构建 stepTypeStats
     const stepTypeStats = Array.from(stepTypeMap.entries()).map(([stepType, stats]) => ({
       stepType,
       count: stats.count,
@@ -136,11 +153,14 @@ export class ImprovementLoop {
       avgTokensUsed: stats.tokensCount > 0 ? stats.totalTokens / stats.tokensCount : 0,
     }));
 
+    // 按失败率排序
     stepTypeStats.sort((a, b) => b.failureRate - a.failureRate);
 
+    // 提取错误模式
     const errorPatternMap = new Map<string, number>();
     for (const metric of filteredMetrics) {
       if (metric.error) {
+        // 简单提取错误类型（取冒号前的部分或前50个字符）
         const errorType = metric.error.includes(':')
           ? metric.error.split(':')[0].trim().slice(0, 80)
           : metric.error.slice(0, 80);
@@ -153,17 +173,28 @@ export class ImprovementLoop {
       .sort((a, b) => b.count - a.count)
       .slice(0, 10);
 
+    // 识别高风险步骤
     const highRiskSteps: Array<{ stepName: string; stepType: string; reason: string }> = [];
 
+    // 失败率高的步骤类型
     for (const stat of stepTypeStats) {
       if (stat.failureRate > 0.3) {
-        highRiskSteps.push({ stepName: stat.stepType, stepType: stat.stepType, reason: `High failure rate: ${(stat.failureRate * 100).toFixed(1)}%` });
+        highRiskSteps.push({
+          stepName: stat.stepType,
+          stepType: stat.stepType,
+          reason: `High failure rate: ${(stat.failureRate * 100).toFixed(1)}%`,
+        });
       }
       if (stat.rejectionRate > 0.3) {
-        highRiskSteps.push({ stepName: stat.stepType, stepType: stat.stepType, reason: `High rejection rate: ${(stat.rejectionRate * 100).toFixed(1)}%` });
+        highRiskSteps.push({
+          stepName: stat.stepType,
+          stepType: stat.stepType,
+          reason: `High rejection rate: ${(stat.rejectionRate * 100).toFixed(1)}%`,
+        });
       }
     }
 
+    // 从被拒绝的检查点中提取具体步骤名
     const rejectedCheckpoints = checkpoints.filter(c => c.status === 'rejected');
     const rejectedStepCounts = new Map<string, number>();
     for (const cp of rejectedCheckpoints) {
@@ -174,11 +205,16 @@ export class ImprovementLoop {
       if (count >= 3) {
         const matchingCp = rejectedCheckpoints.find(c => (c.stepName ?? c.stepId) === stepName);
         if (matchingCp) {
-          highRiskSteps.push({ stepName, stepType: matchingCp.stepType ?? 'unknown', reason: `Frequently rejected (${count} times in ${days} days)` });
+          highRiskSteps.push({
+            stepName,
+            stepType: matchingCp.stepType ?? 'unknown',
+            reason: `Frequently rejected (${count} times in ${days} days)`,
+          });
         }
       }
     }
 
+    // 去重
     const seen = new Set<string>();
     const uniqueHighRiskSteps = highRiskSteps.filter(step => {
       const key = `${step.stepName}:${step.reason}`;
@@ -189,8 +225,14 @@ export class ImprovementLoop {
 
     const analysis: ImprovementAnalysis = {
       period: { start: startDate, end: endDate },
-      totalCheckpoints, approvalRate, rejectionRate, timeoutRate, avgRating,
-      stepTypeStats, topErrorPatterns, highRiskSteps: uniqueHighRiskSteps,
+      totalCheckpoints,
+      approvalRate,
+      rejectionRate,
+      timeoutRate,
+      avgRating,
+      stepTypeStats,
+      topErrorPatterns,
+      highRiskSteps: uniqueHighRiskSteps,
     };
 
     this.logger?.info('Feedback pattern analysis completed', {
@@ -207,7 +249,9 @@ export class ImprovementLoop {
    * 生成改进建议
    * 调用 SOLO 分析数据并生成可操作的建议
    */
-  async generateRecommendations(analysis: ImprovementAnalysis): Promise<ImprovementRecommendation[]> {
+  async generateRecommendations(
+    analysis: ImprovementAnalysis,
+  ): Promise<ImprovementRecommendation[]> {
     this.logger?.info('Generating improvement recommendations via SOLO');
 
     const prompt = [
@@ -243,25 +287,44 @@ export class ImprovementLoop {
       `- action: a JSON object with the specific action details`,
       `- reasoning: why you think this will help`,
       ``,
+      `For "add_rule" actions, include: { "triggerType": "error"|"duration"|"token_cost"|"step_type", "triggerConfig": {...}, "action": "block"|"notify"|"skip", "scopeStepType": "..." }`,
+      `For "adjust_timeout" actions, include: { "stepType": "...", "currentTimeoutMs": ..., "suggestedTimeoutMs": ... }`,
+      `For "add_retry" actions, include: { "stepType": "...", "maxRetries": ..., "backoffStrategy": "..." }`,
+      `For "change_feedback_mode" actions, include: { "stepType": "...", "currentMode": "...", "suggestedMode": "..." }`,
+      `For "optimize_prompt" actions, include: { "stepType": "...", "optimizationHint": "..." }`,
+      `For "split_step" actions, include: { "stepType": "...", "suggestedSplit": "..." }`,
+      ``,
       `Respond ONLY with a valid JSON array. No explanation outside the array.`,
     ].join('\n');
 
     try {
       const soloResult = await this.soloBridge.call({
-        prompt, stepId: 'improvement-loop', executionId: 'improvement-analysis',
-        stepName: 'Improvement Analysis', callMode: 'mcp',
-        subAgentType: 'general_purpose', timeoutMs: 60000,
+        prompt,
+        stepId: 'improvement-loop',
+        executionId: 'improvement-analysis',
+        stepName: 'Improvement Analysis',
+        callMode: 'mcp',
+        subAgentType: 'general_purpose',
+        timeoutMs: 60000,
       });
 
       if (!soloResult.success || !soloResult.data) {
-        this.logger?.warn('SOLO call failed for recommendation generation', { error: soloResult.error });
+        this.logger?.warn('SOLO call failed for recommendation generation', {
+          error: soloResult.error,
+        });
         return [];
       }
 
-      const rawData = typeof soloResult.data === 'string' ? soloResult.data : JSON.stringify(soloResult.data);
+      // 解析 SOLO 响应
+      const rawData = typeof soloResult.data === 'string'
+        ? soloResult.data
+        : JSON.stringify(soloResult.data);
+
+      // 尝试提取 JSON 数组
       let recommendations: ImprovementRecommendation[] = [];
 
       try {
+        // 尝试直接解析
         const parsed = JSON.parse(rawData);
         const items = Array.isArray(parsed) ? parsed : [parsed];
         recommendations = items.map((item: Record<string, unknown>, index: number) => ({
@@ -269,11 +332,14 @@ export class ImprovementLoop {
           type: this.validateRecommendationType(item.type as string),
           targetStepType: typeof item.targetStepType === 'string' ? item.targetStepType : undefined,
           description: typeof item.description === 'string' ? item.description : 'No description provided',
-          confidence: typeof item.confidence === 'number' ? Math.min(1, Math.max(0, item.confidence)) : 0.5,
+          confidence: typeof item.confidence === 'number'
+            ? Math.min(1, Math.max(0, item.confidence))
+            : 0.5,
           action: item.action && typeof item.action === 'object' ? item.action as Record<string, unknown> : {},
           reasoning: typeof item.reasoning === 'string' ? item.reasoning : 'No reasoning provided',
         }));
       } catch {
+        // 尝试从文本中提取 JSON 数组
         const jsonMatch = rawData.match(/\[[\s\S]*\]/);
         if (jsonMatch) {
           const parsed = JSON.parse(jsonMatch[0]);
@@ -283,7 +349,9 @@ export class ImprovementLoop {
             type: this.validateRecommendationType(item.type as string),
             targetStepType: typeof item.targetStepType === 'string' ? item.targetStepType : undefined,
             description: typeof item.description === 'string' ? item.description : 'No description provided',
-            confidence: typeof item.confidence === 'number' ? Math.min(1, Math.max(0, item.confidence)) : 0.5,
+            confidence: typeof item.confidence === 'number'
+              ? Math.min(1, Math.max(0, item.confidence))
+              : 0.5,
             action: item.action && typeof item.action === 'object' ? item.action as Record<string, unknown> : {},
             reasoning: typeof item.reasoning === 'string' ? item.reasoning : 'No reasoning provided',
           }));
@@ -302,6 +370,7 @@ export class ImprovementLoop {
 
   /**
    * 应用改进建议
+   * 根据建议类型执行相应操作
    */
   async applyRecommendation(params: {
     workflowId: string;
@@ -310,7 +379,9 @@ export class ImprovementLoop {
     const { workflowId, recommendation } = params;
 
     this.logger?.info('Applying improvement recommendation', {
-      type: recommendation.type, targetStepType: recommendation.targetStepType, workflowId,
+      type: recommendation.type,
+      targetStepType: recommendation.targetStepType,
+      workflowId,
     });
 
     switch (recommendation.type) {
@@ -318,43 +389,107 @@ export class ImprovementLoop {
         try {
           const action = recommendation.action;
           const triggerType = typeof action.triggerType === 'string' ? action.triggerType : 'error';
-          const triggerConfig = action.triggerConfig ? JSON.stringify(action.triggerConfig) : '{}';
+          const triggerConfig = action.triggerConfig
+            ? JSON.stringify(action.triggerConfig)
+            : '{}';
           const ruleAction = typeof action.action === 'string' ? action.action : 'notify';
           const scopeStepType = typeof action.scopeStepType === 'string' ? action.scopeStepType : null;
 
           await this.prisma.feedbackRule.create({
             data: {
               name: `Auto-generated: ${recommendation.description.slice(0, 100)}`,
-              triggerType, triggerConfig, action: ruleAction,
-              scopeWorkflowId: workflowId, scopeStepType,
-              isActive: true, createdBy: 'solo',
+              triggerType,
+              triggerConfig,
+              action: ruleAction,
+              scopeWorkflowId: workflowId,
+              scopeStepType,
+              isActive: true,
+              createdBy: 'solo',
             },
           });
 
-          this.logger?.info('Created new feedback rule from recommendation', { triggerType, ruleAction, scopeStepType });
-          return { success: true, applied: `Created feedback rule: ${recommendation.description}` };
+          this.logger?.info('Created new feedback rule from recommendation', {
+            triggerType,
+            ruleAction,
+            scopeStepType,
+          });
+
+          return {
+            success: true,
+            applied: `Created feedback rule: ${recommendation.description}`,
+          };
         } catch (error) {
-          this.logger?.error('Failed to create feedback rule', { error: error instanceof Error ? error.message : String(error) });
-          return { success: false, applied: `Failed to create feedback rule: ${error instanceof Error ? error.message : String(error)}` };
+          this.logger?.error('Failed to create feedback rule', {
+            error: error instanceof Error ? error.message : String(error),
+          });
+          return {
+            success: false,
+            applied: `Failed to create feedback rule: ${error instanceof Error ? error.message : String(error)}`,
+          };
         }
       }
+
       case 'adjust_timeout':
-        return { success: true, applied: `Logged timeout adjustment recommendation: ${recommendation.description} (requires orchestrator to apply)` };
+        this.logger?.info('Timeout adjustment recommendation logged', {
+          workflowId,
+          action: recommendation.action,
+        });
+        return {
+          success: true,
+          applied: `Logged timeout adjustment recommendation: ${recommendation.description} (requires orchestrator to apply)`,
+        };
+
       case 'add_retry':
-        return { success: true, applied: `Logged retry policy recommendation: ${recommendation.description} (requires orchestrator to apply)` };
+        this.logger?.info('Retry policy recommendation logged', {
+          workflowId,
+          action: recommendation.action,
+        });
+        return {
+          success: true,
+          applied: `Logged retry policy recommendation: ${recommendation.description} (requires orchestrator to apply)`,
+        };
+
       case 'change_feedback_mode':
-        return { success: true, applied: `Logged feedback mode change recommendation: ${recommendation.description} (requires orchestrator to apply)` };
+        this.logger?.info('Feedback mode change recommendation logged', {
+          workflowId,
+          action: recommendation.action,
+        });
+        return {
+          success: true,
+          applied: `Logged feedback mode change recommendation: ${recommendation.description} (requires orchestrator to apply)`,
+        };
+
       case 'optimize_prompt':
-        return { success: true, applied: `Logged prompt optimization recommendation: ${recommendation.description} (requires orchestrator to apply)` };
+        this.logger?.info('Prompt optimization recommendation logged', {
+          workflowId,
+          action: recommendation.action,
+        });
+        return {
+          success: true,
+          applied: `Logged prompt optimization recommendation: ${recommendation.description} (requires orchestrator to apply)`,
+        };
+
       case 'split_step':
-        return { success: true, applied: `Logged step split recommendation: ${recommendation.description} (requires orchestrator to apply)` };
+        this.logger?.info('Step split recommendation logged', {
+          workflowId,
+          action: recommendation.action,
+        });
+        return {
+          success: true,
+          applied: `Logged step split recommendation: ${recommendation.description} (requires orchestrator to apply)`,
+        };
+
       default:
-        return { success: false, applied: `Unknown recommendation type: ${recommendation.type}` };
+        return {
+          success: false,
+          applied: `Unknown recommendation type: ${recommendation.type}`,
+        };
     }
   }
 
   /**
    * 运行完整的改进周期
+   * 分析 -> 生成建议 -> 可选自动应用
    */
   async runImprovementCycle(params: {
     workflowId?: string;
@@ -362,57 +497,114 @@ export class ImprovementLoop {
     autoApply?: boolean;
     minConfidence?: number;
   }): Promise<ImprovementCycleResult> {
-    const { workflowId, days = 7, autoApply = false, minConfidence = 0.8 } = params;
+    const {
+      workflowId,
+      days = 7,
+      autoApply = false,
+      minConfidence = 0.8,
+    } = params;
 
-    this.logger?.info('Starting improvement cycle', { workflowId, days, autoApply, minConfidence });
+    this.logger?.info('Starting improvement cycle', {
+      workflowId,
+      days,
+      autoApply,
+      minConfidence,
+    });
 
+    // 1. 分析反馈模式
     const analysis = await this.analyzeFeedbackPatterns({ workflowId, days });
+
+    // 2. 生成建议
     const recommendations = await this.generateRecommendations(analysis);
 
+    // 3. 可选自动应用
     let appliedCount = 0;
     let skippedCount = 0;
 
     if (autoApply && workflowId) {
       for (const rec of recommendations) {
         if (rec.confidence >= minConfidence) {
-          const result = await this.applyRecommendation({ workflowId, recommendation: rec });
-          if (result.success) { appliedCount++; } else { skippedCount++; }
-        } else { skippedCount++; }
+          const result = await this.applyRecommendation({
+            workflowId,
+            recommendation: rec,
+          });
+          if (result.success) {
+            appliedCount++;
+          } else {
+            skippedCount++;
+          }
+        } else {
+          skippedCount++;
+        }
       }
-    } else { skippedCount = recommendations.length; }
+    } else {
+      skippedCount = recommendations.length;
+    }
 
     const cycleResult: ImprovementCycleResult = {
-      analysis, recommendations, appliedCount, skippedCount, timestamp: new Date(),
+      analysis,
+      recommendations,
+      appliedCount,
+      skippedCount,
+      timestamp: new Date(),
     };
 
+    // 记录改进历史
     const record: ImprovementRecord = {
       id: Date.now().toString(36) + Math.random().toString(36).slice(2),
-      timestamp: new Date(), workflowId,
+      timestamp: new Date(),
+      workflowId,
       analysisSummary: [
         `Checkpoints: ${analysis.totalCheckpoints}`,
         `Approval: ${(analysis.approvalRate * 100).toFixed(1)}%`,
         `Rejection: ${(analysis.rejectionRate * 100).toFixed(1)}%`,
         `High Risk: ${analysis.highRiskSteps.length} steps`,
       ].join(', '),
-      recommendationsCount: recommendations.length, appliedCount,
+      recommendationsCount: recommendations.length,
+      appliedCount,
     };
 
     this.addImprovementRecord(record);
 
-    this.logger?.info('Improvement cycle completed', { recommendationsCount: recommendations.length, appliedCount, skippedCount });
+    this.logger?.info('Improvement cycle completed', {
+      recommendationsCount: recommendations.length,
+      appliedCount,
+      skippedCount,
+    });
+
     return cycleResult;
   }
 
+  /**
+   * 获取改进历史记录
+   */
   getImprovementHistory(params: { limit?: number }): ImprovementRecord[] {
     const limit = params.limit ?? 20;
     return [...this.improvementHistory].slice(-limit).reverse();
   }
 
-  private validateRecommendationType(type: string): ImprovementRecommendation['type'] {
-    const validTypes: ImprovementRecommendation['type'][] = ['add_rule', 'adjust_timeout', 'add_retry', 'change_feedback_mode', 'optimize_prompt', 'split_step'];
-    return validTypes.includes(type as ImprovementRecommendation['type']) ? (type as ImprovementRecommendation['type']) : 'add_rule';
+  /**
+   * 验证建议类型是否合法
+   */
+  private validateRecommendationType(
+    type: string,
+  ): ImprovementRecommendation['type'] {
+    const validTypes: ImprovementRecommendation['type'][] = [
+      'add_rule',
+      'adjust_timeout',
+      'add_retry',
+      'change_feedback_mode',
+      'optimize_prompt',
+      'split_step',
+    ];
+    return validTypes.includes(type as ImprovementRecommendation['type'])
+      ? (type as ImprovementRecommendation['type'])
+      : 'add_rule';
   }
 
+  /**
+   * 添加改进记录到历史（上限 100 条）
+   */
   private addImprovementRecord(record: ImprovementRecord): void {
     this.improvementHistory.push(record);
     if (this.improvementHistory.length > this.maxHistorySize) {

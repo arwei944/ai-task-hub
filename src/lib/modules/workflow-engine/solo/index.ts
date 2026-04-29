@@ -1,4 +1,2 @@
 export { SOLOBridge } from './solo-bridge';
-export { SOLOMCPClient } from './mcp-client';
-export { SOLORESTClient } from './rest-client';
-export { SOLOPullClient } from './pull-client';
+export type { SOLOBridgeConfig, SOLOCallParams, SOLOCallResult, SOLOCallRecord, SOLOCallMode, SOLOSubAgentType } from '../types';

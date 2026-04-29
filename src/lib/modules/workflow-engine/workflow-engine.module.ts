@@ -22,6 +22,7 @@ export default class WorkflowEngineModule implements Module {
       const adapter = new PrismaBetterSqlite3({ url: dbPath });
       const prisma = new PrismaClient({ adapter });
 
+      // Create core services
       const { SOLOBridge } = await import('./solo/solo-bridge');
       const { Observability } = await import('./observability');
       const { ConcurrencyController } = await import('./concurrency');
@@ -37,16 +38,21 @@ export default class WorkflowEngineModule implements Module {
       const logger = context.logger as any;
       const eventBus = context.eventBus as any;
 
+      // SOLO bridge config
       const soloConfig: SOLOBridgeConfig = {
-        defaultMode: 'mcp', defaultTimeoutMs: 30000, maxConcurrentSessions: 5,
+        defaultMode: 'mcp',
+        defaultTimeoutMs: 30000,
+        maxConcurrentSessions: 5,
       };
 
+      // Instantiate services
       const soloBridge = new SOLOBridge(soloConfig, eventBus, logger);
       const observability = new Observability(eventBus, logger);
       const concurrencyController = new ConcurrencyController(5);
       const feedbackModule = new FeedbackModule(prisma, soloBridge, observability, eventBus, logger);
       const improvementLoop = new ImprovementLoop(prisma, soloBridge, observability, logger);
 
+      // Get TaskService from DI container (dependency: task-core)
       const taskService = context.container.resolve('TaskService') as any;
 
       const executor = new WorkflowExecutor(prisma, taskService, soloBridge, feedbackModule, observability, logger);
@@ -54,9 +60,13 @@ export default class WorkflowEngineModule implements Module {
       const triggerDispatcher = new TriggerDispatcher(prisma, orchestrator, eventBus, logger);
       const notificationIntegration = new WorkflowNotificationIntegration(eventBus, logger);
 
+      // Set cross-references
       orchestrator.setTriggerDispatcher(triggerDispatcher);
+
+      // Setup notification listeners
       notificationIntegration.setupEventListeners();
 
+      // Register to DI container
       context.container.register('PrismaClient', () => prisma);
       context.container.register('SOLOBridge', () => soloBridge);
       context.container.register('Observability', () => observability);
@@ -73,7 +83,12 @@ export default class WorkflowEngineModule implements Module {
       context.logger.info('[WorkflowEngine] Module enabled - all services registered');
     },
 
-    disable: async () => {},
-    uninstall: async () => {},
+    disable: async () => {
+      // Cleanup would go here
+    },
+
+    uninstall: async () => {
+      // Full cleanup would go here
+    },
   };
 }
