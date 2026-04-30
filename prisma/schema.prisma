@@ -921,3 +921,24 @@ model HealthCheck {
   @@index([environmentId])
   @@index([isActive])
 }
+
+// ==================== Notification Rule ====================
+
+model NotificationRule {
+  id              String   @id @default(cuid())
+  name            String                        // Rule display name
+  eventPattern    String                        // Event pattern (e.g., "task.*", "release.*")
+  action          String   @default("notify")   // notify, log, webhook
+  level           String?                       // Override notification level
+  titleTemplate   String?                       // Custom title template
+  messageTemplate String?                       // Custom message template
+  channels        String   @default("system")   // Comma-separated channel IDs (e.g., "system,telegram,webhook")
+  isActive        Boolean  @default(true)
+  priority        Int      @default(0)          // Higher priority rules evaluated first
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([isActive])
+  @@index([eventPattern])
+  @@index([priority])
+}

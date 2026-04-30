@@ -36,6 +36,8 @@ import { deploymentMcpTools } from '@/lib/modules/mcp-server/tools/deployment-to
 import { createDeploymentToolHandlers } from '@/lib/modules/mcp-server/tools/deployment-handlers';
 import { dashboardMcpTools } from '@/lib/modules/mcp-server/tools/dashboard-tools';
 import { createDashboardToolHandlers } from '@/lib/modules/mcp-server/tools/dashboard-handlers';
+import { notificationRuleMcpTools } from '@/lib/modules/mcp-server/tools/notification-rule-tools';
+import { createNotificationRuleToolHandlers } from '@/lib/modules/mcp-server/tools/notification-rule-handlers';
 import { getPrisma } from '@/lib/db';
 import { NextRequest } from 'next/server';
 import { z } from 'zod';
@@ -351,6 +353,25 @@ async function initializeSharedTools() {
         name: toolConfig.name,
         description: toolConfig.description ?? `Tool: ${toolConfig.name}`,
         sourceModule: 'dashboard-tools',
+        handler,
+        schema: jsonSchemaToZodShape(toolConfig.inputSchema),
+      });
+    }
+  }
+
+  // Register notification rule tools
+  const { NotificationRepository } = await import('@/lib/modules/notifications/notification.repository');
+  const notificationRepo = new NotificationRepository(prisma);
+  const { NotificationRuleEngine } = await import('@/lib/modules/notifications/rule-engine');
+  const ruleEngine = new NotificationRuleEngine(notificationRepo, eventBus, logger, () => prisma);
+  const notifRuleHandlers = createNotificationRuleToolHandlers(ruleEngine, logger);
+  for (const toolConfig of notificationRuleMcpTools) {
+    const handler = (notifRuleHandlers as any)[toolConfig.name];
+    if (handler !== undefined) {
+      allTools.push({
+        name: toolConfig.name,
+        description: toolConfig.description ?? `Tool: ${toolConfig.name}`,
+        sourceModule: 'notification-rule-tools',
         handler,
         schema: jsonSchemaToZodShape(toolConfig.inputSchema),
       });

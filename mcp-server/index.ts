@@ -50,6 +50,8 @@ import { deploymentMcpTools } from '@/lib/modules/mcp-server/tools/deployment-to
 import { createDeploymentToolHandlers } from '@/lib/modules/mcp-server/tools/deployment-handlers';
 import { dashboardMcpTools } from '@/lib/modules/mcp-server/tools/dashboard-tools';
 import { createDashboardToolHandlers } from '@/lib/modules/mcp-server/tools/dashboard-handlers';
+import { notificationRuleMcpTools } from '@/lib/modules/mcp-server/tools/notification-rule-tools';
+import { createNotificationRuleToolHandlers } from '@/lib/modules/mcp-server/tools/notification-rule-handlers';
 import { aiEngineMcpTools } from '@/lib/modules/mcp-server/tools/ai-engine-tools';
 import { projectMcpTools } from '@/lib/modules/mcp-server/tools/project-tools';
 import { versionMcpTools } from '@/lib/modules/mcp-server/tools/version-tools';
@@ -258,6 +260,19 @@ async function main() {
 
   await toolRegistry.registerModuleTools(
     { id: 'dashboard-tools', mcpTools: dashboardMcpTools } as any,
+    (_mod, toolName) => handlerMap[toolName],
+  );
+
+  // Register notification rule tools
+  const { NotificationRepository } = await import('@/lib/modules/notifications/notification.repository');
+  const notificationRepo = new NotificationRepository(prisma);
+  const { NotificationRuleEngine } = await import('@/lib/modules/notifications/rule-engine');
+  const ruleEngine = new NotificationRuleEngine(notificationRepo, eventBus, logger, () => prisma);
+  const notifRuleHandlers = createNotificationRuleToolHandlers(ruleEngine, logger);
+  Object.assign(handlerMap, notifRuleHandlers);
+
+  await toolRegistry.registerModuleTools(
+    { id: 'notification-rule-tools', mcpTools: notificationRuleMcpTools } as any,
     (_mod, toolName) => handlerMap[toolName],
   );
 

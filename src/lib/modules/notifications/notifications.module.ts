@@ -37,6 +37,9 @@ export default class NotificationsModule implements Module {
       ruleEngine.addRule({ event: 'agent.operation', action: 'log' });
       ruleEngine.addRule({ event: 'integration.synced', action: 'log' });
 
+      // Load persisted rules from database
+      await ruleEngine.loadRulesFromDb();
+
       // Register built-in channels
       const { WebhookChannel } = await import('./channels/webhook-channel');
       const { BrowserPushChannel } = await import('./channels/browser-push-channel');
