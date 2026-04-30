@@ -1,5 +1,55 @@
 # Changelog
 
+## [2.4.0] - 2026-04-30
+
+### v2.4.0 正式发布 — "AI Unleashed"
+
+从 alpha.1 到 beta.1，历经 3 个迭代版本，AI Task Hub v2.4.0 正式发布。本版本聚焦 AI 能力释放、通知系统完善和插件生态启动。
+
+#### SOLO Bridge Phase B (Phase 1)
+- **真实 MCP 客户端** — 基于 `@modelcontextprotocol/sdk` 的 Streamable HTTP 客户端，支持工具列表发现和调用
+- **真实 REST 客户端** — 完整的 HTTP 客户端，支持 GET/POST/PUT/DELETE，自定义 headers/body/timeout
+- **真实 Pull 客户端** — 轮询模式客户端，支持间隔配置和超时控制
+- **熔断器 (Circuit Breaker)** — 三态熔断器（Closed/Open/Half-Open），可配置失败阈值和恢复时间
+- **健康检查** — 定期探测客户端可用性，自动标记不健康客户端
+- **7 个 SOLO Bridge MCP 工具** — 客户端管理、调用、状态查询、健康检查
+
+#### AI 事件处理器 (Phase 2)
+- **7 个事件处理器** — 覆盖 task/status/phase/requirement/deployment/workflow/knowledge 七大领域
+- **TaskCreatedHandler** — 任务创建时分析复杂度和优先级建议
+- **TaskStatusHandler** — 状态变更时计算项目健康度
+- **ProjectPhaseHandler** — 阶段转换时提供 AI 建议
+- **RequirementCreatedHandler** — 需求创建时自动分析验收标准
+- **DeploymentStatusHandler** — 部署状态变更时风险评估
+- **WorkflowCompletedHandler** — 工作流完成时效率分析
+- **KnowledgeCreatedHandler** — 知识创建时标签建议
+
+#### 通知系统完善 (Phase 3)
+- **Email 通知渠道 (SMTP)** — 支持 SMTP 配置、HTML 邮件模板、附件支持
+- **Web Push 真实集成 (VAPID)** — 基于 Web Push Protocol 的真实推送，支持订阅管理和批量推送
+- **出站 Webhook 重试** — 指数退避重试机制（1s → 2s → 4s → 8s），最多 3 次重试
+- **GitHub Issue 触发器增强** — 支持仓库/标签/状态过滤，自动匹配触发工作流
+
+#### 通知管理前端 (Phase 4)
+- **通知管理页面** — 3 个 Tab（通知历史/规则管理/渠道配置）
+- **通知历史列表** — 时间线展示，支持已读/未读过滤
+- **规则管理** — 创建/编辑/启停通知规则
+- **渠道配置** — Email/WebPush/Webhook 渠道状态和配置
+- **通知历史 tRPC** — 5 个新端点（列表/标记已读/批量标记/统计/清理）
+
+#### 插件生态启动 (Phase 5)
+- **3 个示例插件** — hello-world（问候工具）、task-stats（任务统计+健康检查）、event-logger（事件日志查询）
+- **插件市场更新** — 新增 2 个官方插件到市场列表
+- **插件类型完善** — 所有示例插件使用 PluginRegistry 类型导出
+
+#### 统计
+- **162+ MCP 工具**
+- **1875 测试通过** (99 个文件)
+- **15 个 tRPC 路由**
+- **7 个 AI 事件处理器**
+- **5 个通知渠道**
+- **3 个示例插件**
+
 ## [2.3.0] - 2026-04-30
 
 ### v2.3.0 正式发布 — "Workflow Evolution"

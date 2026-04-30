@@ -77,6 +77,30 @@ const MARKETPLACE_PLUGINS = [
     downloads: 567,
     rating: 4.3,
   },
+  {
+    name: 'task-stats',
+    displayName: 'Task Statistics',
+    description: '提供任务统计工具，快速获取任务概览数据',
+    version: '1.0.0',
+    author: 'AI Task Hub',
+    entryPoint: './plugins/task-stats/index.ts',
+    capabilities: ['task-tool', 'data-source'],
+    category: '工具',
+    downloads: 234,
+    rating: 4.5,
+  },
+  {
+    name: 'event-logger',
+    displayName: 'Event Logger',
+    description: '记录和查询事件日志，用于调试和审计',
+    version: '1.0.0',
+    author: 'AI Task Hub',
+    entryPoint: './plugins/event-logger/index.ts',
+    capabilities: ['task-tool'],
+    category: '工具',
+    downloads: 178,
+    rating: 4.3,
+  },
 ];
 
 const CATEGORIES = ['全部', '示例', '集成', '通知', '效率', 'UI', '工具'];
