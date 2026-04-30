@@ -4,11 +4,12 @@
 
 import type { Module, ModuleContext } from '@/lib/core/types';
 import { testManagementMcpTools } from '@/lib/modules/mcp-server/tools/test-management-tools';
+import { APP_VERSION } from '@/lib/core/version';
 
 export default class TestManagementModule implements Module {
   id = 'test-management';
   name = '测试管理';
-  version = '2.0.0';
+  version = APP_VERSION;
   description = '测试用例管理、测试执行、测试套件、AI 测试生成';
   dependencies = ['task-core'];
 

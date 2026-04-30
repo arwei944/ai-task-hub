@@ -1,10 +1,11 @@
 import type { Module, ModuleContext } from '@/lib/core/types';
 import { TelegramAdapter } from './telegram.adapter';
+import { APP_VERSION } from '@/lib/core/version';
 
 export default class TelegramIntegrationModule implements Module {
   id = 'integration-telegram';
   name = 'Telegram 集成';
-  version = '1.0.0';
+  version = APP_VERSION;
   description = 'Telegram Bot 双向操作 + 通知推送';
   dependencies = ['task-core'];
 

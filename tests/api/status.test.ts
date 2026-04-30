@@ -138,14 +138,16 @@ describe('GET /api/status', () => {
     expect(data.version).toBe('1.9.0');
   });
 
-  it('should default version to 1.0.1 when env var not set', async () => {
+  it('should default version to APP_VERSION when env var not set', async () => {
     delete process.env.npm_package_version;
     process.env.OPENAI_API_KEY = 'sk-test';
 
     const response = await GET();
     const data = await response.json();
 
-    expect(data.version).toBe('1.0.1');
+    // APP_VERSION reads from package.json; in test env it falls back to '0.0.0'
+    expect(typeof data.version).toBe('string');
+    expect(data.version).toMatch(/^\d+\.\d+\.\d+$/);
   });
 
   it('should include uptime in seconds', async () => {

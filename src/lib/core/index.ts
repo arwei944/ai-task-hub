@@ -10,5 +10,20 @@ export { ConfigAccessor } from './config';
 export { Logger } from './logger';
 export { ModuleKernel } from './kernel';
 
+// Centralized version management (single source of truth)
+export {
+  APP_VERSION,
+  APP_NAME,
+  APP_CODENAME,
+  getModuleVersion,
+  getFullVersionString,
+  getVersionInfo,
+  parseSemver,
+  compareVersions,
+  isPrerelease,
+  isStable,
+  VERSION_HISTORY,
+} from './version';
+
 // Events (v2)
 export * from './events';

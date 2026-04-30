@@ -3,11 +3,12 @@
 // ============================================================
 
 import type { Module, ModuleContext } from '@/lib/core/types';
+import { APP_VERSION } from '@/lib/core/version';
 
 export default class LifecycleModule implements Module {
   id = 'lifecycle';
   name = '项目生命周期管理';
-  version = '1.0.0';
+  version = APP_VERSION;
   description = '项目阶段转换管理、审批流程、阶段规则引擎';
   dependencies = ['task-core'];
 

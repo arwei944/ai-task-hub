@@ -1,9 +1,10 @@
 import type { Module, ModuleContext } from '@/lib/core/types';
+import { APP_VERSION } from '@/lib/core/version';
 
 export default class VersionMgmtModule implements Module {
   id = 'version-mgmt';
   name = '版本管理';
-  version = '1.0.0';
+  version = APP_VERSION;
   description = '项目版本发布管理、变更日志、审批流程、版本对比、标签管理';
   dependencies = ['task-core'];
 

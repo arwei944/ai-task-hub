@@ -1,10 +1,11 @@
 import type { Module, ModuleContext } from '@/lib/core/types';
 import { aiEngineMcpTools } from '@/lib/modules/mcp-server/tools/ai-engine-tools';
+import { APP_VERSION } from '@/lib/core/version';
 
 export default class AIEngineModule implements Module {
   id = 'ai-engine';
   name = 'AI 引擎';
-  version = '1.0.0';
+  version = APP_VERSION;
   description = 'AI 任务提取、状态推断、任务拆解、智能分析';
   dependencies = ['task-core'];
 

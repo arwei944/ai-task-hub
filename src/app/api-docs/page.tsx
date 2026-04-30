@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { APP_VERSION } from '@/lib/core/version';
 
 interface ApiEndpoint {
   method: 'query' | 'mutation';
@@ -227,7 +228,7 @@ export default function ApiDocsPage() {
   "action": "register",
   "name": "My AI Agent",
   "clientType": "trae",  // trae/cursor/windsurf/vscode/claude/chatgpt/api
-  "clientVersion": "1.0.0"
+  "clientVersion": ${JSON.stringify(APP_VERSION)}
 }`}
             </pre>
             <div className="mt-1 text-gray-500">{'→ 返回 apiKey，后续请求带上 X-API-Key: <your-key>'}</div>

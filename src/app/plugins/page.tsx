@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { trpc } from '@/lib/trpc/client';
+import { APP_VERSION } from '@/lib/core/version';
 
 interface Plugin {
   id: string;
@@ -23,7 +24,7 @@ export default function PluginsPage() {
     name: '',
     displayName: '',
     description: '',
-    version: '1.0.0',
+    version: APP_VERSION,
     author: '',
     entryPoint: '',
   });
@@ -70,7 +71,7 @@ export default function PluginsPage() {
     try {
       await trpc.plugins.install.mutate(installForm);
       setShowInstall(false);
-      setInstallForm({ name: '', displayName: '', description: '', version: '1.0.0', author: '', entryPoint: '' });
+      setInstallForm({ name: '', displayName: '', description: '', version: APP_VERSION, author: '', entryPoint: '' });
       await fetchPlugins();
     } catch (err: any) {
       setError(err.message);

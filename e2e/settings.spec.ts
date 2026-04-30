@@ -27,7 +27,8 @@ test.describe('E2E-SET: 设置页面测试', () => {
 
   test('E2E-SET-03: 系统信息显示', async ({ page }) => {
     const allText = await page.locator('#page-settings').textContent();
-    expect(allText).toContain('v2.0.0');
+    // 版本号从 package.json 动态读取，匹配 semver 格式
+    expect(allText).toMatch(/v\d+\.\d+\.\d+/);
     expect(allText).toContain('Next.js');
     expect(allText).toContain('SQLite');
   });

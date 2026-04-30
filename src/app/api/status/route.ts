@@ -4,6 +4,7 @@
 
 import { NextResponse } from 'next/server';
 import { getPrisma } from '@/lib/db';
+import { APP_VERSION } from '@/lib/core/version';
 
 const startTime = Date.now();
 
@@ -52,7 +53,7 @@ export async function GET() {
     status: Object.values(healthChecks).every(h => h.status === 'ok' || h.status === 'configured' || h.status === 'available')
       ? 'healthy'
       : 'degraded',
-    version: process.env.npm_package_version ?? '1.0.1',
+    version: process.env.npm_package_version ?? APP_VERSION,
     uptime: Math.round((Date.now() - startTime) / 1000),
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV ?? 'development',

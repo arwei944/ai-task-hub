@@ -1,10 +1,11 @@
 import type { Module, ModuleContext } from '@/lib/core/types';
 import { NotionAdapter } from './notion.adapter';
+import { APP_VERSION } from '@/lib/core/version';
 
 export default class NotionIntegrationModule implements Module {
   id = 'integration-notion';
   name = 'Notion 集成';
-  version = '1.0.0';
+  version = APP_VERSION;
   description = '同步 Notion 数据库为任务，支持字段映射';
   dependencies = ['task-core'];
 

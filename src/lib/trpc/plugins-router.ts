@@ -5,6 +5,7 @@ import { PrismaClient } from '@/generated/prisma/client';
 import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
 import { Logger } from '@/lib/core/logger';
 import { EventBus } from '@/lib/core/event-bus';
+import { APP_VERSION } from '@/lib/core/version';
 
 let _pluginLoader: PluginLoader | null = null;
 
@@ -42,7 +43,7 @@ export const pluginsRouter = createTRPCRouter({
       name: z.string().min(1).max(64),
       displayName: z.string().min(1).max(128),
       description: z.string().optional(),
-      version: z.string().default('1.0.0'),
+      version: z.string().default(APP_VERSION),
       author: z.string().optional(),
       entryPoint: z.string(),
     }))

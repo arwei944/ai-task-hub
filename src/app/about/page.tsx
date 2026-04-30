@@ -6,8 +6,9 @@ import {
   Bot, Globe, Database, Code2, Server, Cpu, ChevronDown, ChevronUp,
   Heart, BookOpen, Rocket, GitFork,
 } from 'lucide-react';
+import { APP_VERSION, VERSION_HISTORY as VERSION_HISTORY_IMPORTED } from '@/lib/core/version';
 
-const VERSION = '1.4.0';
+const VERSION = APP_VERSION;
 
 const techStack = [
   { name: 'Next.js 16', desc: 'React 全栈框架 (Turbopack)', icon: Globe, color: 'text-black dark:text-white' },
@@ -38,14 +39,7 @@ const archComponents = [
   { name: 'Logger', desc: '日志系统 — 结构化日志，支持多级别输出' },
 ];
 
-const versionHistory = [
-  { version: '1.4.0', date: '2026-04-29', highlights: ['关于页面', 'HF 持久化存储'] },
-  { version: '1.3.1', date: '2026-04-28', highlights: ['登录入口优化', '首用户自动管理员'] },
-  { version: '1.3.0', date: '2026-04-28', highlights: ['工作流引擎', 'Web Push 通知'] },
-  { version: '1.2.0', date: '2026-04-28', highlights: ['集成数据写入', '测试 schema 同步'] },
-  { version: '1.1.0', date: '2026-04-28', highlights: ['安全加固', '48 个 API 权限管控'] },
-  { version: '1.0.0', date: '2026-04-28', highlights: ['首次发布', '全功能上线'] },
-];
+const versionHistory = VERSION_HISTORY_IMPORTED;
 
 const modules = [
   { name: '任务管理核心', id: 'task-core', status: 'stable' },

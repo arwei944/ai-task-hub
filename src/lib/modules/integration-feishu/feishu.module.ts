@@ -1,10 +1,11 @@
 import type { Module, ModuleContext } from '@/lib/core/types';
 import { FeishuAdapter } from './feishu.adapter';
+import { APP_VERSION } from '@/lib/core/version';
 
 export default class FeishuIntegrationModule implements Module {
   id = 'integration-feishu';
   name = '飞书集成';
-  version = '1.0.0';
+  version = APP_VERSION;
   description = '同步飞书任务，支持 Webhook 事件处理';
   dependencies = ['task-core'];
 

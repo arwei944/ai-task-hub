@@ -15,11 +15,12 @@ import { aiEngineMcpTools } from './tools/ai-engine-tools';
 import { lifecycleMcpTools } from './tools/lifecycle-tools';
 import { requirementMcpTools } from './tools/requirement-tools';
 import { knowledgeMcpTools } from './tools/knowledge-tools';
+import { APP_VERSION } from '@/lib/core/version';
 
 export default class McpServerModule implements Module {
   id = 'mcp-server';
   name = 'MCP 服务';
-  version = '1.0.0';
+  version = APP_VERSION;
   description = 'MCP 协议服务端，支持 Trae 和外部智能体通过 MCP 操作任务';
   dependencies = ['task-core'];
 
@@ -59,7 +60,7 @@ export default class McpServerModule implements Module {
       // Create MCP Server
       this.mcpServer = new McpServer({
         name: 'AI Task Hub',
-        version: '1.0.0',
+        version: APP_VERSION,
       });
 
       // Create Tool Registry

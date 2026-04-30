@@ -1,10 +1,11 @@
 import type { Module, ModuleContext } from '@/lib/core/types';
 import { WebhookAdapter } from './webhook.adapter';
+import { APP_VERSION } from '@/lib/core/version';
 
 export default class WebhookIntegrationModule implements Module {
   id = 'integration-webhook';
   name = '通用 Webhook';
-  version = '1.0.0';
+  version = APP_VERSION;
   description = '接收任意 Webhook，通过规则引擎自动创建/更新任务';
   dependencies = ['task-core'];
 

@@ -1,9 +1,10 @@
 import type { Module, ModuleContext } from '@/lib/core/types';
+import { APP_VERSION } from '@/lib/core/version';
 
 export default class KnowledgeModule implements Module {
   id = 'knowledge';
   name = '知识管理';
-  version = '1.0.0';
+  version = APP_VERSION;
   description = '知识库管理，支持经验教训、决策记录、模式识别、解决方案模板等知识条目的创建、搜索和统计';
   dependencies = [];
 

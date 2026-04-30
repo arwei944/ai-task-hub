@@ -1,10 +1,11 @@
 import type { Module, ModuleContext } from '@/lib/core/types';
 import { GitHubAdapter } from './github.adapter';
+import { APP_VERSION } from '@/lib/core/version';
 
 export default class GitHubIntegrationModule implements Module {
   id = 'integration-github';
   name = 'GitHub 集成';
-  version = '1.0.0';
+  version = APP_VERSION;
   description = '同步 GitHub Issues 为任务，支持 Webhook 事件处理';
   dependencies = ['task-core'];
 

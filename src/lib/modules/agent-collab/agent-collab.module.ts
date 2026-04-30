@@ -1,9 +1,10 @@
 import type { Module, ModuleContext } from '@/lib/core/types';
+import { APP_VERSION } from '@/lib/core/version';
 
 export default class AgentCollabModule implements Module {
   id = 'agent-collab';
   name = '智能体协作';
-  version = '1.0.0';
+  version = APP_VERSION;
   description = '智能体注册、权限管理、操作日志';
   dependencies = ['task-core'];
 

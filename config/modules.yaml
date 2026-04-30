@@ -124,5 +124,7 @@ modules:
 
 app:
   name: "AI Task Hub"
-  version: "2.0.0"
+  # ⚠️ 版本号由 package.json 统一管理，请勿手动修改
+  # 运行时从 package.json 自动读取，此处仅作配置占位
+  version: "READ_FROM_PACKAGE_JSON"
   port: 3000

@@ -23,6 +23,7 @@ import { createVersionToolHandlers } from '@/lib/modules/mcp-server/tools/versio
 import { getPrisma } from '@/lib/db';
 import { NextRequest } from 'next/server';
 import { z } from 'zod';
+import { APP_VERSION } from '@/lib/core/version';
 
 /**
  * Convert JSON Schema property definition to Zod type
@@ -219,7 +220,7 @@ async function initializeSharedTools() {
 function createMcpServer(): McpServer {
   const server = new McpServer({
     name: 'AI Task Hub',
-    version: '1.0.0',
+    version: APP_VERSION,
   });
 
   for (const tool of _sharedTools!) {

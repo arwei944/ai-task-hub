@@ -1,9 +1,10 @@
 import type { Module, ModuleContext } from '@/lib/core/types';
+import { APP_VERSION } from '@/lib/core/version';
 
 export default class ExampleModule implements Module {
   id = 'example';
   name = '示例模块';
-  version = '1.0.0';
+  version = APP_VERSION;
   description = '用于验证模块化内核是否正常工作';
 
   lifecycle = {

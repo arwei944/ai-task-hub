@@ -1,10 +1,11 @@
 import type { Module, ModuleContext } from '@/lib/core/types';
 import { WeChatAdapter } from './wechat.adapter';
+import { APP_VERSION } from '@/lib/core/version';
 
 export default class WeChatIntegrationModule implements Module {
   id = 'integration-wechat';
   name = '企业微信集成';
-  version = '1.0.0';
+  version = APP_VERSION;
   description = '企业微信 Bot 双向操作 + 通知推送';
   dependencies = ['task-core'];
 

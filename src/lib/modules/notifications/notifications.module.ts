@@ -1,9 +1,10 @@
 import type { Module, ModuleContext } from '@/lib/core/types';
+import { APP_VERSION } from '@/lib/core/version';
 
 export default class NotificationsModule implements Module {
   id = 'notifications';
   name = '通知';
-  version = '1.0.0';
+  version = APP_VERSION;
   description = '事件驱动通知系统，支持可插拔通知渠道和规则引擎';
 
   lifecycle = {

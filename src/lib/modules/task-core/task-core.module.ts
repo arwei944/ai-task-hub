@@ -1,10 +1,11 @@
 import type { Module, ModuleContext } from '@/lib/core/types';
 import { taskCoreMcpTools } from '@/lib/modules/mcp-server/tools/task-core-tools';
+import { APP_VERSION } from '@/lib/core/version';
 
 export default class TaskCoreModule implements Module {
   id = 'task-core';
   name = '任务管理核心';
-  version = '1.0.0';
+  version = APP_VERSION;
   description = '任务 CRUD、状态管理、依赖关系、变更历史';
   locked = true;
 

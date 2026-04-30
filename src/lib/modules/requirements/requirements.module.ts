@@ -3,11 +3,12 @@
 // ============================================================
 
 import type { Module, ModuleContext } from '@/lib/core/types';
+import { APP_VERSION } from '@/lib/core/version';
 
 export default class RequirementsModule implements Module {
   id = 'requirements';
   name = '需求分析';
-  version = '1.0.0';
+  version = APP_VERSION;
   description = '需求分析模块，支持需求的创建、分解、优先级分析、验收标准生成和任务映射';
   dependencies = ['task-core'];
 
