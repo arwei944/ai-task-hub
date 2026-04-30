@@ -834,3 +834,90 @@ model TestSuite {
 
   @@index([projectId])
 }
+
+// ==================== Deployment Environment ====================
+
+model DeploymentEnvironment {
+  id                String   @id @default(cuid())
+  name              String   @unique          // dev, staging, production
+  displayName       String
+  description       String?
+  baseUrl           String                    // Environment base URL
+  config            String   @default("{}")   // JSON: environment config (env vars, etc.)
+  isActive          Boolean  @default(true)
+  healthStatus      String   @default("unknown") // healthy, degraded, unhealthy, unknown
+  lastDeploymentAt  DateTime?
+  order             Int      @default(0)      // Sort order
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  deployments       Deployment[]
+  healthChecks      HealthCheck[]
+
+  @@index([isActive])
+  @@index([order])
+}
+
+// ==================== Deployment ====================
+
+model Deployment {
+  id              String   @id @default(cuid())
+  environmentId   String
+  projectId       String?
+  version         String                    // Deployed version (semver)
+  strategy        String   @default("rolling") // rolling, blue_green, canary, recreate
+  status          String   @default("pending") // pending, queued, building, deploying, verifying, running, failed, rolled_back, cancelled
+  description     String?
+  triggeredBy     String?                   // agentId or userId
+  config          String?                   // JSON: deployment config overrides
+  startedAt       DateTime?
+  completedAt     DateTime?
+  duration        Int?                      // Duration in ms
+  rollbackFromId  String?                   // If this is a rollback, reference to original deployment
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  environment     DeploymentEnvironment @relation(fields: [environmentId], references: [id])
+  logs            DeploymentLog[]
+
+  @@index([environmentId, createdAt])
+  @@index([projectId])
+  @@index([status])
+  @@index([version])
+  @@index([triggeredBy])
+}
+
+// ==================== Deployment Log ====================
+
+model DeploymentLog {
+  id            String   @id @default(cuid())
+  deploymentId  String
+  level         String   @default("info")   // info, warn, error, debug
+  message       String
+  metadata      String?                     // JSON: additional context
+  timestamp     DateTime @default(now())
+
+  deployment    Deployment @relation(fields: [deploymentId], references: [id], onDelete: Cascade)
+
+  @@index([deploymentId, timestamp])
+}
+
+// ==================== Health Check ====================
+
+model HealthCheck {
+  id                 String   @id @default(cuid())
+  environmentId      String
+  name               String
+  type               String   @default("http") // http, tcp, process, custom
+  config             String   @default("{}")   // JSON: check config (url, timeout, interval, etc.)
+  isActive           Boolean  @default(true)
+  lastStatus         String   @default("unknown") // healthy, degraded, unhealthy, unknown
+  lastCheckAt        DateTime?
+  consecutiveFailures Int     @default(0)
+  createdAt          DateTime @default(now())
+
+  environment        DeploymentEnvironment @relation(fields: [environmentId], references: [id], onDelete: Cascade)
+
+  @@index([environmentId])
+  @@index([isActive])
+}

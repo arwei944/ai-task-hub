@@ -46,6 +46,8 @@ import { lifecycleMcpTools } from '@/lib/modules/mcp-server/tools/lifecycle-tool
 import { contextMcpTools } from '@/lib/modules/mcp-server/tools/context-tools';
 import { promptMcpTools } from '@/lib/modules/mcp-server/tools/prompt-tools';
 import { createPromptToolHandlers } from '@/lib/modules/mcp-server/tools/prompt-handlers';
+import { deploymentMcpTools } from '@/lib/modules/mcp-server/tools/deployment-tools';
+import { createDeploymentToolHandlers } from '@/lib/modules/mcp-server/tools/deployment-handlers';
 import { aiEngineMcpTools } from '@/lib/modules/mcp-server/tools/ai-engine-tools';
 import { projectMcpTools } from '@/lib/modules/mcp-server/tools/project-tools';
 import { versionMcpTools } from '@/lib/modules/mcp-server/tools/version-tools';
@@ -232,6 +234,17 @@ async function main() {
 
   await toolRegistry.registerModuleTools(
     { id: 'prompt-tools', mcpTools: promptMcpTools } as any,
+    (_mod, toolName) => handlerMap[toolName],
+  );
+
+  // Register deployment management tools
+  const { DeploymentService } = await import('@/lib/modules/deployment-mgmt/deployment.service');
+  const deploymentService = new DeploymentService(logger, eventBus, () => prisma);
+  const deploymentHandlers = createDeploymentToolHandlers(deploymentService, logger);
+  Object.assign(handlerMap, deploymentHandlers);
+
+  await toolRegistry.registerModuleTools(
+    { id: 'deployment-tools', mcpTools: deploymentMcpTools } as any,
     (_mod, toolName) => handlerMap[toolName],
   );
 
