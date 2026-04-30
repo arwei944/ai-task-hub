@@ -38,6 +38,8 @@ import { dashboardMcpTools } from '@/lib/modules/mcp-server/tools/dashboard-tool
 import { createDashboardToolHandlers } from '@/lib/modules/mcp-server/tools/dashboard-handlers';
 import { notificationRuleMcpTools } from '@/lib/modules/mcp-server/tools/notification-rule-tools';
 import { createNotificationRuleToolHandlers } from '@/lib/modules/mcp-server/tools/notification-rule-handlers';
+import { eventBusMcpTools } from '@/lib/modules/mcp-server/tools/event-bus-tools';
+import { createEventBusToolHandlers } from '@/lib/modules/mcp-server/tools/event-bus-handlers';
 import { getPrisma } from '@/lib/db';
 import { NextRequest } from 'next/server';
 import { z } from 'zod';
@@ -372,6 +374,21 @@ async function initializeSharedTools() {
         name: toolConfig.name,
         description: toolConfig.description ?? `Tool: ${toolConfig.name}`,
         sourceModule: 'notification-rule-tools',
+        handler,
+        schema: jsonSchemaToZodShape(toolConfig.inputSchema),
+      });
+    }
+  }
+
+  // Register event bus tools
+  const eventBusHandlers = createEventBusToolHandlers(eventBus, logger);
+  for (const toolConfig of eventBusMcpTools) {
+    const handler = (eventBusHandlers as any)[toolConfig.name];
+    if (handler !== undefined) {
+      allTools.push({
+        name: toolConfig.name,
+        description: toolConfig.description ?? `Tool: ${toolConfig.name}`,
+        sourceModule: 'event-bus-tools',
         handler,
         schema: jsonSchemaToZodShape(toolConfig.inputSchema),
       });

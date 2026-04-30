@@ -52,6 +52,8 @@ import { dashboardMcpTools } from '@/lib/modules/mcp-server/tools/dashboard-tool
 import { createDashboardToolHandlers } from '@/lib/modules/mcp-server/tools/dashboard-handlers';
 import { notificationRuleMcpTools } from '@/lib/modules/mcp-server/tools/notification-rule-tools';
 import { createNotificationRuleToolHandlers } from '@/lib/modules/mcp-server/tools/notification-rule-handlers';
+import { eventBusMcpTools } from '@/lib/modules/mcp-server/tools/event-bus-tools';
+import { createEventBusToolHandlers } from '@/lib/modules/mcp-server/tools/event-bus-handlers';
 import { aiEngineMcpTools } from '@/lib/modules/mcp-server/tools/ai-engine-tools';
 import { projectMcpTools } from '@/lib/modules/mcp-server/tools/project-tools';
 import { versionMcpTools } from '@/lib/modules/mcp-server/tools/version-tools';
@@ -273,6 +275,15 @@ async function main() {
 
   await toolRegistry.registerModuleTools(
     { id: 'notification-rule-tools', mcpTools: notificationRuleMcpTools } as any,
+    (_mod, toolName) => handlerMap[toolName],
+  );
+
+  // Register event bus tools
+  const eventBusHandlers = createEventBusToolHandlers(eventBus, logger);
+  Object.assign(handlerMap, eventBusHandlers);
+
+  await toolRegistry.registerModuleTools(
+    { id: 'event-bus-tools', mcpTools: eventBusMcpTools } as any,
     (_mod, toolName) => handlerMap[toolName],
   );
 
