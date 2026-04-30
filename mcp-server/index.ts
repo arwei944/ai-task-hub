@@ -34,8 +34,16 @@ import { ConfigAccessor } from '@/lib/core/config';
 import { McpToolRegistry } from '@/lib/modules/mcp-server/tool-registry';
 import { createTaskCoreToolHandlers, createAIEngineToolHandlers, createProjectToolHandlers } from '@/lib/modules/mcp-server/tools/handlers';
 import { createTestManagementToolHandlers } from '@/lib/modules/mcp-server/tools/test-management-handlers';
+import { createRequirementToolHandlers } from '@/lib/modules/mcp-server/tools/requirement-handlers';
+import { createKnowledgeToolHandlers } from '@/lib/modules/mcp-server/tools/knowledge-handlers';
+import { createLifecycleToolHandlers } from '@/lib/modules/mcp-server/tools/lifecycle-handlers';
+import { createContextToolHandlers } from '@/lib/modules/mcp-server/tools/context-handlers';
 import { taskCoreMcpTools } from '@/lib/modules/mcp-server/tools/task-core-tools';
 import { testManagementMcpTools } from '@/lib/modules/mcp-server/tools/test-management-tools';
+import { requirementMcpTools } from '@/lib/modules/mcp-server/tools/requirement-tools';
+import { knowledgeMcpTools } from '@/lib/modules/mcp-server/tools/knowledge-tools';
+import { lifecycleMcpTools } from '@/lib/modules/mcp-server/tools/lifecycle-tools';
+import { contextMcpTools } from '@/lib/modules/mcp-server/tools/context-tools';
 import { aiEngineMcpTools } from '@/lib/modules/mcp-server/tools/ai-engine-tools';
 import { projectMcpTools } from '@/lib/modules/mcp-server/tools/project-tools';
 import { versionMcpTools } from '@/lib/modules/mcp-server/tools/version-tools';
@@ -171,6 +179,48 @@ async function main() {
 
   await toolRegistry.registerModuleTools(
     { id: 'test-management', mcpTools: testManagementMcpTools } as any,
+    (_mod, toolName) => handlerMap[toolName],
+  );
+
+  // Register requirement tools
+  const { RequirementsService } = await import('@/lib/modules/requirements/requirements.service');
+  const reqService = new RequirementsService(logger, eventBus, () => prisma);
+  const reqHandlers = createRequirementToolHandlers(reqService, logger);
+  Object.assign(handlerMap, reqHandlers);
+
+  await toolRegistry.registerModuleTools(
+    { id: 'requirement-tools', mcpTools: requirementMcpTools } as any,
+    (_mod, toolName) => handlerMap[toolName],
+  );
+
+  // Register knowledge tools
+  const { KnowledgeService } = await import('@/lib/modules/knowledge/knowledge.service');
+  const knowledgeService = new KnowledgeService(logger, eventBus, () => prisma);
+  const knowledgeHandlers = createKnowledgeToolHandlers(knowledgeService, logger);
+  Object.assign(handlerMap, knowledgeHandlers);
+
+  await toolRegistry.registerModuleTools(
+    { id: 'knowledge-tools', mcpTools: knowledgeMcpTools } as any,
+    (_mod, toolName) => handlerMap[toolName],
+  );
+
+  // Register lifecycle tools
+  const { LifecycleService } = await import('@/lib/modules/lifecycle/lifecycle.service');
+  const lifecycleService = new LifecycleService(logger, eventBus, () => prisma);
+  const lifecycleHandlers = createLifecycleToolHandlers(lifecycleService, logger);
+  Object.assign(handlerMap, lifecycleHandlers);
+
+  await toolRegistry.registerModuleTools(
+    { id: 'lifecycle-tools', mcpTools: lifecycleMcpTools } as any,
+    (_mod, toolName) => handlerMap[toolName],
+  );
+
+  // Register context aggregation tools
+  const contextHandlers = createContextToolHandlers(logger, eventBus, () => prisma);
+  Object.assign(handlerMap, contextHandlers);
+
+  await toolRegistry.registerModuleTools(
+    { id: 'context-tools', mcpTools: contextMcpTools } as any,
     (_mod, toolName) => handlerMap[toolName],
   );
 

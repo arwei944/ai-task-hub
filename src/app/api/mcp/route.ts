@@ -20,6 +20,16 @@ import { projectMcpTools } from '@/lib/modules/mcp-server/tools/project-tools';
 import { createProjectToolHandlers } from '@/lib/modules/mcp-server/tools/project-handlers';
 import { versionMcpTools } from '@/lib/modules/mcp-server/tools/version-tools';
 import { createVersionToolHandlers } from '@/lib/modules/mcp-server/tools/version-handlers';
+import { testManagementMcpTools } from '@/lib/modules/mcp-server/tools/test-management-tools';
+import { createTestManagementToolHandlers } from '@/lib/modules/mcp-server/tools/test-management-handlers';
+import { requirementMcpTools } from '@/lib/modules/mcp-server/tools/requirement-tools';
+import { createRequirementToolHandlers } from '@/lib/modules/mcp-server/tools/requirement-handlers';
+import { knowledgeMcpTools } from '@/lib/modules/mcp-server/tools/knowledge-tools';
+import { createKnowledgeToolHandlers } from '@/lib/modules/mcp-server/tools/knowledge-handlers';
+import { lifecycleMcpTools } from '@/lib/modules/mcp-server/tools/lifecycle-tools';
+import { createLifecycleToolHandlers } from '@/lib/modules/mcp-server/tools/lifecycle-handlers';
+import { contextMcpTools } from '@/lib/modules/mcp-server/tools/context-tools';
+import { createContextToolHandlers } from '@/lib/modules/mcp-server/tools/context-handlers';
 import { getPrisma } from '@/lib/db';
 import { NextRequest } from 'next/server';
 import { z } from 'zod';
@@ -203,6 +213,89 @@ async function initializeSharedTools() {
         name: toolConfig.name,
         description: toolConfig.description ?? `Tool: ${toolConfig.name}`,
         sourceModule: 'version-mgmt',
+        handler,
+        schema: jsonSchemaToZodShape(toolConfig.inputSchema),
+      });
+    }
+  }
+
+  // Register test management tools
+  const { TestManagementService } = await import('@/lib/modules/test-management/test-management.service');
+  const testMgmtService = new TestManagementService(logger, eventBus, () => prisma);
+  const testMgmtHandlers = createTestManagementToolHandlers(testMgmtService, logger);
+  for (const toolConfig of testManagementMcpTools) {
+    const handler = (testMgmtHandlers as any)[toolConfig.name];
+    if (handler !== undefined) {
+      allTools.push({
+        name: toolConfig.name,
+        description: toolConfig.description ?? `Tool: ${toolConfig.name}`,
+        sourceModule: 'test-management',
+        handler,
+        schema: jsonSchemaToZodShape(toolConfig.inputSchema),
+      });
+    }
+  }
+
+  // Register requirement tools
+  const { RequirementsService } = await import('@/lib/modules/requirements/requirements.service');
+  const reqService = new RequirementsService(logger, eventBus, () => prisma);
+  const reqHandlers = createRequirementToolHandlers(reqService, logger);
+  for (const toolConfig of requirementMcpTools) {
+    const handler = (reqHandlers as any)[toolConfig.name];
+    if (handler !== undefined) {
+      allTools.push({
+        name: toolConfig.name,
+        description: toolConfig.description ?? `Tool: ${toolConfig.name}`,
+        sourceModule: 'requirement-tools',
+        handler,
+        schema: jsonSchemaToZodShape(toolConfig.inputSchema),
+      });
+    }
+  }
+
+  // Register knowledge tools
+  const { KnowledgeService } = await import('@/lib/modules/knowledge/knowledge.service');
+  const knowledgeService = new KnowledgeService(logger, eventBus, () => prisma);
+  const knowledgeHandlers = createKnowledgeToolHandlers(knowledgeService, logger);
+  for (const toolConfig of knowledgeMcpTools) {
+    const handler = (knowledgeHandlers as any)[toolConfig.name];
+    if (handler !== undefined) {
+      allTools.push({
+        name: toolConfig.name,
+        description: toolConfig.description ?? `Tool: ${toolConfig.name}`,
+        sourceModule: 'knowledge-tools',
+        handler,
+        schema: jsonSchemaToZodShape(toolConfig.inputSchema),
+      });
+    }
+  }
+
+  // Register lifecycle tools
+  const { LifecycleService } = await import('@/lib/modules/lifecycle/lifecycle.service');
+  const lifecycleService = new LifecycleService(logger, eventBus, () => prisma);
+  const lifecycleHandlers = createLifecycleToolHandlers(lifecycleService, logger);
+  for (const toolConfig of lifecycleMcpTools) {
+    const handler = (lifecycleHandlers as any)[toolConfig.name];
+    if (handler !== undefined) {
+      allTools.push({
+        name: toolConfig.name,
+        description: toolConfig.description ?? `Tool: ${toolConfig.name}`,
+        sourceModule: 'lifecycle-tools',
+        handler,
+        schema: jsonSchemaToZodShape(toolConfig.inputSchema),
+      });
+    }
+  }
+
+  // Register context aggregation tools
+  const contextHandlers = createContextToolHandlers(logger, eventBus, () => prisma);
+  for (const toolConfig of contextMcpTools) {
+    const handler = (contextHandlers as any)[toolConfig.name];
+    if (handler !== undefined) {
+      allTools.push({
+        name: toolConfig.name,
+        description: toolConfig.description ?? `Tool: ${toolConfig.name}`,
+        sourceModule: 'context-tools',
         handler,
         schema: jsonSchemaToZodShape(toolConfig.inputSchema),
       });

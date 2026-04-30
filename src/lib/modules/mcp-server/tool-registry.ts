@@ -8,6 +8,53 @@ import type { ILogger } from '@/lib/core/types';
 import { z } from 'zod';
 
 /**
+ * Convert JSON Schema property definition to Zod type
+ */
+function jsonSchemaPropToZod(prop: any): z.ZodTypeAny {
+  if (!prop) return z.unknown();
+
+  if (prop.type === 'string') {
+    if (prop.enum) return z.enum(prop.enum as [string, ...string[]]);
+    return z.string().optional();
+  }
+  if (prop.type === 'number') return z.number().optional();
+  if (prop.type === 'boolean') return z.boolean().optional();
+  if (prop.type === 'integer') return z.number().int().optional();
+  if (prop.type === 'array') {
+    const itemType = jsonSchemaPropToZod(prop.items);
+    return z.array(itemType).optional();
+  }
+  if (prop.type === 'object') {
+    const shape: Record<string, z.ZodTypeAny> = {};
+    if (prop.properties) {
+      for (const [key, val] of Object.entries(prop.properties)) {
+        shape[key] = jsonSchemaPropToZod(val);
+      }
+    }
+    return z.object(shape).optional();
+  }
+  return z.unknown().optional();
+}
+
+/**
+ * Convert JSON Schema (from tool config) to Zod raw shape for MCP SDK
+ */
+function jsonSchemaToZodShape(schema: any): Record<string, z.ZodTypeAny> {
+  if (!schema?.properties) return {};
+  const shape: Record<string, z.ZodTypeAny> = {};
+  for (const [key, prop] of Object.entries(schema.properties)) {
+    const zodType = jsonSchemaPropToZod(prop);
+    // If required, make it non-optional
+    if (schema.required?.includes(key)) {
+      shape[key] = zodType;
+    } else {
+      shape[key] = zodType.optional();
+    }
+  }
+  return shape;
+}
+
+/**
  * Resolved tool handler with metadata
  */
 export interface ResolvedMcpTool {
@@ -15,7 +62,7 @@ export interface ResolvedMcpTool {
   description: string;
   sourceModule: string;
   handler: (args: Record<string, unknown>) => Promise<unknown>;
-  inputSchema?: z.ZodType;
+  inputSchema: Record<string, unknown>;
 }
 
 /**
@@ -63,6 +110,7 @@ export class McpToolRegistry {
         description: toolConfig.description ?? `Tool: ${toolConfig.name}`,
         sourceModule: module.id,
         handler,
+        inputSchema: toolConfig.inputSchema ?? {},
       };
 
       this.tools.set(toolConfig.name, tool);
@@ -103,10 +151,11 @@ export class McpToolRegistry {
     }
 
     for (const [name, tool] of this.tools) {
+      const zodShape = jsonSchemaToZodShape(tool.inputSchema);
       this.server.tool(
         name,
         tool.description,
-        {}, // Empty input schema - validation is done inside handler
+        zodShape,
         async (args: Record<string, unknown>) => {
           try {
             const result = await tool.handler(args);
