@@ -48,6 +48,8 @@ import { promptMcpTools } from '@/lib/modules/mcp-server/tools/prompt-tools';
 import { createPromptToolHandlers } from '@/lib/modules/mcp-server/tools/prompt-handlers';
 import { deploymentMcpTools } from '@/lib/modules/mcp-server/tools/deployment-tools';
 import { createDeploymentToolHandlers } from '@/lib/modules/mcp-server/tools/deployment-handlers';
+import { dashboardMcpTools } from '@/lib/modules/mcp-server/tools/dashboard-tools';
+import { createDashboardToolHandlers } from '@/lib/modules/mcp-server/tools/dashboard-handlers';
 import { aiEngineMcpTools } from '@/lib/modules/mcp-server/tools/ai-engine-tools';
 import { projectMcpTools } from '@/lib/modules/mcp-server/tools/project-tools';
 import { versionMcpTools } from '@/lib/modules/mcp-server/tools/version-tools';
@@ -245,6 +247,17 @@ async function main() {
 
   await toolRegistry.registerModuleTools(
     { id: 'deployment-tools', mcpTools: deploymentMcpTools } as any,
+    (_mod, toolName) => handlerMap[toolName],
+  );
+
+  // Register dashboard statistics tools
+  const { StatisticsService } = await import('@/lib/modules/dashboard/statistics.service');
+  const statsService = new StatisticsService(prisma, logger, eventBus);
+  const dashboardHandlers = createDashboardToolHandlers(statsService, logger);
+  Object.assign(handlerMap, dashboardHandlers);
+
+  await toolRegistry.registerModuleTools(
+    { id: 'dashboard-tools', mcpTools: dashboardMcpTools } as any,
     (_mod, toolName) => handlerMap[toolName],
   );
 

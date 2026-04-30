@@ -34,6 +34,8 @@ import { promptMcpTools } from '@/lib/modules/mcp-server/tools/prompt-tools';
 import { createPromptToolHandlers } from '@/lib/modules/mcp-server/tools/prompt-handlers';
 import { deploymentMcpTools } from '@/lib/modules/mcp-server/tools/deployment-tools';
 import { createDeploymentToolHandlers } from '@/lib/modules/mcp-server/tools/deployment-handlers';
+import { dashboardMcpTools } from '@/lib/modules/mcp-server/tools/dashboard-tools';
+import { createDashboardToolHandlers } from '@/lib/modules/mcp-server/tools/dashboard-handlers';
 import { getPrisma } from '@/lib/db';
 import { NextRequest } from 'next/server';
 import { z } from 'zod';
@@ -332,6 +334,23 @@ async function initializeSharedTools() {
         name: toolConfig.name,
         description: toolConfig.description ?? `Tool: ${toolConfig.name}`,
         sourceModule: 'deployment-tools',
+        handler,
+        schema: jsonSchemaToZodShape(toolConfig.inputSchema),
+      });
+    }
+  }
+
+  // Register dashboard statistics tools
+  const { StatisticsService } = await import('@/lib/modules/dashboard/statistics.service');
+  const statsService = new StatisticsService(prisma, logger, eventBus);
+  const dashboardHandlers = createDashboardToolHandlers(statsService, logger);
+  for (const toolConfig of dashboardMcpTools) {
+    const handler = (dashboardHandlers as any)[toolConfig.name];
+    if (handler !== undefined) {
+      allTools.push({
+        name: toolConfig.name,
+        description: toolConfig.description ?? `Tool: ${toolConfig.name}`,
+        sourceModule: 'dashboard-tools',
         handler,
         schema: jsonSchemaToZodShape(toolConfig.inputSchema),
       });

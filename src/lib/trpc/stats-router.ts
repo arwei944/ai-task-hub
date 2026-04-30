@@ -40,7 +40,7 @@ export const statsRouter = createTRPCRouter({
     return service.getSystemStats();
   }),
 
-  // Combined dashboard data
+  // Combined dashboard data (legacy)
   dashboard: protectedProcedure.query(async () => {
     const service = getStatsService();
     const [taskStats, dailyTrends, aiStats, systemStats] = await Promise.all([
@@ -49,7 +49,36 @@ export const statsRouter = createTRPCRouter({
       service.getAIStats(),
       service.getSystemStats(),
     ]);
-
     return { taskStats, dailyTrends, aiStats, systemStats };
+  }),
+
+  // ---- NEW: Project health scores ----
+  projectHealth: protectedProcedure.query(async () => {
+    const service = getStatsService();
+    return service.getProjectHealth();
+  }),
+
+  // ---- NEW: Deployment statistics ----
+  deploymentStats: protectedProcedure.query(async () => {
+    const service = getStatsService();
+    return service.getDeploymentStats();
+  }),
+
+  // ---- NEW: Agent efficiency metrics ----
+  agentEfficiency: protectedProcedure.query(async () => {
+    const service = getStatsService();
+    return service.getAgentEfficiency();
+  }),
+
+  // ---- NEW: Event bus metrics ----
+  eventMetrics: protectedProcedure.query(async () => {
+    const service = getStatsService();
+    return service.getEventMetrics();
+  }),
+
+  // ---- NEW: Full project dashboard (all metrics) ----
+  projectDashboard: protectedProcedure.query(async () => {
+    const service = getStatsService();
+    return service.getProjectDashboard();
   }),
 });
