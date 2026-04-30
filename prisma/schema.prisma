@@ -395,6 +395,8 @@ model Project {
   phaseTransitions PhaseTransition[]
   requirements Requirement[]
   knowledgeEntries KnowledgeEntry[]
+  testCases    TestCase[]
+  testSuites   TestSuite[]
   creator     Agent?  @relation(fields: [creatorId], references: [id], onDelete: SetNull)
 
   @@index([status])
@@ -770,4 +772,65 @@ model KnowledgeEntry {
   @@index([projectId])
   @@index([type])
   @@index([tags])
+}
+
+// ==================== Test Case ====================
+
+model TestCase {
+  id          String   @id @default(cuid())
+  projectId   String
+  title       String
+  description String?
+  type        String   @default("functional") // functional, unit, integration, e2e, performance
+  priority    String   @default("medium")     // low, medium, high, critical
+  status      String   @default("draft")      // draft, ready, passed, failed, skipped, blocked
+  taskId      String?
+  requirementId String?
+  steps       String?  @default("[]")         // JSON array of test steps
+  expectedResult String?
+  createdBy   String?
+  aiGenerated Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  project     Project  @relation(fields: [projectId], references: [id])
+  executions  TestExecution[]
+
+  @@index([projectId, status])
+  @@index([taskId])
+}
+
+// ==================== Test Execution ====================
+
+model TestExecution {
+  id          String   @id @default(cuid())
+  testCaseId  String
+  status      String   @default("pending") // pending, running, passed, failed, skipped
+  duration    Int?     // ms
+  output      String?
+  errorMessage String?
+  executedBy  String?
+  environment String?  // local, staging, production
+  createdAt   DateTime @default(now())
+
+  testCase    TestCase @relation(fields: [testCaseId], references: [id], onDelete: Cascade)
+
+  @@index([testCaseId, createdAt])
+}
+
+// ==================== Test Suite ====================
+
+model TestSuite {
+  id          String   @id @default(cuid())
+  projectId   String
+  name        String
+  description String?
+  testCaseIds String   @default("[]") // JSON array of test case IDs
+  createdBy   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  project     Project  @relation(fields: [projectId], references: [id])
+
+  @@index([projectId])
 }

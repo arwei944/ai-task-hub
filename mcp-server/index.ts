@@ -16,7 +16,9 @@ import { DIContainer } from '@/lib/core/di-container';
 import { ConfigAccessor } from '@/lib/core/config';
 import { McpToolRegistry } from '@/lib/modules/mcp-server/tool-registry';
 import { createTaskCoreToolHandlers, createAIEngineToolHandlers, createProjectToolHandlers } from '@/lib/modules/mcp-server/tools/handlers';
+import { createTestManagementToolHandlers } from '@/lib/modules/mcp-server/tools/test-management-handlers';
 import { taskCoreMcpTools } from '@/lib/modules/mcp-server/tools/task-core-tools';
+import { testManagementMcpTools } from '@/lib/modules/mcp-server/tools/test-management-tools';
 import { aiEngineMcpTools } from '@/lib/modules/mcp-server/tools/ai-engine-tools';
 import { projectMcpTools } from '@/lib/modules/mcp-server/tools/project-tools';
 import { versionMcpTools } from '@/lib/modules/mcp-server/tools/version-tools';
@@ -141,6 +143,17 @@ async function main() {
 
   await toolRegistry.registerModuleTools(
     { id: 'version-mgmt', mcpTools: versionMcpTools } as any,
+    (_mod, toolName) => handlerMap[toolName],
+  );
+
+  // Register test management tools
+  const { TestManagementService } = await import('@/lib/modules/test-management/test-management.service');
+  const testMgmtService = new TestManagementService(logger, eventBus, () => prisma);
+  const testMgmtHandlers = createTestManagementToolHandlers(testMgmtService, logger);
+  Object.assign(handlerMap, testMgmtHandlers);
+
+  await toolRegistry.registerModuleTools(
+    { id: 'test-management', mcpTools: testManagementMcpTools } as any,
     (_mod, toolName) => handlerMap[toolName],
   );
 
