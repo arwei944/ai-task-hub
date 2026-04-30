@@ -54,6 +54,10 @@ import { emailNotificationMcpTools } from '@/lib/modules/mcp-server/tools/email-
 import { createEmailNotificationToolHandlers } from '@/lib/modules/mcp-server/tools/email-notification-handlers';
 import { webpushMcpTools } from '@/lib/modules/mcp-server/tools/webpush-tools';
 import { createWebPushToolHandlers } from '@/lib/modules/mcp-server/tools/webpush-handlers';
+import { webhookRetryMcpTools } from '@/lib/modules/mcp-server/tools/webhook-retry-tools';
+import { createWebhookRetryToolHandlers } from '@/lib/modules/mcp-server/tools/webhook-retry-handlers';
+import { githubTriggerMcpTools } from '@/lib/modules/mcp-server/tools/github-trigger-tools';
+import { createGitHubTriggerToolHandlers } from '@/lib/modules/mcp-server/tools/github-trigger-handlers';
 import { getPrisma } from '@/lib/db';
 import { NextRequest } from 'next/server';
 import { z } from 'zod';
@@ -530,6 +534,40 @@ async function initializeSharedTools() {
         name: toolConfig.name,
         description: toolConfig.description ?? `Tool: ${toolConfig.name}`,
         sourceModule: 'webpush-tools',
+        handler,
+        schema: jsonSchemaToZodShape(toolConfig.inputSchema),
+      });
+    }
+  }
+
+  // Register webhook retry tools
+  const webhookRetryHandlers = createWebhookRetryToolHandlers(outboundWebhookService, logger);
+  for (const toolConfig of webhookRetryMcpTools) {
+    const handler = (webhookRetryHandlers as any)[toolConfig.name];
+    if (handler !== undefined) {
+      allTools.push({
+        name: toolConfig.name,
+        description: toolConfig.description ?? `Tool: ${toolConfig.name}`,
+        sourceModule: 'webhook-retry-tools',
+        handler,
+        schema: jsonSchemaToZodShape(toolConfig.inputSchema),
+      });
+    }
+  }
+
+  // Register GitHub trigger tools
+  const { TriggerDispatcher } = await import('@/lib/modules/workflow-engine/triggers/trigger-dispatcher');
+  const { WorkflowOrchestrator } = await import('@/lib/modules/workflow-engine/orchestrator');
+  const workflowOrchestrator = new WorkflowOrchestrator(prisma, logger, eventBus);
+  const triggerDispatcher = new TriggerDispatcher(prisma, workflowOrchestrator, eventBus, logger);
+  const githubTriggerHandlers = createGitHubTriggerToolHandlers(() => triggerDispatcher, logger);
+  for (const toolConfig of githubTriggerMcpTools) {
+    const handler = (githubTriggerHandlers as any)[toolConfig.name];
+    if (handler !== undefined) {
+      allTools.push({
+        name: toolConfig.name,
+        description: toolConfig.description ?? `Tool: ${toolConfig.name}`,
+        sourceModule: 'github-trigger-tools',
         handler,
         schema: jsonSchemaToZodShape(toolConfig.inputSchema),
       });

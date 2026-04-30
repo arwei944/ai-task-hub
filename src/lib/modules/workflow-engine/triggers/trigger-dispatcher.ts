@@ -14,6 +14,42 @@ interface PhaseChangeTriggerConfig {
   createdBy?: string;
 }
 
+/** GitHub Issue 触发配置 */
+interface GitHubIssueTriggerConfig {
+  /** 按标签过滤 (如 ["bug", "enhancement"]) */
+  labels?: string[];
+  /** 按状态过滤 */
+  state?: 'open' | 'closed';
+  /** 按动作过滤 (如 ["opened", "closed", "reopened", "labeled"]) */
+  actions?: string[];
+}
+
+/** GitHub Issue webhook payload */
+interface GitHubIssuePayload {
+  action?: string;
+  issue?: {
+    title?: string;
+    body?: string;
+    number?: number;
+    state?: string;
+    labels?: Array<{ name?: string }>;
+    html_url?: string;
+    user?: { login?: string };
+  };
+  repository?: {
+    full_name?: string;
+    name?: string;
+    owner?: { login?: string };
+  };
+}
+
+/** GitHub trigger 统计信息 */
+export interface GitHubTriggerStats {
+  registeredWorkflows: number;
+  totalTriggers: number;
+  lastTriggerTime: string | null;
+}
+
 /**
  * 触发调度器
  * 管理所有触发器类型，负责将触发事件分发到对应的工作流
@@ -23,6 +59,20 @@ export class TriggerDispatcher {
   private eventListeners: Array<{ workflowId: string; unsubscribe: () => void }> = [];
   private phaseChangeListener: { unsubscribe: () => void } | null = null;
   private phaseChangeConfig: PhaseChangeTriggerConfig = { enabled: false };
+
+  /** GitHub Issue 触发注册信息 */
+  private githubIssueRegistrations = new Map<string, {
+    workflowId: string;
+    config: GitHubIssueTriggerConfig;
+  }>();
+  /** GitHub Issue 事件监听器 */
+  private githubIssueListener: { unsubscribe: () => void } | null = null;
+  /** GitHub Issue 触发统计 */
+  private githubTriggerStats: GitHubTriggerStats = {
+    registeredWorkflows: 0,
+    totalTriggers: 0,
+    lastTriggerTime: null,
+  };
 
   constructor(
     private prisma: PrismaClient,
@@ -56,7 +106,9 @@ export class TriggerDispatcher {
         }
         break;
       case 'github-issue':
-        // GitHub Issues 触发通过 webhook 接收，不需要主动注册
+        if (triggerConfig) {
+          this.registerGitHubIssueTrigger(workflowId, triggerConfig);
+        }
         break;
       case 'webhook':
         // Webhook 触发通过 API 端点接收
@@ -90,6 +142,10 @@ export class TriggerDispatcher {
       }
       return true;
     });
+
+    // 清理 GitHub Issue 注册
+    this.githubIssueRegistrations.delete(workflowId);
+    this.githubTriggerStats.registeredWorkflows = this.githubIssueRegistrations.size;
 
     this.logger?.info(`Unregistered triggers for workflow ${workflowId}`);
   }
@@ -133,6 +189,49 @@ export class TriggerDispatcher {
       steps,
       variables,
       triggerType: 'webhook',
+      timeoutMs: workflow.timeoutMs,
+    });
+  }
+
+  /**
+   * GitHub Issue 触发
+   * 接收 GitHub issue webhook payload，映射到工作流变量并执行
+   * @param workflowId - 目标工作流 ID
+   * @param payload - GitHub issue webhook payload
+   * @returns 执行结果
+   */
+  async githubIssueTrigger(workflowId: string, payload: GitHubIssuePayload): Promise<{ executionId: string; status: string }> {
+    const workflow = await this.prisma.workflow.findUnique({ where: { id: workflowId } });
+    if (!workflow) throw new Error(`Workflow not found: ${workflowId}`);
+
+    const steps = JSON.parse(workflow.steps ?? '[]');
+    const baseVariables = workflow.variables ? JSON.parse(workflow.variables) : {};
+
+    // Map GitHub issue data to workflow variables
+    const issueVariables = {
+      title: payload.issue?.title ?? '',
+      body: payload.issue?.body ?? '',
+      labels: payload.issue?.labels?.map(l => l.name).filter(Boolean) ?? [],
+      state: payload.issue?.state ?? '',
+      number: payload.issue?.number ?? 0,
+      repository: payload.repository?.full_name ?? payload.repository?.name ?? '',
+      action: payload.action ?? '',
+      issueUrl: payload.issue?.html_url ?? '',
+      author: payload.issue?.user?.login ?? '',
+    };
+
+    const variables = { ...baseVariables, githubIssue: issueVariables };
+
+    // Update stats
+    this.githubTriggerStats.totalTriggers++;
+    this.githubTriggerStats.lastTriggerTime = new Date().toISOString();
+
+    return this.orchestrator.startExecution({
+      workflowId,
+      workflowName: workflow.name,
+      steps,
+      variables,
+      triggerType: 'github-issue',
       timeoutMs: workflow.timeoutMs,
     });
   }
@@ -230,6 +329,105 @@ export class TriggerDispatcher {
       this.eventListeners.push({ workflowId, unsubscribe });
       this.logger?.info(`Registered event trigger for workflow ${workflowId}: ${config.eventType}`);
     }
+  }
+
+  /**
+   * 注册 GitHub Issue 触发器
+   * 解析触发配置中的过滤条件，注册事件监听器
+   */
+  private registerGitHubIssueTrigger(workflowId: string, triggerConfig: string): void {
+    let config: GitHubIssueTriggerConfig;
+    try {
+      config = JSON.parse(triggerConfig);
+    } catch {
+      this.logger?.error(`Invalid GitHub issue config for workflow ${workflowId}`);
+      return;
+    }
+
+    // Store registration
+    this.githubIssueRegistrations.set(workflowId, { workflowId, config });
+    this.githubTriggerStats.registeredWorkflows = this.githubIssueRegistrations.size;
+
+    // Ensure the global listener is set up (only once)
+    if (!this.githubIssueListener && this.eventBus) {
+      const unsubscribe = this.eventBus.on('github.issue.received', async (event: any) => {
+        try {
+          await this.handleGitHubIssueEvent(event.payload);
+        } catch (err) {
+          this.logger?.error('GitHub issue event handler failed', { error: String(err) });
+        }
+      });
+      this.githubIssueListener = { unsubscribe };
+      this.logger?.info('Global GitHub issue event listener registered');
+    }
+
+    this.logger?.info(`Registered GitHub issue trigger for workflow ${workflowId}`, { filters: config });
+  }
+
+  /**
+   * 处理 GitHub Issue 事件
+   * 遍历所有注册的工作流，应用过滤条件后触发匹配的工作流
+   */
+  private async handleGitHubIssueEvent(payload: GitHubIssuePayload): Promise<void> {
+    for (const [workflowId, registration] of this.githubIssueRegistrations.entries()) {
+      const { config } = registration;
+
+      // Apply filters
+      if (!this.matchesGitHubIssueFilters(payload, config)) {
+        continue;
+      }
+
+      try {
+        await this.githubIssueTrigger(workflowId, payload);
+        this.logger?.info(`GitHub issue trigger fired for workflow ${workflowId}`, {
+          action: payload.action,
+          issue: payload.issue?.number,
+          repository: payload.repository?.full_name,
+        });
+      } catch (err) {
+        this.logger?.error(`GitHub issue trigger failed for workflow ${workflowId}`, { error: String(err) });
+      }
+    }
+  }
+
+  /**
+   * 检查 GitHub Issue payload 是否匹配过滤条件
+   */
+  private matchesGitHubIssueFilters(payload: GitHubIssuePayload, config: GitHubIssueTriggerConfig): boolean {
+    // Filter by action
+    if (config.actions && config.actions.length > 0) {
+      if (!payload.action || !config.actions.includes(payload.action)) {
+        return false;
+      }
+    }
+
+    // Filter by state
+    if (config.state) {
+      if (!payload.issue?.state || payload.issue.state !== config.state) {
+        return false;
+      }
+    }
+
+    // Filter by labels
+    if (config.labels && config.labels.length > 0) {
+      const issueLabels = payload.issue?.labels?.map(l => l.name).filter(Boolean) ?? [];
+      const hasMatchingLabel = config.labels.some(filterLabel =>
+        issueLabels.includes(filterLabel)
+      );
+      if (!hasMatchingLabel) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  /**
+   * 获取 GitHub 触发器统计信息
+   * @returns 统计数据：已注册工作流数、总触发次数、最后触发时间
+   */
+  getGitHubTriggerStats(): GitHubTriggerStats {
+    return { ...this.githubTriggerStats };
   }
 
   /**
@@ -488,6 +686,13 @@ export class TriggerDispatcher {
   shutdown(): void {
     // 禁用阶段变更触发
     this.disablePhaseChangeTrigger();
+
+    // 清理 GitHub issue listener
+    if (this.githubIssueListener) {
+      this.githubIssueListener.unsubscribe();
+      this.githubIssueListener = null;
+    }
+    this.githubIssueRegistrations.clear();
 
     for (const [workflowId, job] of this.scheduledJobs.entries()) {
       clearInterval(job);

@@ -13,6 +13,7 @@ import { workflowsRouter } from './workflows-router';
 import { feedbackRouter } from './feedback-router';
 import { deploymentsRouter } from './deployments-router';
 import { notificationRulesRouter } from './notification-rules-router';
+import { notificationHistoryRouter } from './notification-history-router';
 
 export const appRouter = createTRPCRouter({
   auth: authRouter,
@@ -29,6 +30,7 @@ export const appRouter = createTRPCRouter({
   feedback: feedbackRouter,
   deployments: deploymentsRouter,
   notificationRules: notificationRulesRouter,
+  notificationHistory: notificationHistoryRouter,
 });
 
 export type AppRouter = typeof appRouter;

@@ -68,6 +68,10 @@ import { emailNotificationMcpTools } from '@/lib/modules/mcp-server/tools/email-
 import { createEmailNotificationToolHandlers } from '@/lib/modules/mcp-server/tools/email-notification-handlers';
 import { webpushMcpTools } from '@/lib/modules/mcp-server/tools/webpush-tools';
 import { createWebPushToolHandlers } from '@/lib/modules/mcp-server/tools/webpush-handlers';
+import { webhookRetryMcpTools } from '@/lib/modules/mcp-server/tools/webhook-retry-tools';
+import { createWebhookRetryToolHandlers } from '@/lib/modules/mcp-server/tools/webhook-retry-handlers';
+import { githubTriggerMcpTools } from '@/lib/modules/mcp-server/tools/github-trigger-tools';
+import { createGitHubTriggerToolHandlers } from '@/lib/modules/mcp-server/tools/github-trigger-handlers';
 import { aiEngineMcpTools } from '@/lib/modules/mcp-server/tools/ai-engine-tools';
 import { projectMcpTools } from '@/lib/modules/mcp-server/tools/project-tools';
 import { versionMcpTools } from '@/lib/modules/mcp-server/tools/version-tools';
@@ -387,6 +391,28 @@ async function main() {
 
   await toolRegistry.registerModuleTools(
     { id: 'webpush-tools', mcpTools: webpushMcpTools } as any,
+    (_mod, toolName) => handlerMap[toolName],
+  );
+
+  // Register webhook retry tools
+  const webhookRetryHandlers = createWebhookRetryToolHandlers(outboundWebhookService, logger);
+  Object.assign(handlerMap, webhookRetryHandlers);
+
+  await toolRegistry.registerModuleTools(
+    { id: 'webhook-retry-tools', mcpTools: webhookRetryMcpTools } as any,
+    (_mod, toolName) => handlerMap[toolName],
+  );
+
+  // Register GitHub trigger tools
+  const { TriggerDispatcher } = await import('@/lib/modules/workflow-engine/triggers/trigger-dispatcher');
+  const { WorkflowOrchestrator } = await import('@/lib/modules/workflow-engine/orchestrator');
+  const workflowOrchestrator = new WorkflowOrchestrator(prisma, logger, eventBus);
+  const triggerDispatcher = new TriggerDispatcher(prisma, workflowOrchestrator, eventBus, logger);
+  const githubTriggerHandlers = createGitHubTriggerToolHandlers(() => triggerDispatcher, logger);
+  Object.assign(handlerMap, githubTriggerHandlers);
+
+  await toolRegistry.registerModuleTools(
+    { id: 'github-trigger-tools', mcpTools: githubTriggerMcpTools } as any,
     (_mod, toolName) => handlerMap[toolName],
   );
 

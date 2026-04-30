@@ -24,6 +24,7 @@ import {
   MessageSquare,
   GitBranch,
   Activity,
+  Bell,
 } from 'lucide-react';
 import { ThemeToggle } from './theme-toggle';
 import { LanguageSwitcher } from './language-switcher';
@@ -45,6 +46,7 @@ const mainNavItems: NavItem[] = [
   { href: '/workspaces', label: '工作区', icon: Building2 },
   { href: '/integrations', label: '集成', icon: Link2 },
   { href: '/deployments', label: '部署管理', icon: Rocket },
+  { href: '/notifications', label: '通知管理', icon: Bell },
   { href: '/plugins', label: '插件', icon: Puzzle },
 ];
 
