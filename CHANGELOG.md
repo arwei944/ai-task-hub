@@ -1,5 +1,34 @@
 # Changelog
 
+## [2.1.0] - 2026-04-30
+
+### v2.1.0 正式发布 — MCP 智能增强 + 部署管理
+
+从 alpha.1 到 alpha.3，历经 3 个迭代版本，AI Task Hub v2.1.0 正式发布。本版本聚焦 MCP 工具智能增强和部署管理能力，为 AI Agent 提供更高效的上下文和更完整的 DevOps 工具链。
+
+#### MCP 工具优化 (Phase 1)
+- **Standalone Server Schema 修复** — 修复 inputSchema 传递空 `{}` 的关键 Bug，AI Agent 现在能正确看到所有工具参数
+- **20 个缺失工具注册** — requirement(12)、knowledge(9)、lifecycle(6)、test-management 工具全部注册到 standalone + web MCP 服务器
+- **上下文聚合工具** — `get_project_context` + `get_task_context`，一次调用获取项目/任务全貌，减少 Agent 轮次
+
+#### Agent 提示模板系统 (Phase 2)
+- **7 个场景模板** — project_overview、task_analysis、requirement_analysis、risk_assessment、release_checklist、daily_standup、sprint_planning
+- **结构化引导** — 每个模板包含目标、步骤、技巧、输出格式，让 Agent 输出更专业
+- **MCP 工具集成** — `get_agent_prompt` + `list_available_scenarios`，Agent 可自主选择合适的分析模板
+
+#### 部署管理模块 (Phase 3)
+- **多环境管理** — dev/staging/prod 环境配置，支持自定义环境变量和 URL
+- **部署流水线** — 4 种策略（rolling/blue_green/canary/recreate），完整状态机（pending→building→deploying→verifying→running）
+- **部署验证** — 自动检查环境状态、冲突检测、版本格式、策略有效性
+- **回滚机制** — 自动定位上一个成功版本，一键回滚并记录原因
+- **健康检查** — HTTP/TCP/进程/自定义 4 种检查类型，自动聚合环境健康状态
+- **20 个 MCP 工具** — 覆盖环境/部署/健康检查/回滚/日志全流程
+- **4 个 Prisma 模型** — DeploymentEnvironment、Deployment、DeploymentLog、HealthCheck
+
+#### 测试
+- **23 个新测试** — 部署管理模块完整单元测试
+- **总计 1875 个测试通过** — 99 个测试文件，零回归
+
 ## [2.0.0] - 2026-04-30
 
 ### v2.0.0 正式发布 — 全流程贯通 + 集成测试 + 文档完善
