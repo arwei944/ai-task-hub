@@ -942,3 +942,45 @@ model NotificationRule {
   @@index([eventPattern])
   @@index([priority])
 }
+
+// ==================== Outbound Webhook ====================
+
+model OutboundWebhook {
+  id             String   @id @default(cuid())
+  name           String
+  url            String                        // Target URL
+  secret         String?                       // HMAC signing secret
+  eventPatterns  String   @default("*")        // Comma-separated event patterns
+  headers        String?                       // JSON: custom headers
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  deliveries     OutboundWebhookDelivery[]
+
+  @@index([isActive])
+}
+
+// ==================== Outbound Webhook Delivery ====================
+
+model OutboundWebhookDelivery {
+  id           String   @id @default(cuid())
+  webhookId    String
+  eventType    String
+  url          String
+  method       String   @default("POST")
+  requestBody  String
+  responseBody String?
+  statusCode   Int?
+  duration     Int                          // Duration in ms
+  success      Boolean
+  error        String?
+  retryCount   Int      @default(0)
+  createdAt    DateTime @default(now())
+
+  webhook      OutboundWebhook @relation(fields: [webhookId], references: [id], onDelete: Cascade)
+
+  @@index([webhookId, createdAt])
+  @@index([eventType])
+  @@index([success])
+}

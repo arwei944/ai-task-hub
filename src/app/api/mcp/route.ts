@@ -40,6 +40,8 @@ import { notificationRuleMcpTools } from '@/lib/modules/mcp-server/tools/notific
 import { createNotificationRuleToolHandlers } from '@/lib/modules/mcp-server/tools/notification-rule-handlers';
 import { eventBusMcpTools } from '@/lib/modules/mcp-server/tools/event-bus-tools';
 import { createEventBusToolHandlers } from '@/lib/modules/mcp-server/tools/event-bus-handlers';
+import { outboundWebhookMcpTools } from '@/lib/modules/mcp-server/tools/outbound-webhook-tools';
+import { createOutboundWebhookToolHandlers } from '@/lib/modules/mcp-server/tools/outbound-webhook-handlers';
 import { getPrisma } from '@/lib/db';
 import { NextRequest } from 'next/server';
 import { z } from 'zod';
@@ -389,6 +391,23 @@ async function initializeSharedTools() {
         name: toolConfig.name,
         description: toolConfig.description ?? `Tool: ${toolConfig.name}`,
         sourceModule: 'event-bus-tools',
+        handler,
+        schema: jsonSchemaToZodShape(toolConfig.inputSchema),
+      });
+    }
+  }
+
+  // Register outbound webhook tools
+  const { OutboundWebhookService } = await import('@/lib/modules/integration-webhook/outbound-webhook.service');
+  const outboundWebhookService = new OutboundWebhookService(logger, eventBus, () => prisma);
+  const outboundWebhookHandlers = createOutboundWebhookToolHandlers(outboundWebhookService, logger);
+  for (const toolConfig of outboundWebhookMcpTools) {
+    const handler = (outboundWebhookHandlers as any)[toolConfig.name];
+    if (handler !== undefined) {
+      allTools.push({
+        name: toolConfig.name,
+        description: toolConfig.description ?? `Tool: ${toolConfig.name}`,
+        sourceModule: 'outbound-webhook-tools',
         handler,
         schema: jsonSchemaToZodShape(toolConfig.inputSchema),
       });

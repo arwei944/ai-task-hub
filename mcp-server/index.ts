@@ -54,6 +54,8 @@ import { notificationRuleMcpTools } from '@/lib/modules/mcp-server/tools/notific
 import { createNotificationRuleToolHandlers } from '@/lib/modules/mcp-server/tools/notification-rule-handlers';
 import { eventBusMcpTools } from '@/lib/modules/mcp-server/tools/event-bus-tools';
 import { createEventBusToolHandlers } from '@/lib/modules/mcp-server/tools/event-bus-handlers';
+import { outboundWebhookMcpTools } from '@/lib/modules/mcp-server/tools/outbound-webhook-tools';
+import { createOutboundWebhookToolHandlers } from '@/lib/modules/mcp-server/tools/outbound-webhook-handlers';
 import { aiEngineMcpTools } from '@/lib/modules/mcp-server/tools/ai-engine-tools';
 import { projectMcpTools } from '@/lib/modules/mcp-server/tools/project-tools';
 import { versionMcpTools } from '@/lib/modules/mcp-server/tools/version-tools';
@@ -284,6 +286,17 @@ async function main() {
 
   await toolRegistry.registerModuleTools(
     { id: 'event-bus-tools', mcpTools: eventBusMcpTools } as any,
+    (_mod, toolName) => handlerMap[toolName],
+  );
+
+  // Register outbound webhook tools
+  const { OutboundWebhookService } = await import('@/lib/modules/integration-webhook/outbound-webhook.service');
+  const outboundWebhookService = new OutboundWebhookService(logger, eventBus, () => prisma);
+  const outboundWebhookHandlers = createOutboundWebhookToolHandlers(outboundWebhookService, logger);
+  Object.assign(handlerMap, outboundWebhookHandlers);
+
+  await toolRegistry.registerModuleTools(
+    { id: 'outbound-webhook-tools', mcpTools: outboundWebhookMcpTools } as any,
     (_mod, toolName) => handlerMap[toolName],
   );
 
