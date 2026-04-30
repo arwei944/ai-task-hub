@@ -125,6 +125,9 @@ export interface IEventBus {
   once(eventType: string, callback: EventCallback): Unsubscribe;
   off(eventType: string, callback: EventCallback): void;
   removeAllListeners(eventType?: string): void;
+  queryEvents?(filter: any): Promise<any[]>;
+  replayEvents?(eventType: string, from?: Date): Promise<void>;
+  getEventCount?(eventType?: string): Promise<number>;
 }
 
 export interface OnOptions {

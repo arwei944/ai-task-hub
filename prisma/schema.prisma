@@ -671,3 +671,17 @@ model ReleaseMilestone {
   @@index([releaseId])
   @@index([status])
 }
+
+// ==================== Event Store ====================
+
+model EventStore {
+  id        String   @id @default(cuid())
+  eventType String
+  payload   String
+  source    String?
+  timestamp DateTime @default(now())
+  version   Int      @default(1)
+
+  @@index([eventType, timestamp])
+  @@index([source, timestamp])
+}

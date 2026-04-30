@@ -1,5 +1,28 @@
 # Changelog
 
+## [2.0.0-alpha.1] - 2026-04-30
+
+### 🧠 EventBus v2 — 事件溯源 + Schema 校验（中枢神经系统基础）
+
+#### 新增: 事件系统核心
+- **EventStore 模型** — SQLite 事件持久化，支持查询和回放
+- **38 个事件类型** — 覆盖 project/task/workflow/release/requirement/agent/integration/system 8 大领域
+- **Zod Schema 校验** — 每个事件类型有对应的 payload Schema，发射时自动校验
+- **EventStore 类** — persist/query/replay/getEventCount/cleanOldEvents 五大方法
+
+#### EventBus 升级
+- **向后兼容** — 现有 emit/on/off/once/removeAllListeners 不受影响
+- **可选事件溯源** — 通过 EventBusConfig.eventStore 启用持久化
+- **可选 Schema 校验** — 通过 EventBusConfig.validateEvents 启用
+- **新增方法** — queryEvents/replayEvents/getEventCount
+- **IEventBus 接口扩展** — 新增 3 个可选方法
+
+#### 测试
+- **48 个新测试** — event-catalog(5) + schemas(13) + event-store(10) + event-bus-v2(20)
+- **总测试数** — 1375 个测试全部通过
+
+---
+
 ## [1.9.0] - 2026-04-30
 
 ### 🎯 版本管理模块 — 全生命周期版本发布系统
