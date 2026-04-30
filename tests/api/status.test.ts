@@ -130,12 +130,12 @@ describe('GET /api/status', () => {
   });
 
   it('should include version information', async () => {
-    process.env.npm_package_version = '1.8.0';
+    process.env.npm_package_version = '1.9.0';
 
     const response = await GET();
     const data = await response.json();
 
-    expect(data.version).toBe('1.8.0');
+    expect(data.version).toBe('1.9.0');
   });
 
   it('should default version to 1.0.1 when env var not set', async () => {

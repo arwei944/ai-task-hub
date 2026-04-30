@@ -1,5 +1,57 @@
 # Changelog
 
+## [1.9.0] - 2026-04-30
+
+### 🎯 版本管理模块 — 全生命周期版本发布系统
+
+#### 新模块: version-mgmt
+- **5 个数据模型** — Release、ReleaseChangelog、ReleaseTag、ReleaseApproval、ReleaseMilestone
+- **20 个 Service 方法** — 覆盖版本发布全生命周期
+- **14 个 MCP 工具** — AI Agent 可直接调用版本管理功能
+
+#### 版本发布流程
+- **完整工作流** — draft → review → approved → published → archived / rolled_back
+- **语义化版本** — 自动递增 major/minor/patch
+- **审批系统** — 多角色审批（reviewer/admin/auto），支持通过/拒绝/跳过
+- **里程碑管理** — Code Freeze、QA Complete、Deployed 等阶段追踪
+
+#### 变更日志
+- **11 种分类** — added、changed、fixed、deprecated、removed、security、performance、docs、refactor、test、chore
+- **自动生成** — 从项目活动日志自动生成 Changelog
+- **版本对比** — 两个版本之间的差异分析
+
+#### MCP 工具 (14 个)
+- `create_release` — 创建版本发布
+- `get_release` / `list_releases` — 查询发布
+- `update_release` / `delete_release` — 管理发布
+- `publish_release` — 发布版本
+- `add_changelog` — 添加变更日志
+- `compare_versions` — 版本对比
+- `get_next_version` — 自动计算下一版本号
+- `get_release_stats` — 发布统计
+- `submit_for_review` / `approve_release` — 审批流程
+- `rollback_release` — 版本回滚
+- `generate_changelog` — 自动生成变更日志
+
+#### Bug 修复 (5 个已知问题)
+- **P0**: Standalone MCP Server 补全 12 个 Project Lifecycle 工具注册
+- **P0**: `advance_phase` 的 `previousPhase` 记录错误修复
+- **P1**: `advance_phase` 添加阶段守卫逻辑（防止非法跳转）
+- **P1**: JWT 默认密钥安全加固（生产环境强制配置，开发环境随机生成）
+- **P1**: 统一数据库默认路径（`./prisma/dev.db` → `./data/dev.db`）
+
+#### 文档
+- **交接文档** — 详细的项目交接文档（HANDOVER_DOC.docx）
+- **模块架构地图** — 8 层架构可视化 + 13 步执行路径（MODULE_MAP.html）
+- **流程演示视频** — 截图小工具完整流程演示（ai-task-hub-demo.mp4）
+
+#### 测试
+- 新增 50 个版本管理模块测试
+- 更新 3 个 JWT 安全测试（反映新的随机密钥行为）
+- 总计: 71 文件 / 1329 测试 / 0 失败
+
+---
+
 ## [1.8.0] - 2026-04-29
 
 ### 🚀 Phase C: 智能化 — 策略即代码 + 可观测性 + 反馈闭环
