@@ -415,18 +415,18 @@ describe('Step Handlers', () => {
       expect(handler).toBeUndefined();
     });
 
-    it('should throw for placeholder step types', async () => {
+    it('should throw for http-request step without url', async () => {
       const deps: StepHandlerDeps = { prisma: {}, taskService: {} };
       const handler = StepRegistry.getHandler('http-request', deps);
       expect(handler).toBeDefined();
-      await expect(handler!.execute({}, {})).rejects.toThrow('not yet implemented');
+      await expect(handler!.execute({}, {})).rejects.toThrow('http-request step requires "url"');
     });
 
-    it('should throw for transform placeholder', async () => {
+    it('should throw for transform step without operation', async () => {
       const deps: StepHandlerDeps = { prisma: {}, taskService: {} };
       const handler = StepRegistry.getHandler('transform', deps);
       expect(handler).toBeDefined();
-      await expect(handler!.execute({}, {})).rejects.toThrow('not yet implemented');
+      await expect(handler!.execute({}, {})).rejects.toThrow('transform step requires "operation"');
     });
   });
 });

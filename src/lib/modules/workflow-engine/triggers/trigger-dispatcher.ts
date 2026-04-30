@@ -2,7 +2,17 @@ import type { PrismaClient } from '@/generated/prisma/client';
 import type { Logger } from '@/lib/core/logger';
 import type { EventBus } from '@/lib/core/event-bus';
 import type { WorkflowOrchestrator } from '../orchestrator';
-import type { TriggerType } from '../types';
+import type { TriggerType, WorkflowStep } from '../types';
+import { getTemplateForPhase } from '../templates/project-templates';
+
+/** 项目阶段变更事件触发配置 */
+interface PhaseChangeTriggerConfig {
+  enabled: boolean;
+  /** 是否自动创建工作流（如果不存在匹配的工作流） */
+  autoCreate?: boolean;
+  /** 工作流创建者 */
+  createdBy?: string;
+}
 
 /**
  * 触发调度器
@@ -11,6 +21,8 @@ import type { TriggerType } from '../types';
 export class TriggerDispatcher {
   private scheduledJobs = new Map<string, ReturnType<typeof setInterval>>();
   private eventListeners: Array<{ workflowId: string; unsubscribe: () => void }> = [];
+  private phaseChangeListener: { unsubscribe: () => void } | null = null;
+  private phaseChangeConfig: PhaseChangeTriggerConfig = { enabled: false };
 
   constructor(
     private prisma: PrismaClient,
@@ -313,10 +325,170 @@ export class TriggerDispatcher {
     return false;
   }
 
+  // ==================== 项目阶段变更触发 ====================
+
+  /**
+   * 启用项目阶段变更自动工作流触发
+   * 当收到 project.phase.changed 事件时，自动查找并执行匹配的工作流模板
+   */
+  enablePhaseChangeTrigger(config?: { autoCreate?: boolean; createdBy?: string }): void {
+    if (!this.eventBus) {
+      this.logger?.warn('Cannot enable phase change trigger: no eventBus provided');
+      return;
+    }
+
+    // 如果已经启用，先清理
+    this.disablePhaseChangeTrigger();
+
+    this.phaseChangeConfig = {
+      enabled: true,
+      autoCreate: config?.autoCreate ?? false,
+      createdBy: config?.createdBy ?? 'system',
+    };
+
+    const unsubscribe = this.eventBus.on('project.phase.changed', async (event: any) => {
+      try {
+        await this.handlePhaseChangeEvent(event.payload);
+      } catch (err) {
+        this.logger?.error('Phase change trigger handler failed', { error: String(err) });
+      }
+    });
+
+    this.phaseChangeListener = { unsubscribe };
+    this.logger?.info('Phase change trigger enabled');
+  }
+
+  /**
+   * 禁用项目阶段变更自动工作流触发
+   */
+  disablePhaseChangeTrigger(): void {
+    if (this.phaseChangeListener) {
+      this.phaseChangeListener.unsubscribe();
+      this.phaseChangeListener = null;
+    }
+    this.phaseChangeConfig = { enabled: false };
+    this.logger?.info('Phase change trigger disabled');
+  }
+
+  /**
+   * 获取当前阶段变更触发配置
+   */
+  getPhaseChangeConfig(): PhaseChangeTriggerConfig {
+    return { ...this.phaseChangeConfig };
+  }
+
+  /**
+   * 处理项目阶段变更事件
+   */
+  private async handlePhaseChangeEvent(payload: Record<string, unknown>): Promise<void> {
+    const newPhase = String(payload.newPhase ?? payload.phase ?? '');
+    const projectId = String(payload.projectId ?? '');
+
+    if (!newPhase) {
+      this.logger?.warn('Phase change event missing newPhase');
+      return;
+    }
+
+    // 查找匹配的工作流模板
+    const template = getTemplateForPhase(newPhase);
+    if (!template) {
+      this.logger?.debug(`No workflow template found for phase: ${newPhase}`);
+      return;
+    }
+
+    this.logger?.info(`Found workflow template for phase "${newPhase}": ${template.name}`);
+
+    // 查找项目中是否已有该阶段的工作流
+    let workflowId = await this.findWorkflowForPhase(projectId, newPhase);
+
+    if (!workflowId && this.phaseChangeConfig.autoCreate) {
+      // 自动创建工作流
+      workflowId = await this.createWorkflowFromTemplate(template, projectId);
+      if (workflowId) {
+        this.logger?.info(`Auto-created workflow "${template.name}" (id: ${workflowId}) for phase ${newPhase}`);
+      }
+    }
+
+    if (!workflowId) {
+      this.logger?.debug(`No workflow found or created for phase: ${newPhase}`);
+      return;
+    }
+
+    // 触发工作流执行
+    try {
+      await this.executeTriggeredWorkflow(workflowId, 'event', {
+        ...payload,
+        source: 'phase-change-trigger',
+        templateName: template.name,
+      });
+      this.logger?.info(`Triggered workflow ${workflowId} for phase change to "${newPhase}"`);
+    } catch (err) {
+      this.logger?.error(`Failed to trigger workflow for phase change`, { error: String(err) });
+    }
+  }
+
+  /**
+   * 查找项目中指定阶段的工作流
+   */
+  private async findWorkflowForPhase(projectId: string, phase: string): Promise<string | null> {
+    try {
+      const workflows = await this.prisma.workflow.findMany({
+        where: {
+          isActive: true,
+          name: { contains: phase },
+        },
+        select: { id: true },
+        take: 1,
+      });
+
+      if (workflows.length > 0) {
+        return workflows[0].id;
+      }
+    } catch (err) {
+      this.logger?.error(`Failed to find workflow for phase`, { error: String(err) });
+    }
+
+    return null;
+  }
+
+  /**
+   * 从模板创建工作流
+   */
+  private async createWorkflowFromTemplate(
+    template: { name: string; description: string; phase: string; steps: WorkflowStep[] },
+    projectId: string,
+  ): Promise<string | null> {
+    try {
+      const workflow = await this.prisma.workflow.create({
+        data: {
+          name: template.name,
+          description: template.description,
+          trigger: 'event',
+          triggerConfig: JSON.stringify({
+            eventType: 'project.phase.changed',
+            filter: { newPhase: template.phase },
+          }),
+          steps: JSON.stringify(template.steps),
+          isActive: true,
+          createdBy: this.phaseChangeConfig.createdBy,
+          context: JSON.stringify({ projectId }),
+        },
+      });
+
+      return workflow.id;
+    } catch (err) {
+      this.logger?.error(`Failed to create workflow from template`, { error: String(err) });
+      return null;
+    }
+  }
+
   /**
    * 关闭所有触发器
    */
   shutdown(): void {
+    // 禁用阶段变更触发
+    this.disablePhaseChangeTrigger();
+
     for (const [workflowId, job] of this.scheduledJobs.entries()) {
       clearInterval(job);
       this.logger?.info(`Cleared scheduled trigger for workflow ${workflowId}`);

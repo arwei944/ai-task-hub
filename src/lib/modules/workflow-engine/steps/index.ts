@@ -9,6 +9,8 @@ import { ConditionStep } from './condition';
 import { InvokeAgentStep } from './invoke-agent';
 import { ForEachStep } from './foreach';
 import { ApprovalStep } from './approval';
+import { HttpRequestStep } from './http-request';
+import { TransformStep } from './transform';
 
 export type { StepHandlerDeps } from '../types';
 
@@ -43,13 +45,5 @@ StepRegistry.register('condition', (deps) => new ConditionStep(deps));
 StepRegistry.register('invoke-agent', (deps) => new InvokeAgentStep(deps));
 StepRegistry.register('foreach', (deps) => new ForEachStep(deps));
 StepRegistry.register('approval', (deps) => new ApprovalStep(deps));
-
-// Placeholder step types for Phase B/C
-const placeholderTypes = ['http-request', 'transform'];
-for (const type of placeholderTypes) {
-  StepRegistry.register(type, () => ({
-    async execute() {
-      throw new Error(`Step type "${type}" is not yet implemented (planned for Phase B/C)`);
-    },
-  }));
-}
+StepRegistry.register('http-request', () => new HttpRequestStep());
+StepRegistry.register('transform', () => new TransformStep());

@@ -1,5 +1,27 @@
 # Changelog
 
+## [2.0.0-beta.2] - 2026-04-30
+
+### ⚙️ 工作流引擎补全 — 占位步骤实现 + 项目模板 + 事件触发
+
+#### 步骤实现
+- **http-request 步骤** — 支持 GET/POST/PUT/DELETE/PATCH，自定义 headers/body/timeout
+- **transform 步骤** — 支持 map/filter/reduce/pick/omit/merge/template 7 种数据转换
+
+#### 项目工作流模板
+- **6 个阶段模板** — 需求分析/项目规划/架构设计/编码实现/测试验证/部署发布
+- 每个模板包含完整的步骤定义和 AI 分析节点
+
+#### 事件触发增强
+- **阶段变更自动触发** — project.phase.changed 事件自动匹配并创建工作流
+- 支持 autoCreate 选项，可配置是否自动创建
+
+#### 测试
+- **70 个新测试** — http-request(16) + transform(29) + templates(25)
+- **总测试数** — 1627 个测试全部通过
+
+---
+
 ## [2.0.0-beta.1] - 2026-04-30
 
 ### 📋 需求分析模块 — 结构化需求管理
