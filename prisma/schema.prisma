@@ -393,6 +393,7 @@ model Project {
   activities  ActivityLog[]
   releases    Release[]
   phaseTransitions PhaseTransition[]
+  requirements Requirement[]
   creator     Agent?  @relation(fields: [creatorId], references: [id], onDelete: SetNull)
 
   @@index([status])
@@ -704,4 +705,45 @@ model PhaseTransition {
   project     Project  @relation(fields: [projectId], references: [id])
 
   @@index([projectId, createdAt])
+}
+
+// ==================== Requirement ====================
+
+model Requirement {
+  id          String   @id @default(cuid())
+  projectId   String
+  title       String
+  description String
+  type        String   @default("feature")
+  priority    Int      @default(0)
+  status      String   @default("draft")
+  complexity  String?
+  acceptance  String?
+  source      String?
+  parentReqId String?
+  createdBy   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  project     Project  @relation(fields: [projectId], references: [id])
+  parent      Requirement?  @relation("ReqHierarchy", fields: [parentReqId], references: [id])
+  children    Requirement[] @relation("ReqHierarchy")
+  tags        RequirementTag[]
+
+  @@index([projectId, status])
+  @@index([parentReqId])
+}
+
+// ==================== Requirement Tag ====================
+
+model RequirementTag {
+  id             String       @id @default(cuid())
+  requirementId  String
+  name           String
+  createdAt      DateTime     @default(now())
+
+  requirement    Requirement  @relation(fields: [requirementId], references: [id], onDelete: Cascade)
+
+  @@unique([requirementId, name])
+  @@index([name])
 }

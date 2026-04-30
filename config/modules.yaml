@@ -106,6 +106,12 @@ modules:
     config:
       auto_validate: true
 
+  # Requirements analysis module
+  requirements:
+    enabled: true
+    config:
+      auto_analyze: true
+
 app:
   name: "AI Task Hub"
   version: "2.0.0-alpha.2"

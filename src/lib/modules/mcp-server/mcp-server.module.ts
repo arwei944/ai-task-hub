@@ -8,9 +8,11 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { McpToolRegistry } from './tool-registry';
 import { createTaskCoreToolHandlers, createAIEngineToolHandlers } from './tools/handlers';
 import { createLifecycleToolHandlers } from './tools/lifecycle-handlers';
+import { createRequirementToolHandlers } from './tools/requirement-handlers';
 import { taskCoreMcpTools } from './tools/task-core-tools';
 import { aiEngineMcpTools } from './tools/ai-engine-tools';
 import { lifecycleMcpTools } from './tools/lifecycle-tools';
+import { requirementMcpTools } from './tools/requirement-tools';
 
 export default class McpServerModule implements Module {
   id = 'mcp-server';
@@ -22,7 +24,7 @@ export default class McpServerModule implements Module {
   // Declare MCP tools that this module provides
   // (In practice, tools come from task-core and ai-engine modules,
   //  but we declare them here for the module system to discover)
-  mcpTools = [...taskCoreMcpTools, ...aiEngineMcpTools, ...lifecycleMcpTools];
+  mcpTools = [...taskCoreMcpTools, ...aiEngineMcpTools, ...lifecycleMcpTools, ...requirementMcpTools];
 
   private mcpServer: McpServer | null = null;
   private toolRegistry: McpToolRegistry | null = null;
@@ -104,6 +106,17 @@ export default class McpServerModule implements Module {
         Object.assign(handlerMap, lifecycleHandlers);
         await this.toolRegistry.registerModuleTools(
           { id: 'lifecycle', mcpTools: lifecycleMcpTools } as any,
+          (_mod, toolName) => handlerMap[toolName],
+        );
+      }
+
+      // Requirements handlers
+      if (context.container.has('RequirementsService')) {
+        const requirementsService = context.container.resolve<any>('RequirementsService');
+        const requirementHandlers = createRequirementToolHandlers(requirementsService, context.logger);
+        Object.assign(handlerMap, requirementHandlers);
+        await this.toolRegistry.registerModuleTools(
+          { id: 'requirements', mcpTools: requirementMcpTools } as any,
           (_mod, toolName) => handlerMap[toolName],
         );
       }
