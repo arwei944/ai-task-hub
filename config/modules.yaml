@@ -100,6 +100,12 @@ modules:
       max_concurrent: 5
       solo_mode: "mcp"
 
+  # Project lifecycle management module
+  lifecycle:
+    enabled: true
+    config:
+      auto_validate: true
+
 app:
   name: "AI Task Hub"
   version: "2.0.0-alpha.2"

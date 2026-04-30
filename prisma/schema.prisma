@@ -392,6 +392,7 @@ model Project {
   tasks       Task[]
   activities  ActivityLog[]
   releases    Release[]
+  phaseTransitions PhaseTransition[]
   creator     Agent?  @relation(fields: [creatorId], references: [id], onDelete: SetNull)
 
   @@index([status])
@@ -684,4 +685,23 @@ model EventStore {
 
   @@index([eventType, timestamp])
   @@index([source, timestamp])
+}
+
+// ==================== Phase Transition ====================
+
+model PhaseTransition {
+  id          String   @id @default(cuid())
+  projectId   String
+  fromPhase   String
+  toPhase     String
+  triggeredBy String?
+  reason      String?
+  status      String   @default("pending") // pending, approved, rejected, completed
+  metadata    String?  // JSON - additional context
+  createdAt   DateTime @default(now())
+  completedAt DateTime?
+
+  project     Project  @relation(fields: [projectId], references: [id])
+
+  @@index([projectId, createdAt])
 }

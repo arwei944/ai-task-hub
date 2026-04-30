@@ -7,8 +7,10 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { McpToolRegistry } from './tool-registry';
 import { createTaskCoreToolHandlers, createAIEngineToolHandlers } from './tools/handlers';
+import { createLifecycleToolHandlers } from './tools/lifecycle-handlers';
 import { taskCoreMcpTools } from './tools/task-core-tools';
 import { aiEngineMcpTools } from './tools/ai-engine-tools';
+import { lifecycleMcpTools } from './tools/lifecycle-tools';
 
 export default class McpServerModule implements Module {
   id = 'mcp-server';
@@ -20,7 +22,7 @@ export default class McpServerModule implements Module {
   // Declare MCP tools that this module provides
   // (In practice, tools come from task-core and ai-engine modules,
   //  but we declare them here for the module system to discover)
-  mcpTools = [...taskCoreMcpTools, ...aiEngineMcpTools];
+  mcpTools = [...taskCoreMcpTools, ...aiEngineMcpTools, ...lifecycleMcpTools];
 
   private mcpServer: McpServer | null = null;
   private toolRegistry: McpToolRegistry | null = null;
@@ -91,6 +93,17 @@ export default class McpServerModule implements Module {
       if (context.container.has('TaskExtractor')) {
         await this.toolRegistry.registerModuleTools(
           { id: 'ai-engine', mcpTools: aiEngineMcpTools } as any,
+          (_mod, toolName) => handlerMap[toolName],
+        );
+      }
+
+      // Lifecycle handlers
+      if (context.container.has('LifecycleService')) {
+        const lifecycleService = context.container.resolve<any>('LifecycleService');
+        const lifecycleHandlers = createLifecycleToolHandlers(lifecycleService, context.logger);
+        Object.assign(handlerMap, lifecycleHandlers);
+        await this.toolRegistry.registerModuleTools(
+          { id: 'lifecycle', mcpTools: lifecycleMcpTools } as any,
           (_mod, toolName) => handlerMap[toolName],
         );
       }

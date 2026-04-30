@@ -1,5 +1,25 @@
 # Changelog
 
+## [2.0.0-alpha.4] - 2026-04-30
+
+### 🔄 项目生命周期管理器 — 阶段转换规则与审批
+
+#### 新模块: lifecycle
+- **PhaseTransition 模型** — 记录所有阶段转换历史
+- **6 条转换规则** — requirements → planning → architecture → implementation → testing → deployment → completed
+- **审批系统** — 关键转换需人工审批，自动转换直接完成
+- **7 个 Service 方法** — 验证/请求/批准/拒绝/历史/当前阶段/可用转换
+
+#### MCP 工具 (6 个)
+- `request_phase_transition` / `approve_phase_transition` / `reject_phase_transition`
+- `get_phase_validation` / `get_transition_history` / `get_available_transitions`
+
+#### 测试
+- **52 个新测试** — lifecycle(33) + phase-rules(19)
+- **总测试数** — 1487 个测试全部通过
+
+---
+
 ## [2.0.0-alpha.3] - 2026-04-30
 
 ### 🤖 AI Engine v2 — 事件驱动的主动 AI 参与者
