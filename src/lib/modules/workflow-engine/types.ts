@@ -13,7 +13,9 @@ export type StepType =
   | 'invoke-agent'
   | 'http-request'
   | 'transform'
-  | 'approval';
+  | 'approval'
+  | 'sub-workflow'    // v3: 调用另一个工作流
+  | 'dynamic-step';   // v3: 运行时动态添加步骤
 
 /** 所有支持的触发器类型 */
 export type TriggerType =

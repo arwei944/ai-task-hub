@@ -42,6 +42,8 @@ import { eventBusMcpTools } from '@/lib/modules/mcp-server/tools/event-bus-tools
 import { createEventBusToolHandlers } from '@/lib/modules/mcp-server/tools/event-bus-handlers';
 import { outboundWebhookMcpTools } from '@/lib/modules/mcp-server/tools/outbound-webhook-tools';
 import { createOutboundWebhookToolHandlers } from '@/lib/modules/mcp-server/tools/outbound-webhook-handlers';
+import { workflowV3McpTools } from '@/lib/modules/mcp-server/tools/workflow-v3-tools';
+import { createWorkflowV3ToolHandlers } from '@/lib/modules/mcp-server/tools/workflow-v3-handlers';
 import { getPrisma } from '@/lib/db';
 import { NextRequest } from 'next/server';
 import { z } from 'zod';
@@ -408,6 +410,23 @@ async function initializeSharedTools() {
         name: toolConfig.name,
         description: toolConfig.description ?? `Tool: ${toolConfig.name}`,
         sourceModule: 'outbound-webhook-tools',
+        handler,
+        schema: jsonSchemaToZodShape(toolConfig.inputSchema),
+      });
+    }
+  }
+
+  // Register workflow v3 tools
+  const { ExecutionStateManager } = await import('@/lib/modules/workflow-engine/execution-state');
+  const executionStateManager = new ExecutionStateManager(logger, () => prisma);
+  const workflowV3Handlers = createWorkflowV3ToolHandlers(executionStateManager, logger);
+  for (const toolConfig of workflowV3McpTools) {
+    const handler = (workflowV3Handlers as any)[toolConfig.name];
+    if (handler !== undefined) {
+      allTools.push({
+        name: toolConfig.name,
+        description: toolConfig.description ?? `Tool: ${toolConfig.name}`,
+        sourceModule: 'workflow-v3-tools',
         handler,
         schema: jsonSchemaToZodShape(toolConfig.inputSchema),
       });

@@ -177,6 +177,21 @@ export class WorkflowExecutor {
         durationMs,
       });
 
+      // ===== v3: Handle branch steps (condition, sub-workflow, dynamic) =====
+      if (result.branchSteps && Array.isArray(result.branchSteps) && result.branchSteps.length > 0) {
+        const branchSteps = result.branchSteps as WorkflowStep[];
+        const branchStatus = await this.executeWorkflow({
+          executionId,
+          steps: branchSteps,
+          contextManager,
+          isCancelled,
+        });
+
+        if (branchStatus === 'failed') {
+          return { status: 'failed', result, error: 'Branch execution failed' };
+        }
+      }
+
       return { status: 'completed', result };
     } catch (error) {
       const durationMs = Date.now() - startTime;

@@ -56,6 +56,8 @@ import { eventBusMcpTools } from '@/lib/modules/mcp-server/tools/event-bus-tools
 import { createEventBusToolHandlers } from '@/lib/modules/mcp-server/tools/event-bus-handlers';
 import { outboundWebhookMcpTools } from '@/lib/modules/mcp-server/tools/outbound-webhook-tools';
 import { createOutboundWebhookToolHandlers } from '@/lib/modules/mcp-server/tools/outbound-webhook-handlers';
+import { workflowV3McpTools } from '@/lib/modules/mcp-server/tools/workflow-v3-tools';
+import { createWorkflowV3ToolHandlers } from '@/lib/modules/mcp-server/tools/workflow-v3-handlers';
 import { aiEngineMcpTools } from '@/lib/modules/mcp-server/tools/ai-engine-tools';
 import { projectMcpTools } from '@/lib/modules/mcp-server/tools/project-tools';
 import { versionMcpTools } from '@/lib/modules/mcp-server/tools/version-tools';
@@ -297,6 +299,17 @@ async function main() {
 
   await toolRegistry.registerModuleTools(
     { id: 'outbound-webhook-tools', mcpTools: outboundWebhookMcpTools } as any,
+    (_mod, toolName) => handlerMap[toolName],
+  );
+
+  // Register workflow v3 tools
+  const { ExecutionStateManager } = await import('@/lib/modules/workflow-engine/execution-state');
+  const executionStateManager = new ExecutionStateManager(logger, () => prisma);
+  const workflowV3Handlers = createWorkflowV3ToolHandlers(executionStateManager, logger);
+  Object.assign(handlerMap, workflowV3Handlers);
+
+  await toolRegistry.registerModuleTools(
+    { id: 'workflow-v3-tools', mcpTools: workflowV3McpTools } as any,
     (_mod, toolName) => handlerMap[toolName],
   );
 
