@@ -91,13 +91,13 @@ describe('C-01: JWT 密钥硬编码默认值', () => {
     }
   });
 
-  // C-01-1: 未设置 JWT_SECRET 时使用默认密钥
-  it('C-01-1: 未设置 JWT_SECRET 时使用默认密钥，verifyToken 应能验证默认密钥签发的 token', async () => {
+  // C-01-1: 未设置 JWT_SECRET 时使用随机密钥（已修复：不再使用硬编码默认密钥）
+  it('C-01-1: 未设置 JWT_SECRET 时使用随机密钥，旧默认密钥签发的 token 应被拒绝', async () => {
     delete process.env.JWT_SECRET;
 
     const authService = new AuthService(createMockUserRepo(), createMockLogger());
 
-    // 使用默认密钥手动签发一个 token
+    // 使用旧的硬编码默认密钥签发 token
     const defaultKey = new TextEncoder().encode(DEFAULT_SECRET);
     const token = await new SignJWT({
       userId: 'user-123',
@@ -109,39 +109,32 @@ describe('C-01: JWT 密钥硬编码默认值', () => {
       .setExpirationTime('7d')
       .sign(defaultKey);
 
-    // AuthService 的 verifyToken 应能验证该 token
+    // AuthService 使用随机密钥，应拒绝旧默认密钥签发的 token
     const result = await authService.verifyToken(token);
-    expect(result).not.toBeNull();
-    expect(result!.id).toBe('user-123');       // AuthUser 使用 `id`
-    expect(result!.username).toBe('testuser');
-    expect(result!.role).toBe('user');
+    expect(result).toBeNull();
   });
 
-  // C-01-2: 默认密钥签发的 token 可被任意复现
-  it('C-01-2: 默认密钥签发的 token 可被任意复现，任何人知道默认密钥都能生成合法 token', async () => {
+  // C-01-2: 默认密钥签发的 token 不可被任意复现（已修复：使用随机密钥）
+  it('C-01-2: 未设置 JWT_SECRET 时使用随机密钥，攻击者无法伪造 token', async () => {
     delete process.env.JWT_SECRET;
 
     const authService = new AuthService(createMockUserRepo(), createMockLogger());
 
-    // 攻击者知道默认密钥，可以伪造任意用户的 token
+    // 攻击者尝试用旧的硬编码默认密钥伪造 token
     const forgedKey = new TextEncoder().encode(DEFAULT_SECRET);
     const forgedToken = await new SignJWT({
       userId: 'user-123',
       username: 'testuser',
-      role: 'admin', // 伪造为 admin 角色（JWT payload 中）
+      role: 'admin',
     })
       .setProtectedHeader({ alg: 'HS256' })
       .setIssuedAt()
       .setExpirationTime('7d')
       .sign(forgedKey);
 
-    // 系统会接受这个伪造的 token（安全漏洞：默认密钥可被猜测）
+    // 系统应拒绝使用旧默认密钥签发的 token（安全修复：不再使用硬编码默认密钥）
     const result = await authService.verifyToken(forgedToken);
-    expect(result).not.toBeNull();
-    expect(result!.id).toBe('user-123');
-    // 注意：虽然 JWT payload 中 role='admin'，但 verifyToken 从数据库查用户
-    // 返回的是数据库中的 role='user'。这说明系统以数据库角色为准，
-    // 但默认密钥本身仍是安全漏洞（攻击者可伪造任意合法用户的身份）
+    expect(result).toBeNull();
   });
 
   // C-01-3: 设置自定义 JWT_SECRET 后使用自定义密钥
@@ -194,13 +187,13 @@ describe('C-01: JWT 密钥硬编码默认值', () => {
     expect(result).toBeNull();
   });
 
-  // C-01-5: JWT_SECRET 为空字符串时的行为
-  it('C-01-5: JWT_SECRET 为空字符串时应视为未设置，warn 并使用默认值', async () => {
+  // C-01-5: JWT_SECRET 为空字符串时的行为（已修复：使用随机密钥）
+  it('C-01-5: JWT_SECRET 为空字符串时应视为未设置，使用随机密钥', async () => {
     process.env.JWT_SECRET = '';
 
     const authService = new AuthService(createMockUserRepo(), createMockLogger());
 
-    // 空字符串在 JS 中 trim 后为空，走 warn 路径，回退到默认密钥
+    // 空字符串走随机密钥路径，旧默认密钥签发的 token 应被拒绝
     const defaultKey = new TextEncoder().encode(DEFAULT_SECRET);
     const token = await new SignJWT({
       userId: 'user-123',
@@ -212,9 +205,8 @@ describe('C-01: JWT 密钥硬编码默认值', () => {
       .setExpirationTime('7d')
       .sign(defaultKey);
 
-    // 验证空字符串 JWT_SECRET 的 AuthService 能否验证默认密钥的 token
+    // 使用随机密钥的 AuthService 应拒绝旧默认密钥的 token
     const result = await authService.verifyToken(token);
-    expect(result).not.toBeNull();
-    expect(result!.id).toBe('user-123');
+    expect(result).toBeNull();
   });
 });

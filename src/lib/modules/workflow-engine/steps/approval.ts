@@ -7,7 +7,7 @@ async function getApprovalPrisma() {
   if (_approvalPrisma) return _approvalPrisma;
   const { PrismaClient } = await import('@/generated/prisma/client');
   const { PrismaBetterSqlite3 } = await import('@prisma/adapter-better-sqlite3');
-  const dbPath = process.env.DATABASE_URL?.replace(/^file:/, '') ?? './prisma/dev.db';
+  const dbPath = process.env.DATABASE_URL?.replace(/^file:/, '') ?? './data/dev.db';
   const adapter = new PrismaBetterSqlite3({ url: dbPath });
   _approvalPrisma = new PrismaClient({ adapter });
   return _approvalPrisma;

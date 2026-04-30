@@ -317,6 +317,27 @@ export function createProjectToolHandlers(logger: ILogger) {
       try {
         const { projectId, phase, summary, agentId } = args as any;
 
+        // Phase guard: validate phase transition order
+        const PHASE_ORDER = ['requirements', 'planning', 'architecture', 'implementation', 'testing', 'deployment', 'completed'];
+        if (!PHASE_ORDER.includes(phase)) {
+          return { error: `Invalid phase "${phase}". Valid phases: ${PHASE_ORDER.join(', ')}` };
+        }
+
+        // Read current project state BEFORE updating
+        const currentProject = await prisma.project.findUnique({ where: { id: projectId } });
+        if (!currentProject) {
+          return { error: `Project not found: ${projectId}` };
+        }
+
+        const previousPhase = currentProject.phase;
+        const currentIndex = PHASE_ORDER.indexOf(previousPhase);
+        const targetIndex = PHASE_ORDER.indexOf(phase);
+
+        // Allow: forward progression, staying on same phase, or explicit backward (with warning)
+        if (targetIndex < currentIndex) {
+          logger.warn(`Phase regression: ${previousPhase} → ${phase} for project ${projectId}`);
+        }
+
         const project = await prisma.project.update({
           where: { id: projectId },
           data: {
@@ -332,11 +353,11 @@ export function createProjectToolHandlers(logger: ILogger) {
             action: 'phase_changed',
             phase,
             title: `项目阶段推进至「${phase}」`,
-            details: JSON.stringify({ summary, previousPhase: project.phase }),
+            details: JSON.stringify({ summary, previousPhase }),
           },
         });
 
-        return { projectId: project.id, phase: project.phase, message: `阶段已推进至「${phase}」` };
+        return { projectId: project.id, phase: project.phase, previousPhase, message: `阶段已从「${previousPhase}」推进至「${phase}」` };
       } finally {
         await prisma.$disconnect();
       }

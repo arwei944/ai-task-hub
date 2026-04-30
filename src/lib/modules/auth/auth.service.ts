@@ -27,8 +27,13 @@ export class AuthService {
   ) {
     const secret = process.env.JWT_SECRET;
     if (!secret || secret.trim() === '') {
-      this.logger.warn('JWT_SECRET is not set or empty! Using default secret - CHANGE IN PRODUCTION!');
-      this.secretKey = new TextEncoder().encode('ai-task-hub-default-secret-change-in-production');
+      if (process.env.NODE_ENV === 'production') {
+        throw new Error('JWT_SECRET environment variable is required in production');
+      }
+      // Dev/test: generate a random secret per process startup
+      const randomSecret = `dev_${crypto.randomUUID()}_${Date.now()}`;
+      this.logger.warn(`JWT_SECRET is not set! Using auto-generated random secret for ${process.env.NODE_ENV || 'development'} mode. Tokens will not survive restarts.`);
+      this.secretKey = new TextEncoder().encode(randomSecret);
     } else {
       this.secretKey = new TextEncoder().encode(secret);
     }

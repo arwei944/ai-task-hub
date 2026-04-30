@@ -15,9 +15,10 @@ import { EventBus } from '@/lib/core/event-bus';
 import { DIContainer } from '@/lib/core/di-container';
 import { ConfigAccessor } from '@/lib/core/config';
 import { McpToolRegistry } from '@/lib/modules/mcp-server/tool-registry';
-import { createTaskCoreToolHandlers, createAIEngineToolHandlers } from '@/lib/modules/mcp-server/tools/handlers';
+import { createTaskCoreToolHandlers, createAIEngineToolHandlers, createProjectToolHandlers } from '@/lib/modules/mcp-server/tools/handlers';
 import { taskCoreMcpTools } from '@/lib/modules/mcp-server/tools/task-core-tools';
 import { aiEngineMcpTools } from '@/lib/modules/mcp-server/tools/ai-engine-tools';
+import { projectMcpTools } from '@/lib/modules/mcp-server/tools/project-tools';
 import { PrismaClient } from '@/generated/prisma/client';
 import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
 
@@ -105,8 +106,10 @@ async function main() {
   // Build handler map
   const handlerMap: Record<string, (args: Record<string, unknown>) => Promise<unknown>> = {};
   const taskHandlers = createTaskCoreToolHandlers(taskService, logger);
+  const projectHandlers = createProjectToolHandlers(logger);
   Object.assign(handlerMap, taskHandlers);
   Object.assign(handlerMap, aiHandlers);
+  Object.assign(handlerMap, projectHandlers);
 
   // Register task-core tools
   await toolRegistry.registerModuleTools(
@@ -121,6 +124,12 @@ async function main() {
       (_mod, toolName) => handlerMap[toolName],
     );
   }
+
+  // Register project lifecycle tools
+  await toolRegistry.registerModuleTools(
+    { id: 'project-lifecycle', mcpTools: projectMcpTools } as any,
+    (_mod, toolName) => handlerMap[toolName],
+  );
 
   // Register all tools with MCP server
   await toolRegistry.registerWithServer();
