@@ -45,7 +45,14 @@ export class TaskService {
     this.logger.info(`Creating task: ${data.title}`);
     const task = await this.taskRepo.create(data, actor);
 
-    this.emitEvent('task.created', { task, actor });
+    this.emitEvent('task.created', {
+      taskId: task.id,
+      projectId: task.projectId,
+      title: task.title,
+      priority: task.priority,
+      source: task.source,
+      creator: actor,
+    });
     return task;
   }
 
@@ -72,19 +79,40 @@ export class TaskService {
 
     const updated = await this.taskRepo.update(id, data);
 
-    this.emitEvent('task.updated', { task: updated, changes: data, actor });
-
     if (data.status && data.status !== existing.status) {
-      this.emitEvent('task.status_changed', {
-        task: updated,
-        oldStatus: existing.status,
-        newStatus: data.status,
-        actor,
+      this.emitEvent('task.status.changed', {
+        taskId: id,
+        projectId: existing.projectId,
+        status: data.status,
+        previousStatus: existing.status,
+        changedBy: actor,
       });
 
       if (data.status === 'done') {
-        this.emitEvent('task.completed', { task: updated, actor });
+        this.emitEvent('task.completed', {
+          taskId: id,
+          projectId: existing.projectId,
+          completedBy: actor,
+        });
       }
+
+      if (data.status === 'blocked') {
+        this.emitEvent('task.blocked', {
+          taskId: id,
+          projectId: existing.projectId,
+          reason: 'Status changed to blocked',
+          blockedBy: actor,
+        });
+      }
+    }
+
+    if (data.assignee && data.assignee !== existing.assignee) {
+      this.emitEvent('task.assigned', {
+        taskId: id,
+        projectId: existing.projectId,
+        assignee: data.assignee,
+        assignedBy: actor,
+      });
     }
 
     // Recalculate parent progress if this is a subtask

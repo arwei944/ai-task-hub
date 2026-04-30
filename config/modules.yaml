@@ -92,7 +92,15 @@ modules:
       auto_check: true
       check_interval: "5m"
 
+  # Workflow engine module
+  workflow-engine:
+    enabled: true
+    locked: true
+    config:
+      max_concurrent: 5
+      solo_mode: "mcp"
+
 app:
   name: "AI Task Hub"
-  version: "1.0.1"
+  version: "2.0.0-alpha.2"
   port: 3000

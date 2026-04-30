@@ -104,7 +104,7 @@ describe('NotificationRuleEngine', () => {
     services.ruleEngine.addRule({ event: 'task.*', action: 'notify' });
 
     await services.ruleEngine.evaluate({
-      type: 'task.status_changed',
+      type: 'task.status.changed',
       payload: {},
       timestamp: new Date(),
       source: 'test',
@@ -360,7 +360,7 @@ describe('NotificationRuleEngine', () => {
 
     await services.ruleEngine.evaluate({
       type: 'task.created',
-      payload: { task: { title: 'My Task' } },
+      payload: { title: 'My Task', taskId: 'task-001' },
       timestamp: new Date(),
       source: 'test',
     });
@@ -369,18 +369,18 @@ describe('NotificationRuleEngine', () => {
     expect(notifs.notifications[0].message).toBe('My Task');
   });
 
-  it('should use default message with agent name', async () => {
-    services.ruleEngine.addRule({ event: 'agent.operation', action: 'notify' });
+  it('should use default message with agent id', async () => {
+    services.ruleEngine.addRule({ event: 'agent.registered', action: 'notify' });
 
     await services.ruleEngine.evaluate({
-      type: 'agent.operation',
-      payload: { agent: { name: 'TestAgent' } },
+      type: 'agent.registered',
+      payload: { agentId: 'agent-001', name: 'TestAgent' },
       timestamp: new Date(),
       source: 'test',
     });
 
     const notifs = await services.notificationRepo.findMany();
-    expect(notifs.notifications[0].message).toContain('TestAgent');
+    expect(notifs.notifications[0].message).toContain('agent-001');
   });
 
   it('should use default title for unknown event type', async () => {

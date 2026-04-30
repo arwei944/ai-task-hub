@@ -14,7 +14,7 @@ export default class VersionMgmtModule implements Module {
     enable: async (context: ModuleContext) => {
       context.logger.info('[VersionMgmt] Enabling...');
       const { VersionMgmtService } = await import('./version-mgmt.service');
-      const service = new VersionMgmtService(context.logger);
+      const service = new VersionMgmtService(context.logger, context.eventBus);
       context.container.register('VersionMgmtService', () => service);
       context.logger.info('[VersionMgmt] Enabled');
     },

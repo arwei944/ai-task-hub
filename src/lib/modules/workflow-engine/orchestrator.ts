@@ -73,6 +73,14 @@ export class WorkflowOrchestrator {
     // 标记为运行中
     this.runningExecutions.set(execution.id, true);
 
+    // Emit workflow.triggered event
+    this.observability.emitWorkflowEvent('triggered', {
+      workflowId,
+      executionId: execution.id,
+      triggerType: triggerType ?? 'manual',
+      triggeredBy: triggeredBy ?? null,
+    });
+
     // 后台异步执行
     this.runExecution(execution.id, steps, variables, timeoutMs).catch((err) => {
       this.logger?.error(`Workflow execution failed: ${execution.id}`, {
@@ -181,7 +189,13 @@ export class WorkflowOrchestrator {
         },
       });
 
-      // 发射事件
+      // 发射事件 (catalog-matched types)
+      this.observability.emitWorkflowEvent(
+        finalStatus === 'completed' ? 'completed' : 'failed',
+        { executionId, status: finalStatus },
+      );
+
+      // Also emit the execution-scoped events for backward compatibility
       this.observability.emitWorkflowEvent(
         finalStatus === 'completed' ? 'execution.completed' : 'execution.failed',
         { executionId, status: finalStatus },

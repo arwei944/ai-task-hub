@@ -177,7 +177,7 @@ async function initializeSharedTools() {
   }
 
   // Register project lifecycle tools
-  const projectHandlers = createProjectToolHandlers(logger);
+  const projectHandlers = createProjectToolHandlers(logger, eventBus);
   for (const toolConfig of projectMcpTools) {
     const handler = (projectHandlers as any)[toolConfig.name];
     if (handler !== undefined) {
@@ -193,7 +193,7 @@ async function initializeSharedTools() {
 
   // Register version management tools
   const { VersionMgmtService } = await import('@/lib/modules/version-mgmt/version-mgmt.service');
-  const versionService = new VersionMgmtService(logger);
+  const versionService = new VersionMgmtService(logger, eventBus);
   const versionHandlers = createVersionToolHandlers(versionService, logger);
   for (const toolConfig of versionMcpTools) {
     const handler = (versionHandlers as any)[toolConfig.name];

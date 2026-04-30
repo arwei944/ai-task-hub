@@ -108,7 +108,7 @@ async function main() {
   // Build handler map
   const handlerMap: Record<string, (args: Record<string, unknown>) => Promise<unknown>> = {};
   const taskHandlers = createTaskCoreToolHandlers(taskService, logger);
-  const projectHandlers = createProjectToolHandlers(logger);
+  const projectHandlers = createProjectToolHandlers(logger, eventBus);
   Object.assign(handlerMap, taskHandlers);
   Object.assign(handlerMap, aiHandlers);
   Object.assign(handlerMap, projectHandlers);
@@ -135,7 +135,7 @@ async function main() {
 
   // Register version management tools
   const { VersionMgmtService } = await import('@/lib/modules/version-mgmt/version-mgmt.service');
-  const versionService = new VersionMgmtService(logger);
+  const versionService = new VersionMgmtService(logger, eventBus);
   const versionHandlers = createVersionToolHandlers(versionService, logger);
   Object.assign(handlerMap, versionHandlers);
 

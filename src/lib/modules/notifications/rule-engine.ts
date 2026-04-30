@@ -82,14 +82,33 @@ export class NotificationRuleEngine {
    * Start listening to events
    */
   start(): void {
+    // Task events (catalog-matched types)
     this.eventBus.on('task.created', (e) => this.evaluate(e));
-    this.eventBus.on('task.updated', (e) => this.evaluate(e));
-    this.eventBus.on('task.status_changed', (e) => this.evaluate(e));
+    this.eventBus.on('task.status.changed', (e) => this.evaluate(e));
     this.eventBus.on('task.completed', (e) => this.evaluate(e));
-    this.eventBus.on('task.deleted', (e) => this.evaluate(e));
-    this.eventBus.on('agent.operation', (e) => this.evaluate(e));
-    this.eventBus.on('integration.synced', (e) => this.evaluate(e));
+    this.eventBus.on('task.assigned', (e) => this.evaluate(e));
+    this.eventBus.on('task.blocked', (e) => this.evaluate(e));
+
+    // Project events
+    this.eventBus.on('project.created', (e) => this.evaluate(e));
+    this.eventBus.on('project.phase.changed', (e) => this.evaluate(e));
+
+    // Release events
+    this.eventBus.on('release.created', (e) => this.evaluate(e));
+    this.eventBus.on('release.status.changed', (e) => this.evaluate(e));
+    this.eventBus.on('release.published', (e) => this.evaluate(e));
+    this.eventBus.on('release.rolled.back', (e) => this.evaluate(e));
+
+    // Workflow events
+    this.eventBus.on('workflow.triggered', (e) => this.evaluate(e));
+    this.eventBus.on('workflow.completed', (e) => this.evaluate(e));
+    this.eventBus.on('workflow.failed', (e) => this.evaluate(e));
+    this.eventBus.on('workflow.step.completed', (e) => this.evaluate(e));
+    this.eventBus.on('workflow.step.failed', (e) => this.evaluate(e));
+
+    // Agent events
     this.eventBus.on('agent.registered', (e) => this.evaluate(e));
+
     this.logger.info('Notification rule engine started, listening to events');
   }
 
@@ -169,23 +188,49 @@ export class NotificationRuleEngine {
 
   private defaultTitle(eventType: string): string {
     const titles: Record<string, string> = {
+      // Task events
       'task.created': '新任务创建',
-      'task.updated': '任务已更新',
-      'task.status_changed': '任务状态变更',
+      'task.status.changed': '任务状态变更',
       'task.completed': '任务已完成',
-      'task.deleted': '任务已删除',
-      'agent.operation': '智能体操作',
+      'task.assigned': '任务已分配',
+      'task.blocked': '任务阻塞',
+      // Project events
+      'project.created': '新项目创建',
+      'project.phase.changed': '项目阶段变更',
+      // Release events
+      'release.created': '新发布创建',
+      'release.status.changed': '发布状态变更',
+      'release.published': '发布完成',
+      'release.rolled.back': '发布回滚',
+      // Workflow events
+      'workflow.triggered': '工作流触发',
+      'workflow.completed': '工作流完成',
+      'workflow.failed': '工作流失败',
+      'workflow.step.completed': '工作流步骤完成',
+      'workflow.step.failed': '工作流步骤失败',
+      // Agent events
       'agent.registered': '新智能体注册',
-      'integration.synced': '集成同步完成',
     };
     return titles[eventType] || `事件: ${eventType}`;
   }
 
   private defaultMessage(event: DomainEvent): string {
     const payload = event.payload as any;
-    if (payload?.task?.title) return payload.task.title;
-    if (payload?.agent?.name) return `智能体: ${payload.agent.name}`;
-    if (payload?.integrationId) return `集成: ${payload.type}`;
+    // Task events
+    if (payload?.title) return payload.title;
+    if (payload?.taskId) return `任务 ${payload.taskId}`;
+    // Project events
+    if (payload?.projectId && payload?.phase) return `项目 ${payload.projectId} 阶段: ${payload.phase}`;
+    if (payload?.projectId && payload?.name) return `项目: ${payload.name}`;
+    // Release events
+    if (payload?.releaseId && payload?.version) return `发布 v${payload.version}`;
+    if (payload?.releaseId) return `发布 ${payload.releaseId}`;
+    // Workflow events
+    if (payload?.workflowId) return `工作流 ${payload.workflowId}`;
+    if (payload?.executionId) return `执行 ${payload.executionId}`;
+    // Agent events
+    if (payload?.agentId) return `智能体 ${payload.agentId}`;
+    // Fallback
     return JSON.stringify(payload).slice(0, 200);
   }
 

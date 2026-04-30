@@ -1,5 +1,42 @@
 # Changelog
 
+## [2.0.0-alpha.2] - 2026-04-30
+
+### 🔗 模块事件接入 — 激活 EventBus 中枢神经
+
+#### Task-Core 事件
+- `task.created` — 任务创建时自动发射
+- `task.status.changed` — 任务状态变更（含 previousStatus）
+- `task.completed` — 任务完成
+- `task.blocked` — 任务阻塞
+- `task.assigned` — 任务分配变更
+
+#### Project 事件
+- `project.created` — 项目创建
+- `project.phase.changed` — 项目阶段变更（含 previousPhase）
+
+#### Version-Mgmt 事件
+- `release.created` — 版本创建
+- `release.status.changed` — 版本状态变更（6 个生命周期点）
+- `release.published` — 版本发布
+- `release.rolled.back` — 版本回滚
+
+#### Workflow-Engine 事件
+- `workflow.triggered` — 工作流触发
+- `workflow.completed` — 工作流完成
+- `workflow.failed` — 工作流失败
+
+#### 基础设施
+- workflow-engine 注册到 modules.yaml
+- 通知规则引擎扩展到 17 个事件类型
+- modules.yaml app.version 同步为 2.0.0-alpha.2
+
+#### 测试
+- **25 个新测试** — task-core(8) + version-mgmt(8) + workflow-engine(9)
+- **总测试数** — 1399 个测试全部通过
+
+---
+
 ## [2.0.0-alpha.1] - 2026-04-30
 
 ### 🧠 EventBus v2 — 事件溯源 + Schema 校验（中枢神经系统基础）

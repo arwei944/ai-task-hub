@@ -75,6 +75,7 @@ export interface TaskWithRelations {
   assignee: string | null;
   creator: string | null;
   parentTaskId: string | null;
+  projectId: string | null;
   dueDate: Date | null;
   startedAt: Date | null;
   completedAt: Date | null;

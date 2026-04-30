@@ -57,7 +57,7 @@ describe('TaskService', () => {
         expect.objectContaining({
           type: 'task.created',
           payload: expect.objectContaining({
-            task: expect.objectContaining({ title: 'Event Test' }),
+            title: 'Event Test',
           }),
         }),
       );
@@ -153,10 +153,10 @@ describe('TaskService', () => {
       await expect(service.updateStatus('nonexistent', 'in_progress')).rejects.toThrow('Task not found');
     });
 
-    it('should emit task.status_changed and task.completed events', async () => {
+    it('should emit task.status.changed and task.completed events', async () => {
       const statusHandler = vi.fn();
       const completedHandler = vi.fn();
-      eventBus.on('task.status_changed', statusHandler);
+      eventBus.on('task.status.changed', statusHandler);
       eventBus.on('task.completed', completedHandler);
 
       const task = await service.createTask({ title: 'Events' });

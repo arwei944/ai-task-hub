@@ -1,5 +1,5 @@
 import { getPrisma } from '@/lib/db';
-import type { ILogger } from '@/lib/core/types';
+import type { ILogger, IEventBus, DomainEvent } from '@/lib/core/types';
 import type {
   CreateReleaseInput,
   UpdateReleaseInput,
@@ -12,7 +12,10 @@ import type {
 } from './types';
 
 export class VersionMgmtService {
-  constructor(private logger: ILogger) {}
+  constructor(
+    private logger: ILogger,
+    private eventBus?: IEventBus,
+  ) {}
 
   // ================================================================
   // Release CRUD
@@ -90,6 +93,17 @@ export class VersionMgmtService {
       }
 
       this.logger.info(`Release created: ${release.id} - v${releaseVersion}`);
+
+      // Emit release.created event
+      this.emitEvent('release.created', {
+        releaseId: release.id,
+        projectId,
+        version: releaseVersion,
+        title: releaseTitle,
+        channel: channel || 'stable',
+        type: type || 'minor',
+        createdBy: createdBy,
+      });
 
       // Return the full release with relations
       return await this.getRelease(release.id);
@@ -400,6 +414,14 @@ export class VersionMgmtService {
       });
 
       this.logger.info(`Release ${releaseId} submitted for review`);
+
+      this.emitEvent('release.status.changed', {
+        releaseId,
+        projectId: release.projectId,
+        status: 'review',
+        previousStatus: 'draft',
+      });
+
       return updated;
     } finally {
       await prisma.$disconnect();
@@ -443,6 +465,15 @@ export class VersionMgmtService {
             data: { status: 'approved' },
           });
           this.logger.info(`Release ${releaseId} approved`);
+
+          this.emitEvent('release.status.changed', {
+            releaseId,
+            projectId: release.projectId,
+            status: 'approved',
+            previousStatus: 'review',
+            changedBy: input.approverId,
+          });
+
           return updated;
         }
       }
@@ -453,6 +484,15 @@ export class VersionMgmtService {
           data: { status: 'draft' },
         });
         this.logger.info(`Release ${releaseId} rejected, reverted to draft`);
+
+        this.emitEvent('release.status.changed', {
+          releaseId,
+          projectId: release.projectId,
+          status: 'draft',
+          previousStatus: 'review',
+          changedBy: input.approverId,
+        });
+
         return updated;
       }
 
@@ -511,6 +551,20 @@ export class VersionMgmtService {
       });
 
       this.logger.info(`Release ${releaseId} published as v${release.version}`);
+
+      this.emitEvent('release.status.changed', {
+        releaseId,
+        projectId: release.projectId,
+        status: 'published',
+        previousStatus: release.status,
+      });
+
+      this.emitEvent('release.published', {
+        releaseId,
+        projectId: release.projectId,
+        version: release.version,
+      });
+
       return updated;
     } finally {
       await prisma.$disconnect();
@@ -534,6 +588,14 @@ export class VersionMgmtService {
       });
 
       this.logger.info(`Release ${releaseId} archived`);
+
+      this.emitEvent('release.status.changed', {
+        releaseId,
+        projectId: release.projectId,
+        status: 'archived',
+        previousStatus: release.status,
+      });
+
       return updated;
     } finally {
       await prisma.$disconnect();
@@ -558,6 +620,19 @@ export class VersionMgmtService {
       });
 
       this.logger.info(`Release ${releaseId} rolled back`);
+
+      this.emitEvent('release.status.changed', {
+        releaseId,
+        projectId: release.projectId,
+        status: 'rolled_back',
+        previousStatus: release.status,
+      });
+
+      this.emitEvent('release.rolled.back', {
+        releaseId,
+        projectId: release.projectId,
+      });
+
       return updated;
     } finally {
       await prisma.$disconnect();
@@ -866,5 +941,16 @@ export class VersionMgmtService {
     } finally {
       await prisma.$disconnect();
     }
+  }
+
+  private emitEvent(type: string, payload: unknown): void {
+    if (!this.eventBus) return;
+    const event: DomainEvent = {
+      type,
+      payload,
+      timestamp: new Date(),
+      source: 'version-mgmt',
+    };
+    this.eventBus.emit(event);
   }
 }

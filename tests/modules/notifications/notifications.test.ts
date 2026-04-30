@@ -154,7 +154,7 @@ describe('NotificationsModule', () => {
       services.ruleEngine.addRule({ event: 'task.*', action: 'notify' });
 
       await services.ruleEngine.evaluate({
-        type: 'task.status_changed',
+        type: 'task.status.changed',
         payload: {},
         timestamp: new Date(),
         source: 'test',

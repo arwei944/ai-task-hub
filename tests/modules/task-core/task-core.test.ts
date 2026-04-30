@@ -133,14 +133,14 @@ describe('TaskCoreModule', () => {
     it('should emit events on task operations', async () => {
       const events: any[] = [];
       services.eventBus.on('task.created', (e) => { events.push(e); });
-      services.eventBus.on('task.status_changed', (e) => { events.push(e); });
+      services.eventBus.on('task.status.changed', (e) => { events.push(e); });
 
       const task = await services.taskService.createTask({ title: 'Event Test' });
       await services.taskService.updateStatus(task.id, 'in_progress');
 
       expect(events.length).toBeGreaterThanOrEqual(2);
       expect(events[0].type).toBe('task.created');
-      expect(events.some((e) => e.type === 'task.status_changed')).toBe(true);
+      expect(events.some((e) => e.type === 'task.status.changed')).toBe(true);
     });
 
     it('should support subtasks', async () => {

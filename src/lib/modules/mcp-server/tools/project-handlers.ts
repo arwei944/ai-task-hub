@@ -3,9 +3,9 @@
 // ============================================================
 
 import { getPrisma } from '@/lib/db';
-import type { ILogger } from '@/lib/core/types';
+import type { ILogger, IEventBus, DomainEvent } from '@/lib/core/types';
 
-export function createProjectToolHandlers(logger: ILogger) {
+export function createProjectToolHandlers(logger: ILogger, eventBus?: IEventBus) {
   return {
     // ---- Agent Registration ----
     register_agent: async (args: Record<string, unknown>) => {
@@ -84,6 +84,22 @@ export function createProjectToolHandlers(logger: ILogger) {
         });
 
         logger.info(`Project created: ${project.id} - ${name}`);
+
+        if (eventBus) {
+          eventBus.emit({
+            type: 'project.created',
+            payload: {
+              projectId: project.id,
+              name: project.name,
+              description: project.description,
+              creatorId: agentId,
+              creatorType: 'agent',
+            },
+            timestamp: new Date(),
+            source: 'project',
+          });
+        }
+
         return { projectId: project.id, name: project.name, phase: project.phase, message: `项目「${name}」创建成功` };
       } finally {
         await prisma.$disconnect();
@@ -356,6 +372,20 @@ export function createProjectToolHandlers(logger: ILogger) {
             details: JSON.stringify({ summary, previousPhase }),
           },
         });
+
+        // Emit project.phase.changed event
+        if (eventBus) {
+          eventBus.emit({
+            type: 'project.phase.changed',
+            payload: {
+              projectId,
+              phase,
+              previousPhase,
+            },
+            timestamp: new Date(),
+            source: 'project',
+          });
+        }
 
         return { projectId: project.id, phase: project.phase, previousPhase, message: `阶段已从「${previousPhase}」推进至「${phase}」` };
       } finally {

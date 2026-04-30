@@ -214,10 +214,10 @@ describe('W-ML-03: NotificationRuleEngine listener cleanup', () => {
       engine.start();
     }
 
-    // The start() method registers 8 listeners each time (task.created, task.updated, etc.)
-    // 10 engines * 8 listeners = 80 new listeners
+    // The start() method registers 17 listeners each time (task, project, release, workflow, agent events)
+    // 10 engines * 17 listeners = 170 new listeners
     const listenerCountAfter = eventBus.getListenerCount();
-    const expectedNewListeners = 10 * 8; // 8 event types registered per start()
+    const expectedNewListeners = 10 * 17; // 17 event types registered per start()
     expect(listenerCountAfter - getListenerCountBefore).toBe(expectedNewListeners);
 
     // Clean up all listeners
