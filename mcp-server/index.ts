@@ -19,6 +19,8 @@ import { createTaskCoreToolHandlers, createAIEngineToolHandlers, createProjectTo
 import { taskCoreMcpTools } from '@/lib/modules/mcp-server/tools/task-core-tools';
 import { aiEngineMcpTools } from '@/lib/modules/mcp-server/tools/ai-engine-tools';
 import { projectMcpTools } from '@/lib/modules/mcp-server/tools/project-tools';
+import { versionMcpTools } from '@/lib/modules/mcp-server/tools/version-tools';
+import { createVersionToolHandlers } from '@/lib/modules/mcp-server/tools/version-handlers';
 import { PrismaClient } from '@/generated/prisma/client';
 import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
 
@@ -128,6 +130,17 @@ async function main() {
   // Register project lifecycle tools
   await toolRegistry.registerModuleTools(
     { id: 'project-lifecycle', mcpTools: projectMcpTools } as any,
+    (_mod, toolName) => handlerMap[toolName],
+  );
+
+  // Register version management tools
+  const { VersionMgmtService } = await import('@/lib/modules/version-mgmt/version-mgmt.service');
+  const versionService = new VersionMgmtService(logger);
+  const versionHandlers = createVersionToolHandlers(versionService, logger);
+  Object.assign(handlerMap, versionHandlers);
+
+  await toolRegistry.registerModuleTools(
+    { id: 'version-mgmt', mcpTools: versionMcpTools } as any,
     (_mod, toolName) => handlerMap[toolName],
   );
 

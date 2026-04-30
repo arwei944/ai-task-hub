@@ -391,6 +391,7 @@ model Project {
 
   tasks       Task[]
   activities  ActivityLog[]
+  releases    Release[]
   creator     Agent?  @relation(fields: [creatorId], references: [id], onDelete: SetNull)
 
   @@index([status])
@@ -565,4 +566,108 @@ model StepFeedback {
   @@index([stepExecutionId])
   @@index([rating])
   @@index([createdAt])
+}
+
+// ==================== Release ====================
+
+model Release {
+  id            String   @id @default(uuid())
+  projectId     String
+  version       String   // semantic version: "1.0.0"
+  previousVersion String? // previous release version
+  title         String   // "v1.0.0 - Initial Release"
+  description   String?  // detailed release description
+  status        String   @default("draft") // draft, review, approved, published, archived, rolled_back
+  channel       String   @default("stable") // stable, beta, canary, hotfix
+  type          String   @default("minor") // major, minor, patch, prerelease, hotfix
+  releaseNotes  String?  // Markdown changelog
+  metadata      String?  // JSON: additional data (commit hash, build info, etc.)
+  publishedAt   DateTime?
+  archivedAt    DateTime?
+  createdBy      String?  // agentId or userId
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  project       Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  changelogs    ReleaseChangelog[]
+  tags          ReleaseTag[]
+  approvals     ReleaseApproval[]
+  milestones    ReleaseMilestone[]
+
+  @@unique([projectId, version])
+  @@index([projectId])
+  @@index([status])
+  @@index([channel])
+  @@index([type])
+  @@index([publishedAt])
+  @@index([createdAt])
+}
+
+// ==================== Release Changelog ====================
+
+model ReleaseChangelog {
+  id          String   @id @default(uuid())
+  releaseId   String
+  category    String   // added, changed, fixed, deprecated, removed, security, performance, docs, refactor, test, chore
+  title       String   // "Fixed login bug"
+  description String?  // detailed description
+  impact      String   @default("patch") // major, minor, patch
+  metadata    String?  // JSON: related issues, PRs, etc.
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  release     Release  @relation(fields: [releaseId], references: [id], onDelete: Cascade)
+
+  @@index([releaseId])
+  @@index([category])
+  @@index([order])
+}
+
+// ==================== Release Tag ====================
+
+model ReleaseTag {
+  id        String @id @default(uuid())
+  releaseId String
+  name      String // "breaking", "feature", "bugfix", "security", "documentation", etc.
+  color     String @default("#6B7280")
+
+  release   Release @relation(fields: [releaseId], references: [id], onDelete: Cascade)
+
+  @@index([releaseId])
+  @@index([name])
+}
+
+// ==================== Release Approval ====================
+
+model ReleaseApproval {
+  id          String   @id @default(uuid())
+  releaseId   String
+  approverId  String?  // agentId or userId
+  role        String   @default("reviewer") // reviewer, admin, auto
+  decision    String   @default("pending") // pending, approved, rejected, skipped
+  comment     String?
+  createdAt   DateTime @default(now())
+  decidedAt   DateTime?
+
+  release     Release  @relation(fields: [releaseId], references: [id], onDelete: Cascade)
+
+  @@index([releaseId])
+  @@index([decision])
+  @@index([createdAt])
+}
+
+// ==================== Release Milestone ====================
+
+model ReleaseMilestone {
+  id          String   @id @default(uuid())
+  releaseId   String
+  name        String   // "Code Freeze", "QA Complete", "Deployed"
+  status      String   @default("pending") // pending, in_progress, completed, skipped
+  completedAt DateTime?
+  createdAt   DateTime @default(now())
+
+  release     Release  @relation(fields: [releaseId], references: [id], onDelete: Cascade)
+
+  @@index([releaseId])
+  @@index([status])
 }

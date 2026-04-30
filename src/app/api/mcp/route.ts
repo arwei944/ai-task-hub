@@ -18,6 +18,8 @@ import { taskCoreMcpTools } from '@/lib/modules/mcp-server/tools/task-core-tools
 import { aiEngineMcpTools } from '@/lib/modules/mcp-server/tools/ai-engine-tools';
 import { projectMcpTools } from '@/lib/modules/mcp-server/tools/project-tools';
 import { createProjectToolHandlers } from '@/lib/modules/mcp-server/tools/project-handlers';
+import { versionMcpTools } from '@/lib/modules/mcp-server/tools/version-tools';
+import { createVersionToolHandlers } from '@/lib/modules/mcp-server/tools/version-handlers';
 import { getPrisma } from '@/lib/db';
 import { NextRequest } from 'next/server';
 import { z } from 'zod';
@@ -183,6 +185,23 @@ async function initializeSharedTools() {
         name: toolConfig.name,
         description: toolConfig.description ?? `Tool: ${toolConfig.name}`,
         sourceModule: 'project-lifecycle',
+        handler,
+        schema: jsonSchemaToZodShape(toolConfig.inputSchema),
+      });
+    }
+  }
+
+  // Register version management tools
+  const { VersionMgmtService } = await import('@/lib/modules/version-mgmt/version-mgmt.service');
+  const versionService = new VersionMgmtService(logger);
+  const versionHandlers = createVersionToolHandlers(versionService, logger);
+  for (const toolConfig of versionMcpTools) {
+    const handler = (versionHandlers as any)[toolConfig.name];
+    if (handler !== undefined) {
+      allTools.push({
+        name: toolConfig.name,
+        description: toolConfig.description ?? `Tool: ${toolConfig.name}`,
+        sourceModule: 'version-mgmt',
         handler,
         schema: jsonSchemaToZodShape(toolConfig.inputSchema),
       });
