@@ -30,6 +30,8 @@ import { lifecycleMcpTools } from '@/lib/modules/mcp-server/tools/lifecycle-tool
 import { createLifecycleToolHandlers } from '@/lib/modules/mcp-server/tools/lifecycle-handlers';
 import { contextMcpTools } from '@/lib/modules/mcp-server/tools/context-tools';
 import { createContextToolHandlers } from '@/lib/modules/mcp-server/tools/context-handlers';
+import { promptMcpTools } from '@/lib/modules/mcp-server/tools/prompt-tools';
+import { createPromptToolHandlers } from '@/lib/modules/mcp-server/tools/prompt-handlers';
 import { getPrisma } from '@/lib/db';
 import { NextRequest } from 'next/server';
 import { z } from 'zod';
@@ -296,6 +298,21 @@ async function initializeSharedTools() {
         name: toolConfig.name,
         description: toolConfig.description ?? `Tool: ${toolConfig.name}`,
         sourceModule: 'context-tools',
+        handler,
+        schema: jsonSchemaToZodShape(toolConfig.inputSchema),
+      });
+    }
+  }
+
+  // Register prompt template tools
+  const promptHandlers = createPromptToolHandlers(logger);
+  for (const toolConfig of promptMcpTools) {
+    const handler = (promptHandlers as any)[toolConfig.name];
+    if (handler !== undefined) {
+      allTools.push({
+        name: toolConfig.name,
+        description: toolConfig.description ?? `Tool: ${toolConfig.name}`,
+        sourceModule: 'prompt-tools',
         handler,
         schema: jsonSchemaToZodShape(toolConfig.inputSchema),
       });

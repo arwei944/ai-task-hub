@@ -44,6 +44,8 @@ import { requirementMcpTools } from '@/lib/modules/mcp-server/tools/requirement-
 import { knowledgeMcpTools } from '@/lib/modules/mcp-server/tools/knowledge-tools';
 import { lifecycleMcpTools } from '@/lib/modules/mcp-server/tools/lifecycle-tools';
 import { contextMcpTools } from '@/lib/modules/mcp-server/tools/context-tools';
+import { promptMcpTools } from '@/lib/modules/mcp-server/tools/prompt-tools';
+import { createPromptToolHandlers } from '@/lib/modules/mcp-server/tools/prompt-handlers';
 import { aiEngineMcpTools } from '@/lib/modules/mcp-server/tools/ai-engine-tools';
 import { projectMcpTools } from '@/lib/modules/mcp-server/tools/project-tools';
 import { versionMcpTools } from '@/lib/modules/mcp-server/tools/version-tools';
@@ -221,6 +223,15 @@ async function main() {
 
   await toolRegistry.registerModuleTools(
     { id: 'context-tools', mcpTools: contextMcpTools } as any,
+    (_mod, toolName) => handlerMap[toolName],
+  );
+
+  // Register prompt template tools
+  const promptHandlers = createPromptToolHandlers(logger);
+  Object.assign(handlerMap, promptHandlers);
+
+  await toolRegistry.registerModuleTools(
+    { id: 'prompt-tools', mcpTools: promptMcpTools } as any,
     (_mod, toolName) => handlerMap[toolName],
   );
 

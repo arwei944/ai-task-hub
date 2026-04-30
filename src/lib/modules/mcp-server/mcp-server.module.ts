@@ -15,6 +15,8 @@ import { aiEngineMcpTools } from './tools/ai-engine-tools';
 import { lifecycleMcpTools } from './tools/lifecycle-tools';
 import { requirementMcpTools } from './tools/requirement-tools';
 import { knowledgeMcpTools } from './tools/knowledge-tools';
+import { promptMcpTools } from './tools/prompt-tools';
+import { createPromptToolHandlers } from './tools/prompt-handlers';
 import { APP_VERSION } from '@/lib/core/version';
 
 export default class McpServerModule implements Module {
@@ -27,7 +29,7 @@ export default class McpServerModule implements Module {
   // Declare MCP tools that this module provides
   // (In practice, tools come from task-core and ai-engine modules,
   //  but we declare them here for the module system to discover)
-  mcpTools = [...taskCoreMcpTools, ...aiEngineMcpTools, ...lifecycleMcpTools, ...requirementMcpTools, ...knowledgeMcpTools];
+  mcpTools = [...taskCoreMcpTools, ...aiEngineMcpTools, ...lifecycleMcpTools, ...requirementMcpTools, ...knowledgeMcpTools, ...promptMcpTools];
 
   private mcpServer: McpServer | null = null;
   private toolRegistry: McpToolRegistry | null = null;
@@ -134,6 +136,14 @@ export default class McpServerModule implements Module {
           (_mod, toolName) => handlerMap[toolName],
         );
       }
+
+      // Prompt template handlers (no external dependencies)
+      const promptHandlers = createPromptToolHandlers(context.logger);
+      Object.assign(handlerMap, promptHandlers);
+      await this.toolRegistry.registerModuleTools(
+        { id: 'prompt-tools', mcpTools: promptMcpTools } as any,
+        (_mod, toolName) => handlerMap[toolName],
+      );
 
       // Register tools with MCP server
       await this.toolRegistry.registerWithServer();
