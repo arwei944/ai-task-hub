@@ -169,14 +169,14 @@ describe('S-HC: 硬编码值测试', () => {
   // 验证默认超时 30000ms
   // -------------------------------------------------------
   describe('S-HC-01: WorkflowEngine 默认超时 30000ms', () => {
-    it('soloConfig 中 defaultTimeoutMs 应为 30000', () => {
+    it('soloConfig 中 defaultTimeoutMs 默认值应为 30000', () => {
       const source = readSource('lib/modules/workflow-engine/workflow-engine.module.ts');
-      expect(source).toMatch(/defaultTimeoutMs:\s*30000/);
+      expect(source).toMatch(/SOLO_TIMEOUT_MS.*30000/);
     });
 
-    it('soloConfig 中 defaultMode 应为 mcp', () => {
+    it('soloConfig 中 defaultMode 默认值应为 mcp', () => {
       const source = readSource('lib/modules/workflow-engine/workflow-engine.module.ts');
-      expect(source).toMatch(/defaultMode:\s*'mcp'/);
+      expect(source).toMatch(/defaultMode.*'mcp'/);
     });
 
     it('soloConfig 中 maxConcurrentSessions 应为 5', () => {

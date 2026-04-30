@@ -1,5 +1,5 @@
 import type { Module, ModuleContext } from '@/lib/core/types';
-import type { SOLOBridgeConfig } from './types';
+import type { SOLOBridgeConfig, SOLOCallMode } from './types';
 import { APP_VERSION } from '@/lib/core/version';
 
 export default class WorkflowEngineModule implements Module {
@@ -35,12 +35,23 @@ export default class WorkflowEngineModule implements Module {
       const logger = context.logger as any;
       const eventBus = context.eventBus as any;
 
-      // SOLO bridge config
+      // SOLO bridge config - 从环境变量读取
+      const validModes: SOLOCallMode[] = ['mcp', 'rest', 'pull'];
+      const envMode = process.env.SOLO_DEFAULT_MODE as SOLOCallMode | undefined;
       const soloConfig: SOLOBridgeConfig = {
-        defaultMode: 'mcp',
-        defaultTimeoutMs: 30000,
+        defaultMode: envMode && validModes.includes(envMode) ? envMode : 'mcp',
+        mcpEndpoint: process.env.SOLO_MCP_ENDPOINT || 'http://localhost:3001/mcp',
+        restEndpoint: process.env.SOLO_REST_ENDPOINT || 'http://localhost:3001/api/solo/call',
+        defaultTimeoutMs: parseInt(process.env.SOLO_TIMEOUT_MS || '30000', 10),
         maxConcurrentSessions: 5,
       };
+
+      context.logger.info('[WorkflowEngine] SOLO Bridge config', {
+        defaultMode: soloConfig.defaultMode,
+        mcpEndpoint: soloConfig.mcpEndpoint,
+        restEndpoint: soloConfig.restEndpoint,
+        timeoutMs: soloConfig.defaultTimeoutMs,
+      });
 
       // Instantiate services
       const soloBridge = new SOLOBridge(soloConfig, eventBus, logger);

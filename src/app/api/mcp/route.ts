@@ -46,6 +46,8 @@ import { workflowV3McpTools } from '@/lib/modules/mcp-server/tools/workflow-v3-t
 import { createWorkflowV3ToolHandlers } from '@/lib/modules/mcp-server/tools/workflow-v3-handlers';
 import { notificationPreferenceMcpTools } from '@/lib/modules/mcp-server/tools/notification-preference-tools';
 import { createNotificationPreferenceToolHandlers } from '@/lib/modules/mcp-server/tools/notification-preference-handlers';
+import { soloBridgeMcpTools } from '@/lib/modules/mcp-server/tools/solo-bridge-tools';
+import { createSOLOBridgeToolHandlers } from '@/lib/modules/mcp-server/tools/solo-bridge-handlers';
 import { getPrisma } from '@/lib/db';
 import { NextRequest } from 'next/server';
 import { z } from 'zod';
@@ -446,6 +448,33 @@ async function initializeSharedTools() {
         name: toolConfig.name,
         description: toolConfig.description ?? `Tool: ${toolConfig.name}`,
         sourceModule: 'notification-preference-tools',
+        handler,
+        schema: jsonSchemaToZodShape(toolConfig.inputSchema),
+      });
+    }
+  }
+
+  // Register SOLO Bridge tools
+  const { SOLOBridge } = await import('@/lib/modules/workflow-engine/solo/solo-bridge');
+  const soloBridge = new SOLOBridge(
+    {
+      defaultMode: (process.env.SOLO_DEFAULT_MODE as any) || 'mcp',
+      mcpEndpoint: process.env.SOLO_MCP_ENDPOINT || 'http://localhost:3001/mcp',
+      restEndpoint: process.env.SOLO_REST_ENDPOINT || 'http://localhost:3001/api/solo/call',
+      defaultTimeoutMs: parseInt(process.env.SOLO_TIMEOUT_MS || '30000', 10),
+      maxConcurrentSessions: 5,
+    },
+    eventBus,
+    logger,
+  );
+  const soloBridgeHandlers = createSOLOBridgeToolHandlers(() => soloBridge, logger);
+  for (const toolConfig of soloBridgeMcpTools) {
+    const handler = (soloBridgeHandlers as any)[toolConfig.name];
+    if (handler !== undefined) {
+      allTools.push({
+        name: toolConfig.name,
+        description: toolConfig.description ?? `Tool: ${toolConfig.name}`,
+        sourceModule: 'solo-bridge-tools',
         handler,
         schema: jsonSchemaToZodShape(toolConfig.inputSchema),
       });

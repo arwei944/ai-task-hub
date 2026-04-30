@@ -60,6 +60,8 @@ import { workflowV3McpTools } from '@/lib/modules/mcp-server/tools/workflow-v3-t
 import { createWorkflowV3ToolHandlers } from '@/lib/modules/mcp-server/tools/workflow-v3-handlers';
 import { notificationPreferenceMcpTools } from '@/lib/modules/mcp-server/tools/notification-preference-tools';
 import { createNotificationPreferenceToolHandlers } from '@/lib/modules/mcp-server/tools/notification-preference-handlers';
+import { soloBridgeMcpTools } from '@/lib/modules/mcp-server/tools/solo-bridge-tools';
+import { createSOLOBridgeToolHandlers } from '@/lib/modules/mcp-server/tools/solo-bridge-handlers';
 import { aiEngineMcpTools } from '@/lib/modules/mcp-server/tools/ai-engine-tools';
 import { projectMcpTools } from '@/lib/modules/mcp-server/tools/project-tools';
 import { versionMcpTools } from '@/lib/modules/mcp-server/tools/version-tools';
@@ -323,6 +325,31 @@ async function main() {
 
   await toolRegistry.registerModuleTools(
     { id: 'notification-preference-tools', mcpTools: notificationPreferenceMcpTools } as any,
+    (_mod, toolName) => handlerMap[toolName],
+  );
+
+  // Register SOLO Bridge tools
+  const { SOLOBridge } = await import('@/lib/modules/workflow-engine/solo/solo-bridge');
+  const { EventBus: SOLOEventBus } = await import('@/lib/core/event-bus');
+  const soloEventBusForBridge = new SOLOEventBus();
+  const soloBridge = new SOLOBridge(
+    {
+      defaultMode: (process.env.SOLO_DEFAULT_MODE as any) || 'mcp',
+      mcpEndpoint: process.env.SOLO_MCP_ENDPOINT || 'http://localhost:3001/mcp',
+      restEndpoint: process.env.SOLO_REST_ENDPOINT || 'http://localhost:3001/api/solo/call',
+      defaultTimeoutMs: parseInt(process.env.SOLO_TIMEOUT_MS || '30000', 10),
+      maxConcurrentSessions: 5,
+    },
+    soloEventBusForBridge,
+    logger,
+  );
+  container.register('SOLOBridge', () => soloBridge);
+
+  const soloBridgeHandlers = createSOLOBridgeToolHandlers(() => soloBridge, logger);
+  Object.assign(handlerMap, soloBridgeHandlers);
+
+  await toolRegistry.registerModuleTools(
+    { id: 'solo-bridge-tools', mcpTools: soloBridgeMcpTools } as any,
     (_mod, toolName) => handlerMap[toolName],
   );
 

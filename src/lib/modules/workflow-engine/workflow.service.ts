@@ -312,12 +312,74 @@ export class WorkflowService {
       }
 
       case 'ai-analyze': {
-        // Placeholder: mock AI analysis
-        this.logger.info(`AI analyze step (placeholder): ${step.name}`);
+        // 尝试通过 SOLO Bridge 执行 AI 分析，不可用时降级到占位实现
+        this.logger.info(`AI analyze step: ${step.name}`);
+
+        try {
+          // 尝试从 DI 容器获取 SOLOBridge
+          const { getContainer } = await import('@/lib/core/di-container');
+          const container = getContainer();
+          const soloBridge = container?.resolve('SOLOBridge') as any;
+
+          if (soloBridge && typeof soloBridge.call === 'function') {
+            const soloResult = await soloBridge.call({
+              prompt: String(config.prompt ?? `Analyze: ${step.name}`),
+              stepId: step.id,
+              executionId: context._executionId as string ?? 'unknown',
+              stepName: step.name,
+              subAgentType: config.subAgentType as any,
+              callMode: config.callMode as any,
+              context: config.context as Record<string, unknown> | undefined,
+            });
+
+            if (soloResult.success) {
+              return {
+                lastAiResult: {
+                  analysis: soloResult.data,
+                  sessionId: soloResult.sessionId,
+                  durationMs: soloResult.durationMs,
+                  tokensUsed: soloResult.tokensUsed,
+                  timestamp: new Date().toISOString(),
+                  source: 'solo-bridge',
+                },
+              };
+            }
+
+            // SOLO Bridge 调用失败，降级到 AI Model Adapter
+            this.logger.warn(`SOLO Bridge call failed for step ${step.name}: ${soloResult.error}, falling back to AI Model Adapter`);
+          }
+        } catch (diError) {
+          this.logger.debug(`SOLO Bridge not available for step ${step.name}: ${diError instanceof Error ? diError.message : String(diError)}`);
+        }
+
+        // 降级：尝试使用 AI Model Adapter
+        try {
+          const { getContainer } = await import('@/lib/core/di-container');
+          const container = getContainer();
+          const aiModel = container?.resolve('OpenAICompatibleAdapter') as any;
+
+          if (aiModel && typeof aiModel.complete === 'function') {
+            const prompt = String(config.prompt ?? `Analyze: ${step.name}`);
+            const aiResponse = await aiModel.complete(prompt);
+            return {
+              lastAiResult: {
+                analysis: aiResponse,
+                timestamp: new Date().toISOString(),
+                source: 'ai-model-adapter',
+              },
+            };
+          }
+        } catch (aiError) {
+          this.logger.debug(`AI Model Adapter not available for step ${step.name}: ${aiError instanceof Error ? aiError.message : String(aiError)}`);
+        }
+
+        // 最终降级：占位实现
+        this.logger.info(`AI analyze step (placeholder fallback): ${step.name}`);
         const result = {
           analysis: `AI analysis placeholder for: ${step.name}`,
           timestamp: new Date().toISOString(),
           input: config,
+          source: 'placeholder',
         };
         return { lastAiResult: result };
       }
