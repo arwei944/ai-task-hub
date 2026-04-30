@@ -44,6 +44,8 @@ import { outboundWebhookMcpTools } from '@/lib/modules/mcp-server/tools/outbound
 import { createOutboundWebhookToolHandlers } from '@/lib/modules/mcp-server/tools/outbound-webhook-handlers';
 import { workflowV3McpTools } from '@/lib/modules/mcp-server/tools/workflow-v3-tools';
 import { createWorkflowV3ToolHandlers } from '@/lib/modules/mcp-server/tools/workflow-v3-handlers';
+import { notificationPreferenceMcpTools } from '@/lib/modules/mcp-server/tools/notification-preference-tools';
+import { createNotificationPreferenceToolHandlers } from '@/lib/modules/mcp-server/tools/notification-preference-handlers';
 import { getPrisma } from '@/lib/db';
 import { NextRequest } from 'next/server';
 import { z } from 'zod';
@@ -427,6 +429,23 @@ async function initializeSharedTools() {
         name: toolConfig.name,
         description: toolConfig.description ?? `Tool: ${toolConfig.name}`,
         sourceModule: 'workflow-v3-tools',
+        handler,
+        schema: jsonSchemaToZodShape(toolConfig.inputSchema),
+      });
+    }
+  }
+
+  // Register notification preference tools
+  const { NotificationPreferenceService } = await import('@/lib/modules/notifications/preference.service');
+  const prefService = new NotificationPreferenceService(logger, () => prisma);
+  const notifPrefHandlers = createNotificationPreferenceToolHandlers(prefService, logger);
+  for (const toolConfig of notificationPreferenceMcpTools) {
+    const handler = (notifPrefHandlers as any)[toolConfig.name];
+    if (handler !== undefined) {
+      allTools.push({
+        name: toolConfig.name,
+        description: toolConfig.description ?? `Tool: ${toolConfig.name}`,
+        sourceModule: 'notification-preference-tools',
         handler,
         schema: jsonSchemaToZodShape(toolConfig.inputSchema),
       });

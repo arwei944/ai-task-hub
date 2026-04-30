@@ -984,3 +984,21 @@ model OutboundWebhookDelivery {
   @@index([eventType])
   @@index([success])
 }
+
+// ==================== Notification Preference ====================
+
+model NotificationPreference {
+  id                 String   @id @default(cuid())
+  userId             String   @unique
+  eventPatterns      String   @default("*")
+  channels           String   @default("system")
+  minLevel           String   @default("info")
+  digestEnabled      Boolean  @default(false)
+  digestInterval     Int      @default(60)
+  quietHoursEnabled  Boolean  @default(false)
+  quietHoursStart    String   @default("22:00")
+  quietHoursEnd      String   @default("08:00")
+  includeOwnActions  Boolean  @default(true)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}

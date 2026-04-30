@@ -58,6 +58,8 @@ import { outboundWebhookMcpTools } from '@/lib/modules/mcp-server/tools/outbound
 import { createOutboundWebhookToolHandlers } from '@/lib/modules/mcp-server/tools/outbound-webhook-handlers';
 import { workflowV3McpTools } from '@/lib/modules/mcp-server/tools/workflow-v3-tools';
 import { createWorkflowV3ToolHandlers } from '@/lib/modules/mcp-server/tools/workflow-v3-handlers';
+import { notificationPreferenceMcpTools } from '@/lib/modules/mcp-server/tools/notification-preference-tools';
+import { createNotificationPreferenceToolHandlers } from '@/lib/modules/mcp-server/tools/notification-preference-handlers';
 import { aiEngineMcpTools } from '@/lib/modules/mcp-server/tools/ai-engine-tools';
 import { projectMcpTools } from '@/lib/modules/mcp-server/tools/project-tools';
 import { versionMcpTools } from '@/lib/modules/mcp-server/tools/version-tools';
@@ -310,6 +312,17 @@ async function main() {
 
   await toolRegistry.registerModuleTools(
     { id: 'workflow-v3-tools', mcpTools: workflowV3McpTools } as any,
+    (_mod, toolName) => handlerMap[toolName],
+  );
+
+  // Register notification preference tools
+  const { NotificationPreferenceService } = await import('@/lib/modules/notifications/preference.service');
+  const prefService = new NotificationPreferenceService(logger, () => prisma);
+  const notifPrefHandlers = createNotificationPreferenceToolHandlers(prefService, logger);
+  Object.assign(handlerMap, notifPrefHandlers);
+
+  await toolRegistry.registerModuleTools(
+    { id: 'notification-preference-tools', mcpTools: notificationPreferenceMcpTools } as any,
     (_mod, toolName) => handlerMap[toolName],
   );
 
