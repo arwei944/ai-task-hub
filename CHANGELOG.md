@@ -1,5 +1,48 @@
 # Changelog
 
+## [2.0.0] - 2026-04-30
+
+### v2.0.0 正式发布 — 全流程贯通 + 集成测试 + 文档完善
+
+从 alpha.1 到 rc.1，历经 9 个迭代版本，AI Task Hub v2.0.0 正式发布。本版本实现了事件驱动架构、AI 主动参与、项目全生命周期管理、知识沉淀和测试管理五大核心能力。
+
+#### 架构升级
+- **EventBus v2** — 事件溯源 + Schema 校验，38 个事件类型覆盖 8 大领域
+- **事件驱动工作流** — task-core/version-mgmt/workflow-engine/lifecycle/requirements 全模块事件接入
+- **AI Engine v2** — 3 个事件处理器（TaskCreated/TaskStatus/ProjectPhase），规则驱动无需 API 调用
+- **模块化架构** — 15+ 模块通过 ModuleRegistry + DIContainer 协同工作
+
+#### 新模块 (5 个)
+- **lifecycle** — 项目生命周期管理器，6 条阶段转换规则 + 审批系统
+- **requirements** — 结构化需求管理，10 个 Service 方法 + AI 规则分析器
+- **knowledge** — 知识库管理，支持经验沉淀和 AI 提取
+- **test-management** — 测试管理，测试用例/执行/套件 + AI 生成
+- **version-mgmt** — 版本发布系统，完整生命周期 + 语义化版本 + 审批
+
+#### 工作流引擎增强
+- **http-request 步骤** — 支持 5 种 HTTP 方法，自定义 headers/body/timeout
+- **transform 步骤** — 7 种数据转换（map/filter/reduce/pick/omit/merge/template）
+- **6 个阶段模板** — 需求分析到部署发布的完整工作流模板
+- **阶段变更自动触发** — project.phase.changed 事件自动匹配工作流
+
+#### 集成测试
+- **全生命周期集成测试** — 端到端覆盖项目创建到发布的完整流程
+- **EventBus 验证** — 事件顺序、通配符监听、类型监听器全面测试
+- **多模块协同** — lifecycle + requirements + version-mgmt + test-management + knowledge 联动
+
+#### 文档更新
+- **API 文档** — 更新至 v2.0.0，覆盖 26 个数据模型
+- **部署指南** — 更新至 v2.0.0，含 HF Spaces + Docker 部署
+- **CHANGELOG** — 完整记录 alpha.1 到 rc.1 所有变更
+
+#### 统计
+- **数据模型**: 36 个（含 EventStore/PhaseTransition/Requirement/TestCase 等）
+- **模块**: 15+ 个（task-core/ai-engine/workflow-engine/lifecycle/requirements/knowledge 等）
+- **测试文件**: 100+ 个
+- **测试用例**: 1600+ 个
+
+---
+
 ## [2.0.0-beta.2] - 2026-04-30
 
 ### ⚙️ 工作流引擎补全 — 占位步骤实现 + 项目模板 + 事件触发

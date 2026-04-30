@@ -27,7 +27,7 @@ test.describe('E2E-SET: 设置页面测试', () => {
 
   test('E2E-SET-03: 系统信息显示', async ({ page }) => {
     const allText = await page.locator('#page-settings').textContent();
-    expect(allText).toContain('v1.9.0');
+    expect(allText).toContain('v2.0.0');
     expect(allText).toContain('Next.js');
     expect(allText).toContain('SQLite');
   });

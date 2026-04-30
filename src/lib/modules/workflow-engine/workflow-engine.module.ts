@@ -4,7 +4,7 @@ import type { SOLOBridgeConfig } from './types';
 export default class WorkflowEngineModule implements Module {
   id = 'workflow-engine';
   name = '工作流引擎';
-  version = '1.9.0';
+  version = '2.0.0';
   description = 'SOLO 驱动的智能工作流引擎，支持策略即代码、反馈驱动改进、可观测性';
   locked = true;
   dependencies = ['task-core'];

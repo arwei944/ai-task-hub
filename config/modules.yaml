@@ -124,5 +124,5 @@ modules:
 
 app:
   name: "AI Task Hub"
-  version: "2.0.0-alpha.2"
+  version: "2.0.0"
   port: 3000
