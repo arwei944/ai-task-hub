@@ -109,6 +109,17 @@ export class NotificationRuleEngine {
     // Agent events
     this.eventBus.on('agent.registered', (e) => this.evaluate(e));
 
+    // GitHub integration events
+    this.eventBus.on('integration.github.push', (e) => this.evaluate(e));
+    this.eventBus.on('integration.github.pr.opened', (e) => this.evaluate(e));
+    this.eventBus.on('integration.github.pr.merged', (e) => this.evaluate(e));
+    this.eventBus.on('integration.github.issue.created', (e) => this.evaluate(e));
+
+    // Requirement events
+    this.eventBus.on('requirement.created', (e) => this.evaluate(e));
+    this.eventBus.on('requirement.status.changed', (e) => this.evaluate(e));
+    this.eventBus.on('requirement.mapped.to.task', (e) => this.evaluate(e));
+
     this.logger.info('Notification rule engine started, listening to events');
   }
 
@@ -210,12 +221,30 @@ export class NotificationRuleEngine {
       'workflow.step.failed': '工作流步骤失败',
       // Agent events
       'agent.registered': '新智能体注册',
+      // GitHub integration events
+      'integration.github.push': 'GitHub 代码推送',
+      'integration.github.pr.opened': 'GitHub PR 创建',
+      'integration.github.pr.merged': 'GitHub PR 合并',
+      'integration.github.issue.created': 'GitHub Issue 创建',
+      // Requirement events
+      'requirement.created': '新需求创建',
+      'requirement.status.changed': '需求状态变更',
+      'requirement.mapped.to.task': '需求已映射到任务',
     };
     return titles[eventType] || `事件: ${eventType}`;
   }
 
   private defaultMessage(event: DomainEvent): string {
     const payload = event.payload as any;
+    // GitHub integration events (check before generic title)
+    if (payload?.repository && payload?.ref) return `${payload.repository} 推送: ${payload.ref}`;
+    if (payload?.repository && payload?.prNumber) return `${payload.repository} PR #${payload.prNumber}: ${payload.title}`;
+    if (payload?.repository && payload?.issueNumber) return `${payload.repository} Issue #${payload.issueNumber}: ${payload.title}`;
+    if (payload?.pushedBy) return `推送者: ${payload.pushedBy}`;
+    // Requirement events (check before generic title)
+    if (payload?.requirementId && payload?.taskId) return `需求 ${payload.requirementId} -> 任务 ${payload.taskId}`;
+    if (payload?.requirementId && payload?.status) return `需求 ${payload.requirementId} 状态: ${payload.status}`;
+    if (payload?.requirementId && payload?.title) return `需求 ${payload.requirementId}: ${payload.title}`;
     // Task events
     if (payload?.title) return payload.title;
     if (payload?.taskId) return `任务 ${payload.taskId}`;
@@ -237,7 +266,7 @@ export class NotificationRuleEngine {
   private inferLevel(eventType: string): 'info' | 'warning' | 'error' | 'success' {
     if (eventType.includes('deleted') || eventType.includes('error')) return 'error';
     if (eventType.includes('overdue') || eventType.includes('warning')) return 'warning';
-    if (eventType.includes('completed') || eventType.includes('registered')) return 'success';
+    if (eventType.includes('completed') || eventType.includes('registered') || eventType.includes('merged') || eventType.includes('mapped')) return 'success';
     return 'info';
   }
 }

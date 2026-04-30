@@ -1,13 +1,35 @@
+import { createHmac } from 'node:crypto';
 import type { IntegrationAdapter, SyncOptions, SyncResult, PushResult } from '../integration-core/types';
-import type { ILogger } from '@/lib/core/types';
+import type { ILogger, IEventBus, DomainEvent } from '@/lib/core/types';
 import type { CreateTaskDTO, TaskPriority } from '@/lib/modules/task-core/types';
 import type { TaskService } from '@/lib/modules/task-core/task.service';
+
+export interface GitHubWebhookConfig {
+  /** HMAC secret for webhook signature verification. Set to empty/null to disable. */
+  webhookSecret?: string;
+}
 
 export class GitHubAdapter implements IntegrationAdapter {
   readonly type = 'github';
   readonly name = 'GitHub';
 
-  constructor(private logger: ILogger) {}
+  private eventBus?: IEventBus;
+  private webhookSecret?: string;
+
+  constructor(
+    private logger: ILogger,
+    options?: GitHubWebhookConfig,
+  ) {
+    this.webhookSecret = options?.webhookSecret ?? process.env.GITHUB_WEBHOOK_SECRET;
+  }
+
+  /**
+   * Set the EventBus for emitting internal domain events from webhooks.
+   * This is optional; if not set, webhook events are only logged.
+   */
+  setEventBus(eventBus: IEventBus): void {
+    this.eventBus = eventBus;
+  }
 
   async pullTasks(options?: SyncOptions, taskService?: TaskService): Promise<SyncResult> {
     const token = process.env.GITHUB_TOKEN;
@@ -168,6 +190,48 @@ export class GitHubAdapter implements IntegrationAdapter {
     }
   }
 
+  /**
+   * Verify HMAC-SHA256 signature of a GitHub webhook payload.
+   *
+   * GitHub sends `X-Hub-Signature-256: sha1=<hex>` or `sha256=<hex>`.
+   * This method supports both sha1 and sha256.
+   *
+   * @param payload - Raw string body of the webhook request
+   * @param signature - Value of the X-Hub-Signature-256 header
+   * @returns true if signature is valid or verification is disabled
+   */
+  verifySignature(payload: string, signature: string): boolean {
+    if (!this.webhookSecret) {
+      // No secret configured, skip verification
+      return true;
+    }
+
+    if (!signature) {
+      this.logger.warn('GitHub webhook: missing signature header, but secret is configured');
+      return false;
+    }
+
+    const [algo, hash] = signature.split('=');
+    if (!algo || !hash) {
+      this.logger.warn('GitHub webhook: malformed signature header');
+      return false;
+    }
+
+    try {
+      const hmac = createHmac(algo, this.webhookSecret);
+      hmac.update(payload);
+      const expected = hmac.digest('hex');
+      const result = expected === hash;
+      if (!result) {
+        this.logger.warn('GitHub webhook: HMAC signature verification failed');
+      }
+      return result;
+    } catch (error: any) {
+      this.logger.error(`GitHub webhook: HMAC verification error: ${error.message}`);
+      return false;
+    }
+  }
+
   async handleWebhook(payload: unknown, headers?: Record<string, string>): Promise<void> {
     const event = headers?.['x-github-event'];
     const data = payload as any;
@@ -181,13 +245,100 @@ export class GitHubAdapter implements IntegrationAdapter {
         } else if (data.action === 'closed') {
           this.logger.info(`GitHub issue closed: #${data.issue?.number}`);
         }
+
+        // Emit internal event for issue opened
+        if (data.action === 'opened' && this.eventBus) {
+          this.eventBus.emit({
+            type: 'integration.github.issue.created',
+            payload: {
+              issueNumber: data.issue?.number,
+              title: data.issue?.title,
+              body: data.issue?.body,
+              url: data.issue?.html_url,
+              sender: data.sender?.login,
+              repository: data.repository?.full_name,
+              labels: (data.issue?.labels ?? []).map((l: any) => typeof l === 'string' ? l : l.name),
+            },
+            timestamp: new Date(),
+            source: 'integration-github',
+          });
+        }
         break;
+
       case 'push':
         this.logger.info(`GitHub push: ${data.ref} by ${data.sender?.login}`);
+
+        // Emit internal event for push
+        if (this.eventBus) {
+          this.eventBus.emit({
+            type: 'integration.github.push',
+            payload: {
+              ref: data.ref,
+              before: data.before,
+              after: data.after,
+              pushedBy: data.sender?.login,
+              repository: data.repository?.full_name,
+              commits: (data.commits ?? []).map((c: any) => ({
+                id: c.id,
+                message: c.message,
+                author: c.author?.username,
+                url: c.url,
+              })),
+              headCommit: data.head_commit ? {
+                id: data.head_commit.id,
+                message: data.head_commit.message,
+                author: data.head_commit.author?.username,
+                url: data.head_commit.url,
+              } : undefined,
+            },
+            timestamp: new Date(),
+            source: 'integration-github',
+          });
+        }
         break;
+
       case 'pull_request':
         this.logger.info(`GitHub PR ${data.action}: #${data.pull_request?.number}`);
+
+        // Emit internal events for PR opened and PR merged
+        if (this.eventBus) {
+          if (data.action === 'opened') {
+            this.eventBus.emit({
+              type: 'integration.github.pr.opened',
+              payload: {
+                prNumber: data.pull_request?.number,
+                title: data.pull_request?.title,
+                body: data.pull_request?.body,
+                url: data.pull_request?.html_url,
+                sender: data.sender?.login,
+                repository: data.repository?.full_name,
+                baseBranch: data.pull_request?.base?.ref,
+                headBranch: data.pull_request?.head?.ref,
+              },
+              timestamp: new Date(),
+              source: 'integration-github',
+            });
+          } else if (data.action === 'closed' && data.pull_request?.merged) {
+            this.eventBus.emit({
+              type: 'integration.github.pr.merged',
+              payload: {
+                prNumber: data.pull_request?.number,
+                title: data.pull_request?.title,
+                url: data.pull_request?.html_url,
+                sender: data.sender?.login,
+                mergedBy: data.pull_request?.merged_by?.login,
+                repository: data.repository?.full_name,
+                baseBranch: data.pull_request?.base?.ref,
+                headBranch: data.pull_request?.head?.ref,
+                mergeCommitSha: data.pull_request?.merge_commit_sha,
+              },
+              timestamp: new Date(),
+              source: 'integration-github',
+            });
+          }
+        }
         break;
+
       default:
         this.logger.debug(`GitHub webhook unhandled event: ${event}`);
     }
