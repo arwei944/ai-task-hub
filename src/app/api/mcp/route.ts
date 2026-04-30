@@ -48,6 +48,12 @@ import { notificationPreferenceMcpTools } from '@/lib/modules/mcp-server/tools/n
 import { createNotificationPreferenceToolHandlers } from '@/lib/modules/mcp-server/tools/notification-preference-handlers';
 import { soloBridgeMcpTools } from '@/lib/modules/mcp-server/tools/solo-bridge-tools';
 import { createSOLOBridgeToolHandlers } from '@/lib/modules/mcp-server/tools/solo-bridge-handlers';
+import { aiHandlerMcpTools } from '@/lib/modules/mcp-server/tools/ai-handler-tools';
+import { createAIHandlerToolHandlers } from '@/lib/modules/mcp-server/tools/ai-handler-handlers';
+import { emailNotificationMcpTools } from '@/lib/modules/mcp-server/tools/email-notification-tools';
+import { createEmailNotificationToolHandlers } from '@/lib/modules/mcp-server/tools/email-notification-handlers';
+import { webpushMcpTools } from '@/lib/modules/mcp-server/tools/webpush-tools';
+import { createWebPushToolHandlers } from '@/lib/modules/mcp-server/tools/webpush-handlers';
 import { getPrisma } from '@/lib/db';
 import { NextRequest } from 'next/server';
 import { z } from 'zod';
@@ -475,6 +481,55 @@ async function initializeSharedTools() {
         name: toolConfig.name,
         description: toolConfig.description ?? `Tool: ${toolConfig.name}`,
         sourceModule: 'solo-bridge-tools',
+        handler,
+        schema: jsonSchemaToZodShape(toolConfig.inputSchema),
+      });
+    }
+  }
+
+  // Register AI handler management tools
+  const { AIOrchestrator } = await import('@/lib/modules/ai-engine/ai-orchestrator');
+  const aiOrchestrator = new AIOrchestrator(eventBus, logger);
+  const aiHandlerHandlers = createAIHandlerToolHandlers(() => aiOrchestrator, eventBus, logger);
+  for (const toolConfig of aiHandlerMcpTools) {
+    const handler = (aiHandlerHandlers as any)[toolConfig.name];
+    if (handler !== undefined) {
+      allTools.push({
+        name: toolConfig.name,
+        description: toolConfig.description ?? `Tool: ${toolConfig.name}`,
+        sourceModule: 'ai-handler-tools',
+        handler,
+        schema: jsonSchemaToZodShape(toolConfig.inputSchema),
+      });
+    }
+  }
+
+  // Register email notification tools
+  const emailNotifHandlers = createEmailNotificationToolHandlers(logger);
+  for (const toolConfig of emailNotificationMcpTools) {
+    const handler = (emailNotifHandlers as any)[toolConfig.name];
+    if (handler !== undefined) {
+      allTools.push({
+        name: toolConfig.name,
+        description: toolConfig.description ?? `Tool: ${toolConfig.name}`,
+        sourceModule: 'email-notification-tools',
+        handler,
+        schema: jsonSchemaToZodShape(toolConfig.inputSchema),
+      });
+    }
+  }
+
+  // Register web push tools
+  const { WebPushService } = await import('@/lib/modules/notifications/web-push.service');
+  const webPushService = new WebPushService(logger);
+  const webPushHandlers = createWebPushToolHandlers(() => webPushService, logger);
+  for (const toolConfig of webpushMcpTools) {
+    const handler = (webPushHandlers as any)[toolConfig.name];
+    if (handler !== undefined) {
+      allTools.push({
+        name: toolConfig.name,
+        description: toolConfig.description ?? `Tool: ${toolConfig.name}`,
+        sourceModule: 'webpush-tools',
         handler,
         schema: jsonSchemaToZodShape(toolConfig.inputSchema),
       });

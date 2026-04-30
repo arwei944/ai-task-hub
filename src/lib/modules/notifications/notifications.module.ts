@@ -68,6 +68,13 @@ export default class NotificationsModule implements Module {
         ruleEngine.registerChannel(webhook);
       }
 
+      // Register email channel if SMTP is configured
+      if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS && process.env.NOTIFY_EMAIL_FROM && process.env.NOTIFY_EMAIL_TO) {
+        const { EmailNotificationChannel } = await import('./channels/email-channel');
+        const email = new EmailNotificationChannel(context.logger);
+        ruleEngine.registerChannel(email);
+      }
+
       // Start listening to events
       ruleEngine.start();
 

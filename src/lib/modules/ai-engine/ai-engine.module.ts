@@ -66,11 +66,19 @@ export default class AIEngineModule implements Module {
       const { TaskCreatedHandler } = await import('./handlers/task-created.handler');
       const { TaskStatusHandler } = await import('./handlers/task-status.handler');
       const { ProjectPhaseHandler } = await import('./handlers/project-phase.handler');
+      const { RequirementCreatedHandler } = await import('./handlers/requirement-created.handler');
+      const { DeploymentStatusHandler } = await import('./handlers/deployment-status.handler');
+      const { WorkflowCompletedHandler } = await import('./handlers/workflow-completed.handler');
+      const { KnowledgeUpdatedHandler } = await import('./handlers/knowledge-updated.handler');
 
       const orchestrator = new AIOrchestrator(context.eventBus, context.logger);
       orchestrator.registerHandler(new TaskCreatedHandler(context.eventBus, context.logger));
       orchestrator.registerHandler(new TaskStatusHandler(context.eventBus, context.logger));
       orchestrator.registerHandler(new ProjectPhaseHandler(context.eventBus, context.logger));
+      orchestrator.registerHandler(new RequirementCreatedHandler(context.eventBus, context.logger));
+      orchestrator.registerHandler(new DeploymentStatusHandler(context.eventBus, context.logger));
+      orchestrator.registerHandler(new WorkflowCompletedHandler(context.eventBus, context.logger));
+      orchestrator.registerHandler(new KnowledgeUpdatedHandler(context.eventBus, context.logger));
 
       context.container.register('AIOrchestrator', () => orchestrator);
 

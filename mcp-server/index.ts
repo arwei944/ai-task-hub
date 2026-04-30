@@ -62,6 +62,12 @@ import { notificationPreferenceMcpTools } from '@/lib/modules/mcp-server/tools/n
 import { createNotificationPreferenceToolHandlers } from '@/lib/modules/mcp-server/tools/notification-preference-handlers';
 import { soloBridgeMcpTools } from '@/lib/modules/mcp-server/tools/solo-bridge-tools';
 import { createSOLOBridgeToolHandlers } from '@/lib/modules/mcp-server/tools/solo-bridge-handlers';
+import { aiHandlerMcpTools } from '@/lib/modules/mcp-server/tools/ai-handler-tools';
+import { createAIHandlerToolHandlers } from '@/lib/modules/mcp-server/tools/ai-handler-handlers';
+import { emailNotificationMcpTools } from '@/lib/modules/mcp-server/tools/email-notification-tools';
+import { createEmailNotificationToolHandlers } from '@/lib/modules/mcp-server/tools/email-notification-handlers';
+import { webpushMcpTools } from '@/lib/modules/mcp-server/tools/webpush-tools';
+import { createWebPushToolHandlers } from '@/lib/modules/mcp-server/tools/webpush-handlers';
 import { aiEngineMcpTools } from '@/lib/modules/mcp-server/tools/ai-engine-tools';
 import { projectMcpTools } from '@/lib/modules/mcp-server/tools/project-tools';
 import { versionMcpTools } from '@/lib/modules/mcp-server/tools/version-tools';
@@ -350,6 +356,37 @@ async function main() {
 
   await toolRegistry.registerModuleTools(
     { id: 'solo-bridge-tools', mcpTools: soloBridgeMcpTools } as any,
+    (_mod, toolName) => handlerMap[toolName],
+  );
+
+  // Register AI handler management tools
+  const { AIOrchestrator } = await import('@/lib/modules/ai-engine/ai-orchestrator');
+  const aiOrchestrator = new AIOrchestrator(eventBus, logger);
+  const aiHandlerHandlers = createAIHandlerToolHandlers(() => aiOrchestrator, eventBus, logger);
+  Object.assign(handlerMap, aiHandlerHandlers);
+
+  await toolRegistry.registerModuleTools(
+    { id: 'ai-handler-tools', mcpTools: aiHandlerMcpTools } as any,
+    (_mod, toolName) => handlerMap[toolName],
+  );
+
+  // Register email notification tools
+  const emailNotifHandlers = createEmailNotificationToolHandlers(logger);
+  Object.assign(handlerMap, emailNotifHandlers);
+
+  await toolRegistry.registerModuleTools(
+    { id: 'email-notification-tools', mcpTools: emailNotificationMcpTools } as any,
+    (_mod, toolName) => handlerMap[toolName],
+  );
+
+  // Register web push tools
+  const { WebPushService } = await import('@/lib/modules/notifications/web-push.service');
+  const webPushService = new WebPushService(logger);
+  const webPushHandlers = createWebPushToolHandlers(() => webPushService, logger);
+  Object.assign(handlerMap, webPushHandlers);
+
+  await toolRegistry.registerModuleTools(
+    { id: 'webpush-tools', mcpTools: webpushMcpTools } as any,
     (_mod, toolName) => handlerMap[toolName],
   );
 
