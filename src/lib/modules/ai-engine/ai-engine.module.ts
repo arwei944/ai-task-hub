@@ -60,16 +60,18 @@ export default class AIEngineModule implements Module {
       const taskAnalyzer = new TaskAnalyzer(aiModel, context.logger);
       context.container.register('TaskAnalyzer', () => taskAnalyzer);
 
-      // Subscribe to events
-      context.eventBus.on('task.created', async (event: any) => {
-        context.logger.debug('AI: task.created event received');
-        // Could auto-analyze task complexity here
-      });
+      // Subscribe to events via AI Orchestrator
+      const { AIOrchestrator } = await import('./ai-orchestrator');
+      const { TaskCreatedHandler } = await import('./handlers/task-created.handler');
+      const { TaskStatusHandler } = await import('./handlers/task-status.handler');
+      const { ProjectPhaseHandler } = await import('./handlers/project-phase.handler');
 
-      context.eventBus.on('task.updated', async (event: any) => {
-        context.logger.debug('AI: task.updated event received');
-        // Could auto-infer status here
-      });
+      const orchestrator = new AIOrchestrator(context.eventBus, context.logger);
+      orchestrator.registerHandler(new TaskCreatedHandler(context.eventBus, context.logger));
+      orchestrator.registerHandler(new TaskStatusHandler(context.eventBus, context.logger));
+      orchestrator.registerHandler(new ProjectPhaseHandler(context.eventBus, context.logger));
+
+      context.container.register('AIOrchestrator', () => orchestrator);
 
       context.logger.info('AIEngineModule enabled with all processors registered');
     },

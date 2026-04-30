@@ -1,5 +1,29 @@
 # Changelog
 
+## [2.0.0-alpha.3] - 2026-04-30
+
+### 🤖 AI Engine v2 — 事件驱动的主动 AI 参与者
+
+#### AI 事件处理器框架
+- **BaseAIHandler** — 抽象基类，提供 safeHandle 错误隔离和 register 自动注册
+- **AIOrchestrator** — 统一管理所有 AI handler 的注册、查询和清理
+
+#### 三个事件处理器
+- **TaskCreatedHandler** — 监听 task.created，基于规则分析任务复杂度（low/medium/high）
+- **TaskStatusHandler** — 监听 task.status.changed，计算项目健康度并发射 project.health.updated
+- **ProjectPhaseHandler** — 监听 project.phase.changed，根据阶段转换提供 AI 建议
+
+#### AI 引擎升级
+- 空壳事件处理器替换为完整的 handler 系统
+- 错误隔离：单个 handler 失败不影响其他 handler
+- 规则驱动：不依赖 AI API，快速响应
+
+#### 测试
+- **36 个新测试** — handlers(28) + orchestrator(8)
+- **总测试数** — 1435 个测试全部通过
+
+---
+
 ## [2.0.0-alpha.2] - 2026-04-30
 
 ### 🔗 模块事件接入 — 激活 EventBus 中枢神经
