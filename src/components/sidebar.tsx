@@ -15,6 +15,7 @@ import {
   Store,
   SlidersHorizontal,
   Workflow,
+  Rocket,
   ChevronLeft,
   ChevronRight,
   Brain,
@@ -43,6 +44,7 @@ const mainNavItems: NavItem[] = [
   { href: '/agents', label: '智能体', icon: Bot },
   { href: '/workspaces', label: '工作区', icon: Building2 },
   { href: '/integrations', label: '集成', icon: Link2 },
+  { href: '/deployments', label: '部署管理', icon: Rocket },
   { href: '/plugins', label: '插件', icon: Puzzle },
 ];
 
