@@ -394,6 +394,7 @@ model Project {
   releases    Release[]
   phaseTransitions PhaseTransition[]
   requirements Requirement[]
+  knowledgeEntries KnowledgeEntry[]
   creator     Agent?  @relation(fields: [creatorId], references: [id], onDelete: SetNull)
 
   @@index([status])
@@ -746,4 +747,27 @@ model RequirementTag {
 
   @@unique([requirementId, name])
   @@index([name])
+}
+
+// ==================== Knowledge Entry ====================
+
+model KnowledgeEntry {
+  id          String   @id @default(cuid())
+  projectId   String?
+  type        String   @default("lesson_learned")
+  title       String
+  content     String
+  tags        String   @default("[]")
+  sourceEvent String?
+  aiGenerated Boolean  @default(false)
+  usefulness  Int      @default(0)
+  createdBy   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  project     Project? @relation(fields: [projectId], references: [id])
+
+  @@index([projectId])
+  @@index([type])
+  @@index([tags])
 }

@@ -112,6 +112,10 @@ modules:
     config:
       auto_analyze: true
 
+  # Knowledge base module
+  knowledge:
+    enabled: true
+
 app:
   name: "AI Task Hub"
   version: "2.0.0-alpha.2"

@@ -9,10 +9,12 @@ import { McpToolRegistry } from './tool-registry';
 import { createTaskCoreToolHandlers, createAIEngineToolHandlers } from './tools/handlers';
 import { createLifecycleToolHandlers } from './tools/lifecycle-handlers';
 import { createRequirementToolHandlers } from './tools/requirement-handlers';
+import { createKnowledgeToolHandlers } from './tools/knowledge-handlers';
 import { taskCoreMcpTools } from './tools/task-core-tools';
 import { aiEngineMcpTools } from './tools/ai-engine-tools';
 import { lifecycleMcpTools } from './tools/lifecycle-tools';
 import { requirementMcpTools } from './tools/requirement-tools';
+import { knowledgeMcpTools } from './tools/knowledge-tools';
 
 export default class McpServerModule implements Module {
   id = 'mcp-server';
@@ -24,7 +26,7 @@ export default class McpServerModule implements Module {
   // Declare MCP tools that this module provides
   // (In practice, tools come from task-core and ai-engine modules,
   //  but we declare them here for the module system to discover)
-  mcpTools = [...taskCoreMcpTools, ...aiEngineMcpTools, ...lifecycleMcpTools, ...requirementMcpTools];
+  mcpTools = [...taskCoreMcpTools, ...aiEngineMcpTools, ...lifecycleMcpTools, ...requirementMcpTools, ...knowledgeMcpTools];
 
   private mcpServer: McpServer | null = null;
   private toolRegistry: McpToolRegistry | null = null;
@@ -117,6 +119,17 @@ export default class McpServerModule implements Module {
         Object.assign(handlerMap, requirementHandlers);
         await this.toolRegistry.registerModuleTools(
           { id: 'requirements', mcpTools: requirementMcpTools } as any,
+          (_mod, toolName) => handlerMap[toolName],
+        );
+      }
+
+      // Knowledge handlers
+      if (context.container.has('KnowledgeService')) {
+        const knowledgeService = context.container.resolve<any>('KnowledgeService');
+        const knowledgeHandlers = createKnowledgeToolHandlers(knowledgeService, context.logger);
+        Object.assign(handlerMap, knowledgeHandlers);
+        await this.toolRegistry.registerModuleTools(
+          { id: 'knowledge', mcpTools: knowledgeMcpTools } as any,
           (_mod, toolName) => handlerMap[toolName],
         );
       }
