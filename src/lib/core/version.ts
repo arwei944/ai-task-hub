@@ -122,6 +122,7 @@ export const VERSION_HISTORY: ReadonlyArray<{
   date: string;
   highlights: string[];
 }> = [
+  { version: '2.3.0', date: '2026-04-30', highlights: ['Workflow Evolution', '子工作流 + 动态步骤', '断点恢复', '通知偏好 + 去重', '部署管理页面', '120+ MCP 工具'] },
   { version: '2.2.0', date: '2026-04-30', highlights: ['Platform Pulse', '仪表盘增强', '通知规则持久化', 'EventBus DLQ', '出站 Webhook', '110+ MCP 工具'] },
   { version: '2.1.0', date: '2026-04-30', highlights: ['MCP 工具智能增强', 'Agent 提示模板系统', '部署管理模块', '87+ MCP 工具'] },
   { version: '2.0.0', date: '2026-04-30', highlights: ['AI 原生全流程平台', 'EventBus v2 事件驱动', '6 个新模块', '60+ MCP 工具'] },
