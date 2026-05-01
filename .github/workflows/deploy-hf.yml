@@ -97,7 +97,6 @@ jobs:
               folder_path="/tmp/hf-deploy",
               repo_id=repo_id,
               repo_type="space",
-              commit_message=f"Deploy {sha}",
               delete_patterns=["node_modules", ".next", "*.db", "*.db-journal", "test-db", "backups"],
           )
           print(f"Successfully uploaded to {repo_id}")
