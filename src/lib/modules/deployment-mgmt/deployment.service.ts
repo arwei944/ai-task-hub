@@ -112,6 +112,11 @@ export class DeploymentService {
   async deleteEnvironment(id: string): Promise<boolean> {
     const prisma = this.prismaFn();
     try {
+      // Delete associated deployments first (cascade)
+      await prisma.deployment.deleteMany({ where: { environmentId: id } });
+      // Delete associated health checks
+      await prisma.healthCheck.deleteMany({ where: { environmentId: id } });
+      // Delete the environment
       await prisma.deploymentEnvironment.delete({ where: { id } });
       this.emitEvent('deployment.environment.deleted', { environmentId: id });
       return true;

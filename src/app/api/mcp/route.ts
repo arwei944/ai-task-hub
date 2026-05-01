@@ -171,47 +171,67 @@ async function initializeSharedTools() {
     }
   }
 
-  // AI engine handlers (optional)
-  if (process.env.OPENAI_API_KEY) {
-    try {
-      const { OpenAICompatibleAdapter } = await import('@/lib/modules/ai-engine/ai-model-adapter');
-      const { TaskExtractor } = await import('@/lib/modules/ai-engine/extractors/task-extractor');
-      const { TaskDecomposer } = await import('@/lib/modules/ai-engine/decomposers/task-decomposer');
-      const { StatusInferencer } = await import('@/lib/modules/ai-engine/inferencers/status-inferencer');
-      const { TaskAnalyzer } = await import('@/lib/modules/ai-engine/analyzers/task-analyzer');
+  // AI engine handlers - always register tools, check API key at runtime
+  try {
+    const { OpenAICompatibleAdapter } = await import('@/lib/modules/ai-engine/ai-model-adapter');
+    const { TaskExtractor } = await import('@/lib/modules/ai-engine/extractors/task-extractor');
+    const { TaskDecomposer } = await import('@/lib/modules/ai-engine/decomposers/task-decomposer');
+    const { StatusInferencer } = await import('@/lib/modules/ai-engine/inferencers/status-inferencer');
+    const { TaskAnalyzer } = await import('@/lib/modules/ai-engine/analyzers/task-analyzer');
 
-      const aiModel = new OpenAICompatibleAdapter(
-        {
-          model: process.env.AI_MODEL ?? 'gpt-4o',
-          baseURL: process.env.OPENAI_BASE_URL,
-          apiKey: process.env.OPENAI_API_KEY,
-        },
-        logger,
-      );
+    const aiModel = new OpenAICompatibleAdapter(
+      {
+        model: process.env.AI_MODEL ?? 'gpt-4o',
+        baseURL: process.env.OPENAI_BASE_URL,
+        apiKey: process.env.OPENAI_API_KEY,
+      },
+      logger,
+    );
 
-      const aiHandlers = createAIEngineToolHandlers(
-        new TaskExtractor(aiModel, logger),
-        new TaskDecomposer(aiModel, logger),
-        new StatusInferencer(aiModel, logger),
-        new TaskAnalyzer(aiModel, logger),
-        logger,
-      );
-      Object.assign(handlerMap, aiHandlers);
+    const aiHandlers = createAIEngineToolHandlers(
+      new TaskExtractor(aiModel, logger),
+      new TaskDecomposer(aiModel, logger),
+      new StatusInferencer(aiModel, logger),
+      new TaskAnalyzer(aiModel, logger),
+      logger,
+    );
+    Object.assign(handlerMap, aiHandlers);
 
-      for (const toolConfig of aiEngineMcpTools) {
-        const handler = handlerMap[toolConfig.name];
-        if (handler !== undefined) {
-          allTools.push({
-            name: toolConfig.name,
-            description: toolConfig.description ?? `Tool: ${toolConfig.name}`,
-            sourceModule: 'ai-engine',
-            handler,
-            schema: jsonSchemaToZodShape(toolConfig.inputSchema),
-          });
-        }
+    for (const toolConfig of aiEngineMcpTools) {
+      const handler = handlerMap[toolConfig.name];
+      if (handler !== undefined) {
+        allTools.push({
+          name: toolConfig.name,
+          description: toolConfig.description ?? `Tool: ${toolConfig.name}`,
+          sourceModule: 'ai-engine',
+          handler,
+          schema: jsonSchemaToZodShape(toolConfig.inputSchema),
+        });
       }
-    } catch (error: any) {
-      logger.warn(`AI Engine init failed for HTTP: ${error.message}`);
+    }
+    logger.info(`AI Engine tools registered (${aiEngineMcpTools.length} tools)`);
+  } catch (error: any) {
+    logger.warn(`AI Engine init failed for HTTP: ${error.message}`);
+    // Still register tools with fallback handlers
+    const fallbackHandlers: Record<string, (args: Record<string, unknown>) => Promise<unknown>> = {};
+    for (const toolConfig of aiEngineMcpTools) {
+      fallbackHandlers[toolConfig.name] = async (args: Record<string, unknown>) => ({
+        success: false,
+        error: `AI Engine not available: ${error.message}. Please configure OPENAI_API_KEY.`,
+      });
+    }
+    Object.assign(handlerMap, fallbackHandlers);
+    for (const toolConfig of aiEngineMcpTools) {
+      const handler = handlerMap[toolConfig.name];
+      if (handler !== undefined) {
+        allTools.push({
+          name: toolConfig.name,
+          description: toolConfig.description ?? `Tool: ${toolConfig.name}`,
+          sourceModule: 'ai-engine',
+          handler,
+          schema: jsonSchemaToZodShape(toolConfig.inputSchema),
+        });
+      }
     }
   }
 
