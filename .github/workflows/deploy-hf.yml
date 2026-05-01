@@ -93,7 +93,7 @@ jobs:
           # Get the commit SHA for the message
           sha = os.environ.get("GITHUB_SHA", "unknown")[:7]
 
-          api.upload_folder(
+          api.upload_large_folder(
               folder_path="/tmp/hf-deploy",
               repo_id=repo_id,
               repo_type="space",
