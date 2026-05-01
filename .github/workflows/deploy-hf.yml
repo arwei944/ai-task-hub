@@ -15,6 +15,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -24,22 +26,22 @@ jobs:
       - name: Install huggingface_hub
         run: pip install "huggingface_hub>=0.25.0"
 
-      - name: Deploy to HF Space
+      - name: Deploy to HF Space via git push
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           HF_REPO: ${{ vars.HF_REPO || 'arwei944/ai-task-hub' }}
         run: |
           python3 << 'PYEOF'
-          import os, shutil
+          import os, shutil, subprocess
           from huggingface_hub import HfApi
 
           token = os.environ["HF_TOKEN"]
           repo_id = os.environ.get("HF_REPO", "arwei944/ai-task-hub")
           api = HfApi(token=token)
 
-          # Ensure Space exists
+          # Ensure Space exists with Docker SDK
           try:
-              api.repo_info(repo_id=repo_id, repo_type="space")
+              info = api.repo_info(repo_id=repo_id, repo_type="space")
               print(f"✓ Space {repo_id} exists")
           except Exception:
               api.create_repo(
@@ -48,24 +50,31 @@ jobs:
               )
               print(f"✓ Space {repo_id} created")
 
-          # Clean up old LFS-tracked files that are now regular files
-          for path in ["pnpm-lock.yaml"]:
-              try:
-                  api.delete_file(
-                      path_in_repo=path, repo_id=repo_id,
-                      repo_type="space",
-                      commit_message=f"cleanup: remove old LFS pointer {path}",
-                  )
-                  print(f"  Cleaned: {path}")
-              except Exception:
-                  pass
-
-          # Prepare deploy directory (exclude unnecessary files)
-          deploy_dir = "/tmp/hf-deploy"
+          # Prepare a clean deploy directory
+          deploy_dir = "/tmp/hf-push"
           if os.path.exists(deploy_dir):
               shutil.rmtree(deploy_dir)
-          os.makedirs(deploy_dir)
 
+          # Clone HF Space repo (shallow)
+          hf_url = f"https://hf.co/{repo_id}"
+          subprocess.run(
+              ["git", "clone", "--depth", "1", "--branch", "main",
+               f"{hf_url}", deploy_dir],
+              env={**os.environ, "GIT_LFS": "0"},
+              check=True, capture_output=True,
+          )
+          print("✓ Cloned HF Space")
+
+          # Clear old files (keep .git)
+          for item in os.listdir(deploy_dir):
+              if item != ".git":
+                  p = os.path.join(deploy_dir, item)
+                  if os.path.isdir(p):
+                      shutil.rmtree(p)
+                  else:
+                      os.remove(p)
+
+          # Copy project files (exclude unnecessary)
           skip = {
               ".git", "node_modules", ".next", "test-db", "backups",
               "*.db", "*.db-journal", ".github", "tests", ".husky",
@@ -86,47 +95,40 @@ jobs:
               else:
                   shutil.copy2(s, d)
 
-          # Upload in 3 batches to avoid size limits
-          batches = [
-              ("1_config", ["package.json", "pnpm-lock.yaml", ".gitignore",
-                           ".gitattributes", ".env.example", "Dockerfile",
-                           "start.sh", "next.config.*", "tailwind.config.*",
-                           "postcss.config.*", "prisma.config.*", "tsconfig.json"]),
-              ("2_source", ["prisma/**", "public/**", "src/**", "mcp-server/**", "config/**"]),
-              ("3_assets", ["plugins/**"]),
-          ]
+          # Ensure .gitattributes does NOT track pnpm-lock.yaml as LFS
+          ga_path = os.path.join(deploy_dir, ".gitattributes")
+          if os.path.exists(ga_path):
+              with open(ga_path) as f:
+                  lines = [l for l in f if "pnpm-lock" not in l]
+              with open(ga_path, "w") as f:
+                  f.writelines(lines)
 
-          import glob
-          total = 0
-          for batch_name, patterns in batches:
-              batch_dir = f"/tmp/hf-batch-{batch_name}"
-              if os.path.exists(batch_dir):
-                  shutil.rmtree(batch_dir)
-              os.makedirs(batch_dir)
+          # Remove any LFS tracking config
+          lfs_dir = os.path.join(deploy_dir, ".git", "lfs")
+          if os.path.exists(lfs_dir):
+              shutil.rmtree(lfs_dir)
+          attrs_file = os.path.join(deploy_dir, ".git", "attributes")
+          if os.path.exists(attrs_file):
+              os.remove(attrs_file)
 
-              for pattern in patterns:
-                  for f in glob.glob(f"{deploy_dir}/{pattern}", recursive=True):
-                      if os.path.isfile(f):
-                          rel = os.path.relpath(f, deploy_dir)
-                          dest = os.path.join(batch_dir, rel)
-                          os.makedirs(os.path.dirname(dest), exist_ok=True)
-                          shutil.copy2(f, dest)
+          # Git push
+          subprocess.run(["git", "add", "-A"], cwd=deploy_dir, check=True)
+          subprocess.run(
+              ["git", "commit", "-m",
+               f"deploy: {os.environ.get('GITHUB_SHA', 'manual')[:7]}"],
+              cwd=deploy_dir, check=True, capture_output=True,
+          )
+          result = subprocess.run(
+              ["git", "push", "origin", "main"],
+              cwd=deploy_dir, capture_output=True, text=True,
+              env={**os.environ, "GIT_LFS": "0", "HF_TOKEN": token},
+          )
+          if result.returncode != 0:
+              print(f"Push output: {result.stdout}")
+              print(f"Push stderr: {result.stderr}")
+              raise Exception(f"git push failed with code {result.returncode}")
 
-              count = sum(len(files) for _, _, files in os.walk(batch_dir))
-              if count == 0:
-                  print(f"  Batch '{batch_name}': empty, skip")
-                  continue
-
-              api.upload_folder(
-                  folder_path=batch_dir,
-                  repo_id=repo_id,
-                  repo_type="space",
-                  commit_message=f"deploy({batch_name}): {os.environ.get('GITHUB_SHA', 'manual')[:7]}",
-              )
-              total += count
-              print(f"  ✓ Batch '{batch_name}': {count} files")
-
-          print(f"✓ Total: {total} files uploaded to {repo_id}")
+          print(f"✓ Deployed to {repo_id}")
           PYEOF
 
       - name: Trigger HF rebuild
