@@ -30,7 +30,7 @@ jobs:
           HF_REPO: ${{ vars.HF_REPO || 'arwei944/ai-task-hub' }}
         run: |
           python3 << 'PYEOF'
-          import os, shutil, glob
+          import os, shutil
           from huggingface_hub import HfApi
 
           token = os.environ["HF_TOKEN"]
@@ -48,13 +48,13 @@ jobs:
               )
               print(f"✓ Space {repo_id} created")
 
-          # Prepare deploy directory
+          # Prepare deploy directory (exclude unnecessary files)
           deploy_dir = "/tmp/hf-deploy"
           if os.path.exists(deploy_dir):
               shutil.rmtree(deploy_dir)
           os.makedirs(deploy_dir)
 
-          exclude = {
+          skip = {
               ".git", "node_modules", ".next", "test-db", "backups",
               "*.db", "*.db-journal", ".github", "tests", ".husky",
               ".prettier*", ".eslintrc*", "vitest.config.*",
@@ -63,30 +63,58 @@ jobs:
           }
 
           for item in os.listdir("."):
-              if any(item.startswith(e.rstrip("*")) or item == e for e in exclude):
+              if any(item.startswith(e.rstrip("*")) or item == e for e in skip):
                   continue
-              if item.endswith((".md",)) and item not in ("README.md",):
+              if item.endswith(".md") and item != "README.md":
                   continue
-              src = os.path.join(".", item)
-              dst = os.path.join(deploy_dir, item)
-              if os.path.isdir(src):
-                  shutil.copytree(src, dst)
+              s = os.path.join(".", item)
+              d = os.path.join(deploy_dir, item)
+              if os.path.isdir(s):
+                  shutil.copytree(s, d)
               else:
-                  shutil.copy2(src, dst)
+                  shutil.copy2(s, d)
 
-          # Count files
-          file_count = sum(len(files) for _, _, files in os.walk(deploy_dir))
-          print(f"✓ Prepared {file_count} files for deployment")
+          # Upload in 3 batches to avoid size limits
+          batches = [
+              ("1_config", ["package.json", "pnpm-lock.yaml", ".gitignore",
+                           ".gitattributes", ".env.example", "Dockerfile",
+                           "start.sh", "next.config.*", "tailwind.config.*",
+                           "postcss.config.*", "prisma.config.*", "tsconfig.json"]),
+              ("2_source", ["prisma/**", "public/**", "src/**", "mcp-server/**", "config/**"]),
+              ("3_assets", ["plugins/**"]),
+          ]
 
-          # Upload entire folder at once
-          api.upload_folder(
-              folder_path=deploy_dir,
-              repo_id=repo_id,
-              repo_type="space",
-              commit_message=f"deploy: {os.environ.get('GITHUB_SHA', 'manual')[:7]}",
-              delete_patterns=["*"],  # Clean old files not in new upload
-          )
-          print(f"✓ Uploaded {file_count} files to {repo_id}")
+          import glob
+          total = 0
+          for batch_name, patterns in batches:
+              batch_dir = f"/tmp/hf-batch-{batch_name}"
+              if os.path.exists(batch_dir):
+                  shutil.rmtree(batch_dir)
+              os.makedirs(batch_dir)
+
+              for pattern in patterns:
+                  for f in glob.glob(f"{deploy_dir}/{pattern}", recursive=True):
+                      if os.path.isfile(f):
+                          rel = os.path.relpath(f, deploy_dir)
+                          dest = os.path.join(batch_dir, rel)
+                          os.makedirs(os.path.dirname(dest), exist_ok=True)
+                          shutil.copy2(f, dest)
+
+              count = sum(len(files) for _, _, files in os.walk(batch_dir))
+              if count == 0:
+                  print(f"  Batch '{batch_name}': empty, skip")
+                  continue
+
+              api.upload_folder(
+                  folder_path=batch_dir,
+                  repo_id=repo_id,
+                  repo_type="space",
+                  commit_message=f"deploy({batch_name}): {os.environ.get('GITHUB_SHA', 'manual')[:7]}",
+              )
+              total += count
+              print(f"  ✓ Batch '{batch_name}': {count} files")
+
+          print(f"✓ Total: {total} files uploaded to {repo_id}")
           PYEOF
 
       - name: Trigger HF rebuild
