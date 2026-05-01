@@ -1,8 +1,7 @@
 import { z } from 'zod';
 import { createTRPCRouter, publicProcedure, protectedProcedure, adminProcedure } from './server';
 import { PluginLoader } from '@/lib/modules/plugins/plugin-loader';
-import { PrismaClient } from '@/generated/prisma/client';
-import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
+import { getPrisma } from '@/lib/db';
 import { Logger } from '@/lib/core/logger';
 import { EventBus } from '@/lib/core/event-bus';
 import { APP_VERSION } from '@/lib/core/version';
@@ -12,9 +11,7 @@ let _pluginLoader: PluginLoader | null = null;
 function getPluginLoader(): PluginLoader {
   if (_pluginLoader) return _pluginLoader;
 
-  const dbPath = process.env.DATABASE_URL?.replace(/^file:/, '') ?? './prisma/dev.db';
-  const adapter = new PrismaBetterSqlite3({ url: dbPath });
-  const prisma = new PrismaClient({ adapter });
+  const prisma = getPrisma();
   const logger = new Logger('plugin');
   const eventBus = new EventBus();
 

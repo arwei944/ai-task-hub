@@ -23,11 +23,8 @@ export default class TestManagementModule implements Module {
     enable: async (context: ModuleContext): Promise<void> => {
       context.logger.info('TestManagementModule enabling...');
 
-      const { PrismaClient } = await import('@/generated/prisma/client');
-      const { PrismaBetterSqlite3 } = await import('@prisma/adapter-better-sqlite3');
-      const dbPath = process.env.DATABASE_URL?.replace(/^file:/, '') ?? './prisma/dev.db';
-      const adapter = new PrismaBetterSqlite3({ url: dbPath });
-      const prisma = new PrismaClient({ adapter });
+      const { getPrisma } = await import('@/lib/db');
+      const prisma = getPrisma();
 
       const { TestManagementService } = await import('./test-management.service');
       const service = new TestManagementService(

@@ -3,8 +3,7 @@ import { createTRPCRouter, publicProcedure, protectedProcedure, adminProcedure }
 import { AuthService } from '@/lib/modules/auth/auth.service';
 import { UserRepository } from '@/lib/modules/auth/user.repository';
 import { Logger } from '@/lib/core/logger';
-import { PrismaClient } from '@/generated/prisma/client';
-import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
+import { getPrisma } from '@/lib/db';
 
 // Lazy-initialized
 let _authService: AuthService | null = null;
@@ -13,9 +12,7 @@ let _userRepo: UserRepository | null = null;
 function getServices() {
   if (_authService && _userRepo) return { authService: _authService, userRepo: _userRepo };
 
-  const dbPath = process.env.DATABASE_URL?.replace(/^file:/, '') ?? './prisma/dev.db';
-  const adapter = new PrismaBetterSqlite3({ url: dbPath });
-  const prisma = new PrismaClient({ adapter });
+  const prisma = getPrisma();
   const logger = new Logger('auth');
 
   _userRepo = new UserRepository(prisma);

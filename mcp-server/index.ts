@@ -77,8 +77,7 @@ import { aiEngineMcpTools } from '@/lib/modules/mcp-server/tools/ai-engine-tools
 import { projectMcpTools } from '@/lib/modules/mcp-server/tools/project-tools';
 import { versionMcpTools } from '@/lib/modules/mcp-server/tools/version-tools';
 import { createVersionToolHandlers } from '@/lib/modules/mcp-server/tools/version-handlers';
-import { PrismaClient } from '@/generated/prisma/client';
-import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
+import { getPrisma } from '@/lib/db';
 
 async function main() {
   const logger = new Logger('mcp-standalone');
@@ -93,9 +92,7 @@ async function main() {
   container.register('Logger', () => logger);
 
   // Initialize database
-  const dbPath = process.env.DATABASE_URL?.replace(/^file:/, '') ?? './prisma/dev.db';
-  const adapter = new PrismaBetterSqlite3({ url: dbPath });
-  const prisma = new PrismaClient({ adapter });
+  const prisma = getPrisma();
 
   // Register task-core services
   const { TaskRepository } = await import('@/lib/modules/task-core/task.repository');

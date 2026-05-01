@@ -35,11 +35,8 @@ export default class AIEngineModule implements Module {
       context.container.register('IAIModelAdapter', () => aiModel);
 
       // Repositories
-      const { PrismaClient } = await import('@/generated/prisma/client');
-      const { PrismaBetterSqlite3 } = await import('@prisma/adapter-better-sqlite3');
-      const dbPath = process.env.DATABASE_URL?.replace(/^file:/, '') ?? './prisma/dev.db';
-      const adapter = new PrismaBetterSqlite3({ url: dbPath });
-      const prisma = new PrismaClient({ adapter });
+      const { getPrisma } = await import('@/lib/db');
+      const prisma = getPrisma();
       const { AuditLogRepository } = await import('./audit-log.repository');
       const auditLogRepo = new AuditLogRepository(prisma);
       context.container.register('AuditLogRepository', () => auditLogRepo);

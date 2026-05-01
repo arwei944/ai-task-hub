@@ -17,11 +17,8 @@ export default class AgentCollabModule implements Module {
       context.logger.info('AgentCollabModule enabling...');
 
       // Initialize database
-      const { PrismaClient } = await import('@/generated/prisma/client');
-      const { PrismaBetterSqlite3 } = await import('@prisma/adapter-better-sqlite3');
-      const dbPath = process.env.DATABASE_URL?.replace(/^file:/, '') ?? './prisma/dev.db';
-      const adapter = new PrismaBetterSqlite3({ url: dbPath });
-      const prisma = new PrismaClient({ adapter });
+      const { getPrisma } = await import('@/lib/db');
+      const prisma = getPrisma();
 
       // Repositories
       const { AgentRepository } = await import('./agent.repository');

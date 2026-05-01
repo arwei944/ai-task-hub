@@ -1,14 +1,11 @@
 import { z } from 'zod';
 import { createTRPCRouter, protectedProcedure, adminProcedure } from './server';
 import { StatisticsService } from '@/lib/modules/dashboard/statistics.service';
-import { PrismaClient } from '@/generated/prisma/client';
-import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
+import { getPrisma } from '@/lib/db';
 import { Logger } from '@/lib/core/logger';
 
 function getStatsService(): StatisticsService {
-  const dbPath = process.env.DATABASE_URL?.replace(/^file:/, '') ?? './prisma/dev.db';
-  const adapter = new PrismaBetterSqlite3({ url: dbPath });
-  const prisma = new PrismaClient({ adapter });
+  const prisma = getPrisma();
   const logger = new Logger('stats');
   return new StatisticsService(prisma, logger);
 }

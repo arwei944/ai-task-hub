@@ -1,16 +1,6 @@
 import { z } from 'zod';
 import { createTRPCRouter, protectedProcedure, adminProcedure } from './server';
-import { PrismaClient } from '@/generated/prisma/client';
-import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
-
-let _prisma: PrismaClient | null = null;
-function getPrisma(): PrismaClient {
-  if (_prisma) return _prisma;
-  const dbPath = process.env.DATABASE_URL?.replace(/^file:/, '') ?? './data/dev.db';
-  const adapter = new PrismaBetterSqlite3({ url: dbPath });
-  _prisma = new PrismaClient({ adapter });
-  return _prisma;
-}
+import { getPrisma } from '@/lib/db';
 
 export const feedbackRouter = createTRPCRouter({
   listCheckpoints: protectedProcedure
