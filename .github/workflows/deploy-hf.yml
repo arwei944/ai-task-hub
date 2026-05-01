@@ -57,12 +57,15 @@ jobs:
 
           # Clone HF Space repo (shallow, with auth)
           hf_url = f"https://user:{token}@hf.co/{repo_id}"
-          subprocess.run(
+          result = subprocess.run(
               ["git", "clone", "--depth", "1", "--branch", "main",
                hf_url, deploy_dir],
               env={**os.environ, "GIT_LFS": "0", "GIT_TERMINAL_PROMPT": "0"},
-              check=True, capture_output=True,
+              capture_output=True, text=True,
           )
+          if result.returncode != 0:
+              print(f"Clone stderr: {result.stderr}")
+              raise Exception(f"git clone failed: {result.stderr}")
           print("✓ Cloned HF Space")
 
           # Clear old files (keep .git)
