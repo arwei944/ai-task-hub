@@ -55,12 +55,12 @@ jobs:
           if os.path.exists(deploy_dir):
               shutil.rmtree(deploy_dir)
 
-          # Clone HF Space repo (shallow)
-          hf_url = f"https://hf.co/{repo_id}"
+          # Clone HF Space repo (shallow, with auth)
+          hf_url = f"https://user:{token}@hf.co/{repo_id}"
           subprocess.run(
               ["git", "clone", "--depth", "1", "--branch", "main",
-               f"{hf_url}", deploy_dir],
-              env={**os.environ, "GIT_LFS": "0"},
+               hf_url, deploy_dir],
+              env={**os.environ, "GIT_LFS": "0", "GIT_TERMINAL_PROMPT": "0"},
               check=True, capture_output=True,
           )
           print("✓ Cloned HF Space")
@@ -110,6 +110,12 @@ jobs:
           attrs_file = os.path.join(deploy_dir, ".git", "attributes")
           if os.path.exists(attrs_file):
               os.remove(attrs_file)
+
+          # Configure git remote with auth
+          subprocess.run(
+              ["git", "remote", "set-url", "origin", hf_url],
+              cwd=deploy_dir, check=True, capture_output=True,
+          )
 
           # Git push
           subprocess.run(["git", "add", "-A"], cwd=deploy_dir, check=True)
