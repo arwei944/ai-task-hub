@@ -94,16 +94,18 @@ jobs:
                   shutil.copy2(s, d)
 
           # Ensure .gitattributes has NO LFS rules for text files
-          # (HF commit API rejects files that should be LFS but aren't)
+          # (HF commit API rejects files that match LFS patterns but aren't LFS objects)
           ga_path = os.path.join(deploy_dir, ".gitattributes")
           if os.path.exists(ga_path):
               with open(ga_path) as f:
                   lines = f.readlines()
               # Remove ALL LFS filter rules (keep comments and non-LFS lines)
               safe_lines = [l for l in lines if "filter=lfs" not in l]
+              # Explicitly mark pnpm-lock.yaml as text (not LFS)
+              safe_lines.append("pnpm-lock.yaml text\n")
               with open(ga_path, "w") as f:
                   f.writelines(safe_lines)
-              print(f"  Cleaned .gitattributes: removed {len(lines) - len(safe_lines)} LFS rules")
+              print(f"  Cleaned .gitattributes: removed {len(lines) - len(safe_lines) + 1} LFS rules")
 
           # Upload in batches
           batches = [
