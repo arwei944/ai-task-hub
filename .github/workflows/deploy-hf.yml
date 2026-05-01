@@ -48,6 +48,18 @@ jobs:
               )
               print(f"✓ Space {repo_id} created")
 
+          # Clean up old LFS-tracked files that are now regular files
+          for path in ["pnpm-lock.yaml"]:
+              try:
+                  api.delete_file(
+                      path_in_repo=path, repo_id=repo_id,
+                      repo_type="space",
+                      commit_message=f"cleanup: remove old LFS pointer {path}",
+                  )
+                  print(f"  Cleaned: {path}")
+              except Exception:
+                  pass
+
           # Prepare deploy directory (exclude unnecessary files)
           deploy_dir = "/tmp/hf-deploy"
           if os.path.exists(deploy_dir):
