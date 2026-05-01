@@ -1,4 +1,29 @@
- getPackageVersion();
+// ============================================================
+// Standalone MCP Server Entry Point
+// ============================================================
+//
+// Usage: npx tsx mcp-server/index.ts
+//
+// This starts the MCP server as a standalone process using stdio transport.
+// Trae IDE or other MCP clients can connect by spawning this process.
+//
+
+import { readFileSync } from 'fs';
+import { resolve, dirname } from 'path';
+import { fileURLToPath } from 'url';
+
+// Read version from package.json (single source of truth)
+function getPackageVersion(): string {
+  try {
+    const __dirname = dirname(fileURLToPath(import.meta.url));
+    const pkg = JSON.parse(readFileSync(resolve(__dirname, '../package.json'), 'utf-8'));
+    return pkg.version || '0.0.0';
+  } catch {
+    return '0.0.0';
+  }
+}
+
+const APP_VERSION = getPackageVersion();
 
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
