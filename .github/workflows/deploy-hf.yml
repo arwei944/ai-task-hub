@@ -56,15 +56,20 @@ jobs:
               shutil.rmtree(deploy_dir)
 
           # Clone HF Space repo (shallow, with credential helper)
-          hf_url = f"https://huggingface.co/{repo_id}"
-          # Use git credential store for auth
+          # Get the correct clone URL from HF API
+          repo_info = api.repo_info(repo_id=repo_id, repo_type="space")
+          hf_clone_url = repo_info.url  # This gives the correct authenticated URL
+          # Fallback: construct URL with token
+          if not hf_clone_url or "hf.co" not in hf_clone_url:
+              hf_clone_url = f"https://user:{token}@huggingface.co/{repo_id}"
+
           cred_dir = "/tmp/.hf-git"
           os.makedirs(cred_dir, exist_ok=True)
           with open(os.path.join(cred_dir, "credentials"), "w") as f:
               f.write(f"https://user:{token}@huggingface.co\n")
           result = subprocess.run(
               ["git", "clone", "--depth", "1", "--branch", "main",
-               hf_url, deploy_dir],
+               hf_clone_url, deploy_dir],
               env={
                   **os.environ,
                   "GIT_LFS": "0",
@@ -126,9 +131,9 @@ jobs:
           if os.path.exists(attrs_file):
               os.remove(attrs_file)
 
-          # Configure git remote with auth
+          # Configure git remote with auth for push
           subprocess.run(
-              ["git", "remote", "set-url", "origin", f"https://user:{token}@huggingface.co/{repo_id}"],
+              ["git", "remote", "set-url", "origin", hf_clone_url],
               cwd=deploy_dir, check=True, capture_output=True,
           )
 
