@@ -11,9 +11,9 @@ interface Agent {
   capabilities: string[] | null;
   permissionLevel: string;
   isActive: boolean;
-  lastSeenAt: string | null;
-  createdAt: string;
-  updatedAt: string;
+  lastSeenAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 interface AgentOp {
@@ -23,7 +23,7 @@ interface AgentOp {
   action: string;
   target: string | null;
   success: boolean;
-  createdAt: string;
+  createdAt: Date;
 }
 
 export default function AgentsPage() {

@@ -15,7 +15,7 @@ interface FeedbackCheckpoint {
   intervention?: string;
   rating?: number;
   feedback?: string;
-  createdAt: string;
+  createdAt: Date;
   resolvedAt?: string;
 }
 

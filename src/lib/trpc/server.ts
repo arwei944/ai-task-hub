@@ -1,4 +1,5 @@
 import { initTRPC, TRPCError } from '@trpc/server';
+import superjson from 'superjson';
 import type { AuthUser } from '@/lib/modules/auth/types';
 import { AuthService } from '@/lib/modules/auth/auth.service';
 import { UserRepository } from '@/lib/modules/auth/user.repository';
@@ -89,6 +90,7 @@ export const createTRPCContext = async (opts: { req?: Request }) => {
 const logger = new Logger('trpc');
 
 const t = initTRPC.context<typeof createTRPCContext>().create({
+  transformer: superjson,
   errorFormatter({ error, path }) {
     const code = error.code;
     const appCode = (error.cause as any)?.code ?? AppErrorCode.INTERNAL_ERROR;

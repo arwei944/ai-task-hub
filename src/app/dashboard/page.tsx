@@ -16,8 +16,8 @@ interface TaskItem {
   title: string;
   status: string;
   priority: string;
-  dueDate: string | null;
-  createdAt: string;
+  dueDate: Date | null;
+  createdAt: Date;
 }
 
 interface NotificationItem {
@@ -27,7 +27,7 @@ interface NotificationItem {
   message: string;
   level: string;
   isRead: boolean;
-  createdAt: string;
+  createdAt: Date;
 }
 
 interface DailyTrend {

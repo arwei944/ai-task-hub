@@ -15,7 +15,7 @@ interface NotificationRule {
   channels: string;
   priority: number;
   isActive: boolean;
-  createdAt: string;
+  createdAt: Date;
 }
 
 interface NotificationHistory {
@@ -25,7 +25,7 @@ interface NotificationHistory {
   level: string;
   channel: string;
   isRead: boolean;
-  createdAt: string;
+  createdAt: Date;
 }
 
 interface NotificationPreference {

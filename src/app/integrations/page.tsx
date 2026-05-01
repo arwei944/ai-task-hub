@@ -10,10 +10,10 @@ interface Integration {
   description: string | null;
   config: Record<string, unknown>;
   isActive: boolean;
-  lastSyncAt: string | null;
+  lastSyncAt: Date | null;
   syncStatus: string;
   lastError: string | null;
-  createdAt: string;
+  createdAt: Date;
 }
 
 interface AdapterType {

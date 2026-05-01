@@ -12,7 +12,7 @@ interface Workspace {
   owner: string;
   isDefault: boolean;
   role: string;
-  createdAt: string;
+  createdAt: Date;
 }
 
 export default function WorkspacesPage() {

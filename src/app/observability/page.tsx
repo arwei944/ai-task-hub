@@ -25,7 +25,7 @@ interface ExecutionRecord {
   durationMs: number;
   stepsCompleted: number;
   totalSteps: number;
-  startedAt: string;
+  startedAt: Date;
 }
 
 interface StepPerformanceRecord {
@@ -46,7 +46,7 @@ interface SOLOCallRecord {
   durationMs: number;
   success: boolean;
   tokensUsed: number;
-  startedAt: string;
+  startedAt: Date;
 }
 
 // --- Helpers ---
@@ -61,8 +61,8 @@ function formatPercent(value: number): string {
   return `${(value * 100).toFixed(1)}%`;
 }
 
-function timeAgo(isoString: string): string {
-  const diff = Date.now() - new Date(isoString).getTime();
+function timeAgo(date: string | Date): string {
+  const diff = Date.now() - new Date(date).getTime();
   const minutes = Math.floor(diff / 60000);
   if (minutes < 1) return '刚刚';
   if (minutes < 60) return `${minutes} 分钟前`;

@@ -10,7 +10,7 @@ interface Environment {
   baseUrl: string;
   isActive: boolean;
   healthStatus: string;
-  lastDeploymentAt: string | null;
+  lastDeploymentAt: Date | null;
   order: number;
 }
 
@@ -23,10 +23,10 @@ interface Deployment {
   status: string;
   description: string | null;
   triggeredBy: string | null;
-  startedAt: string | null;
-  completedAt: string | null;
+  startedAt: Date | null;
+  completedAt: Date | null;
   duration: number | null;
-  createdAt: string;
+  createdAt: Date;
 }
 
 const STATUS_COLORS: Record<string, string> = {

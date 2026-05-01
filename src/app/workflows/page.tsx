@@ -27,8 +27,8 @@ interface Workflow {
   variables: Record<string, unknown> | null;
   isActive: boolean;
   createdBy: string;
-  createdAt: string;
-  updatedAt: string;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 interface Execution {
@@ -36,13 +36,13 @@ interface Execution {
   workflowId: string;
   status: string;
   triggeredBy: string | null;
-  startedAt: string | null;
-  completedAt: string | null;
+  startedAt: Date | null;
+  completedAt: Date | null;
   result?: Record<string, unknown> | null;
   context?: string | null;
   error: string | null;
-  createdAt: string;
-  updatedAt: string;
+  createdAt: Date;
+  updatedAt: Date;
   workflow?: { id: string; name: string } | null;
 }
 

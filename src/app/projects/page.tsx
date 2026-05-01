@@ -30,8 +30,8 @@ interface Project {
   phase: string;
   priority: string;
   techStack: string | null;
-  createdAt: string;
-  updatedAt: string;
+  createdAt: Date;
+  updatedAt: Date;
   _count: { tasks: number; activities: number };
   creator: { id: string; name: string; clientType: string } | null;
 }
@@ -41,7 +41,7 @@ interface Activity {
   action: string;
   phase: string | null;
   title: string;
-  createdAt: string;
+  createdAt: Date;
   agent: { id: string; name: string; clientType: string } | null;
 }
 

@@ -12,7 +12,7 @@ interface Plugin {
   version: string;
   author: string | null;
   isEnabled: boolean;
-  installedAt: string;
+  installedAt: Date;
   settings: Record<string, unknown> | null;
 }
 
