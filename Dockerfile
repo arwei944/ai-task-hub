@@ -1,49 +1,37 @@
 FROM node:20-alpine AS base
 
-# Install dependencies only when needed
-FROM base AS deps
-RUN apk add --no-cache libc6-compat
+# Install build dependencies for native modules (better-sqlite3)
+RUN apk add --no-cache libc6-compat python3 make g++ wget
+
 WORKDIR /app
 
+# Install dependencies
 COPY package.json pnpm-lock.yaml ./
 RUN corepack enable pnpm && pnpm install --frozen-lockfile
 
-# Rebuild the source code only when needed
-FROM base AS builder
-WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
+# Verify native module build
+RUN test -f node_modules/better-sqlite3/build/Release/better_sqlite3.node || (echo "FATAL: native build failed" && exit 1)
+
+# Copy source code
 COPY . .
 
-RUN npx prisma generate
+# Generate Prisma client and create database
+RUN npx prisma generate && \
+    mkdir -p /data && \
+    npx prisma db push --accept-data-loss 2>&1 && \
+    test -f /data/dev.db || (echo "FATAL: DB creation failed" && exit 1)
+
+# Build Next.js
 RUN npx next build
 
-# Production image
-FROM base AS runner
-WORKDIR /app
+# Setup startup script
+RUN chmod +x start.sh
 
 ENV NODE_ENV=production
-ENV DATABASE_URL=file:/app/data/dev.db
-
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
-
-COPY --from=builder /app/public ./public
-
-# Set the correct permission for prerender cache
-RUN mkdir .next
-RUN chown nextjs:nodejs .next
-
-COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
-COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
-COPY --from=builder --chown=nextjs:nodejs /app/config ./config
-COPY --from=builder --chown=nextjs:nodejs /app/mcp-server ./mcp-server
-
-USER nextjs
-
-EXPOSE 3000
-
+ENV DATABASE_URL=file:/data/dev.db
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-CMD ["node", "server.js"]
+EXPOSE 3000
+
+CMD ["sh", "-c", "npx prisma generate && npx next start"]

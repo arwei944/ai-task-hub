@@ -3,6 +3,9 @@ name: Deploy to Hugging Face Spaces
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - '*.md'
+      - '.github/workflows/sync-to-huggingface.yml'
   workflow_dispatch:
 
 jobs:
@@ -12,8 +15,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -26,144 +27,90 @@ jobs:
       - name: Deploy to HF Space
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          HF_REPO: ${{ vars.HF_REPO || 'arwei944/ai-task-hub' }}
         run: |
-          # Prepare files in a temp directory (exclude unnecessary files)
-          mkdir -p /tmp/hf-deploy
-          rsync -a --delete \
-            --exclude='.git' \
-            --exclude='node_modules' \
-            --exclude='.next' \
-            --exclude='test-db' \
-            --exclude='backups' \
-            --exclude='*.db' \
-            --exclude='*.db-journal' \
-            --exclude='.github' \
-            --exclude='DEPLOYMENT.md' \
-            --exclude='ROADMAP.md' \
-            --exclude='plugins' \
-            --exclude='tests' \
-            --exclude='.husky' \
-            --exclude='.prettier*' \
-            --exclude='.eslintrc*' \
-            --exclude='vitest.config.*' \
-            --exclude='playwright.config.*' \
-            --exclude='tsconfig.json' \
-            $GITHUB_WORKSPACE/ /tmp/hf-deploy/
-
-          cd /tmp/hf-deploy
-          if [ -f Dockerfile.hf ]; then mv Dockerfile.hf Dockerfile; fi
-          if [ -f README.hf.md ]; then mv README.hf.md README.md; fi
-
           python3 << 'PYEOF'
+          import os, shutil, glob
           from huggingface_hub import HfApi
-          import os
 
           token = os.environ["HF_TOKEN"]
+          repo_id = os.environ.get("HF_REPO", "arwei944/ai-task-hub")
           api = HfApi(token=token)
-          repo_id = "arwei944/ai-task-hub"
 
-          # Ensure the Space exists (with correct SDK)
+          # Ensure Space exists
           try:
               api.repo_info(repo_id=repo_id, repo_type="space")
-              print(f"Space {repo_id} exists")
+              print(f"✓ Space {repo_id} exists")
           except Exception:
               api.create_repo(
-                  repo_id=repo_id,
-                  repo_type="space",
-                  space_sdk="docker",
-                  private=False,
-                  exist_ok=True,
+                  repo_id=repo_id, repo_type="space",
+                  space_sdk="docker", private=False, exist_ok=True,
               )
-              print(f"Space {repo_id} created")
+              print(f"✓ Space {repo_id} created")
 
-          # Step 1: Clean up old unwanted files
-          unwanted = [
-              "node_modules", ".next", "test-db", "backups",
-              "dev.db", "dev.db-journal", ".github", "tests", "plugins",
-              "DEPLOYMENT.md", "ROADMAP.md", ".husky",
-          ]
-          for path in unwanted:
-              try:
-                  api.delete_file(
-                      path_in_repo=path,
-                      repo_id=repo_id,
-                      repo_type="space",
-                      commit_message=f"cleanup: remove {path}",
-                  )
-                  print(f"Deleted: {path}")
-              except Exception:
-                  pass
+          # Prepare deploy directory
+          deploy_dir = "/tmp/hf-deploy"
+          if os.path.exists(deploy_dir):
+              shutil.rmtree(deploy_dir)
+          os.makedirs(deploy_dir)
 
-          # Step 2: Upload files in batches using upload_folder
-          # (upload_folder supports delete_patterns, commit_message)
-          # Split into: config files, source files, public files
-          import glob
+          exclude = {
+              ".git", "node_modules", ".next", "test-db", "backups",
+              "*.db", "*.db-journal", ".github", "tests", ".husky",
+              ".prettier*", ".eslintrc*", "vitest.config.*",
+              "playwright.config.*", "coverage", "playwright-report",
+              "test-results", ".vscode", ".idea", "*.log",
+          }
 
-          batches = [
-              ("config", ["package.json", "pnpm-lock.yaml", ".gitignore", ".gitattributes",
-                          ".env.example", "Dockerfile", "start.sh", "next.config.*",
-                          "tailwind.config.*", "postcss.config.*", "prisma.config.*"]),
-              ("prisma", ["prisma/**"]),
-              ("public", ["public/**"]),
-              ("src_app", ["src/app/**", "src/components/**"]),
-              ("src_lib", ["src/lib/**"]),
-              ("src_generated", ["src/generated/**"]),
-              ("mcp_server", ["mcp-server/**"]),
-          ]
+          for item in os.listdir("."):
+              if any(item.startswith(e.rstrip("*")) or item == e for e in exclude):
+                  continue
+              if item.endswith((".md",)) and item not in ("README.md",):
+                  continue
+              src = os.path.join(".", item)
+              dst = os.path.join(deploy_dir, item)
+              if os.path.isdir(src):
+                  shutil.copytree(src, dst)
+              else:
+                  shutil.copy2(src, dst)
 
-          for batch_name, patterns in batches:
-              try:
-                  # Create a temp dir with only this batch's files
-                  batch_dir = f"/tmp/hf-batch-{batch_name}"
-                  os.makedirs(batch_dir, exist_ok=True)
+          # Count files
+          file_count = sum(len(files) for _, _, files in os.walk(deploy_dir))
+          print(f"✓ Prepared {file_count} files for deployment")
 
-                  for pattern in patterns:
-                      for f in glob.glob(f"/tmp/hf-deploy/{pattern}", recursive=True):
-                          if os.path.isfile(f):
-                              rel = os.path.relpath(f, "/tmp/hf-deploy")
-                              dest = os.path.join(batch_dir, rel)
-                              os.makedirs(os.path.dirname(dest), exist_ok=True)
-                              import shutil
-                              shutil.copy2(f, dest)
-
-                  # Check if batch has files
-                  file_count = sum(len(files) for _, _, files in os.walk(batch_dir))
-                  if file_count == 0:
-                      print(f"Batch '{batch_name}': no files, skipping")
-                      continue
-
-                  api.upload_folder(
-                      folder_path=batch_dir,
-                      repo_id=repo_id,
-                      repo_type="space",
-                      commit_message=f"deploy: {batch_name}",
-                  )
-                  print(f"Batch '{batch_name}': uploaded {file_count} files")
-              except Exception as e:
-                  print(f"Batch '{batch_name}' error: {e}")
-
-          print(f"Deployment to {repo_id} complete!")
+          # Upload entire folder at once
+          api.upload_folder(
+              folder_path=deploy_dir,
+              repo_id=repo_id,
+              repo_type="space",
+              commit_message=f"deploy: {os.environ.get('GITHUB_SHA', 'manual')[:7]}",
+              delete_patterns=["*"],  # Clean old files not in new upload
+          )
+          print(f"✓ Uploaded {file_count} files to {repo_id}")
           PYEOF
 
       - name: Trigger HF rebuild
         if: always()
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          HF_REPO: ${{ vars.HF_REPO || 'arwei944/ai-task-hub' }}
         run: |
           python3 -c "
           from huggingface_hub import HfApi
           import os
           api = HfApi(token=os.environ['HF_TOKEN'])
+          repo = os.environ.get('HF_REPO', 'arwei944/ai-task-hub')
           try:
-              api.restart_space(repo_id='arwei944/ai-task-hub')
-              print('HF Space rebuild triggered')
+              api.restart_space(repo_id=repo)
+              print(f'✓ HF Space rebuild triggered: {repo}')
           except Exception as e:
-              print(f'Restart triggered (or already building): {e}')
+              print(f'✓ Restart triggered (or already building): {e}')
           "
 
       - name: Deployment summary
         if: always()
         run: |
           echo "## HF Spaces Deployment" >> $GITHUB_STEP_SUMMARY
-          echo "- **Space**: https://arwei944-ai-task-hub.hf.space" >> $GITHUB_STEP_SUMMARY
+          echo "- **Space**: https://${{ vars.HF_REPO || 'arwei944/ai-task-hub' }}.hf.space" >> $GITHUB_STEP_SUMMARY
           echo "- **Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Status**: ${{ job.status }}" >> $GITHUB_STEP_SUMMARY

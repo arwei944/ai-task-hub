@@ -1,8 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Enable React strict mode for development
-  reactStrictMode: true,
+  // Enable standalone output for Docker deployment
+  output: 'standalone',
 
   // Prisma and native modules must be external in standalone
   serverExternalPackages: [
