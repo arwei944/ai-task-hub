@@ -62,7 +62,21 @@ jobs:
           api = HfApi(token=token)
           repo_id = "arwei944/ai-task-hub"
 
-          # Step 1: Clean up old unwanted files from HF repo
+          # Ensure the Space exists (with correct SDK)
+          try:
+              api.repo_info(repo_id=repo_id, repo_type="space")
+              print(f"Space {repo_id} exists")
+          except Exception:
+              api.create_repo(
+                  repo_id=repo_id,
+                  repo_type="space",
+                  space_sdk="docker",
+                  private=False,
+                  exist_ok=True,
+              )
+              print(f"Space {repo_id} created")
+
+          # Step 1: Clean up old unwanted files
           unwanted = [
               "node_modules", ".next", "test-db", "backups",
               "dev.db", "dev.db-journal", ".github", "tests", "plugins",
@@ -78,21 +92,57 @@ jobs:
                   )
                   print(f"Deleted: {path}")
               except Exception:
-                  pass  # File may not exist, that's fine
+                  pass
 
-          # Step 2: Upload all files using upload_large_folder (handles large repos)
-          api.upload_large_folder(
-              repo_id=repo_id,
-              folder_path="/tmp/hf-deploy",
-              repo_type="space",
-              ignore_patterns=[
-                  "node_modules/**",
-                  ".next/**",
-                  "*.db",
-                  "*.db-journal",
-              ],
-          )
-          print(f"Successfully uploaded to {repo_id}")
+          # Step 2: Upload files in batches using upload_folder
+          # (upload_folder supports delete_patterns, commit_message)
+          # Split into: config files, source files, public files
+          import glob
+
+          batches = [
+              ("config", ["package.json", "pnpm-lock.yaml", ".gitignore", ".gitattributes",
+                          ".env.example", "Dockerfile", "start.sh", "next.config.*",
+                          "tailwind.config.*", "postcss.config.*", "prisma.config.*"]),
+              ("prisma", ["prisma/**"]),
+              ("public", ["public/**"]),
+              ("src_app", ["src/app/**", "src/components/**"]),
+              ("src_lib", ["src/lib/**"]),
+              ("src_generated", ["src/generated/**"]),
+              ("mcp_server", ["mcp-server/**"]),
+          ]
+
+          for batch_name, patterns in batches:
+              try:
+                  # Create a temp dir with only this batch's files
+                  batch_dir = f"/tmp/hf-batch-{batch_name}"
+                  os.makedirs(batch_dir, exist_ok=True)
+
+                  for pattern in patterns:
+                      for f in glob.glob(f"/tmp/hf-deploy/{pattern}", recursive=True):
+                          if os.path.isfile(f):
+                              rel = os.path.relpath(f, "/tmp/hf-deploy")
+                              dest = os.path.join(batch_dir, rel)
+                              os.makedirs(os.path.dirname(dest), exist_ok=True)
+                              import shutil
+                              shutil.copy2(f, dest)
+
+                  # Check if batch has files
+                  file_count = sum(len(files) for _, _, files in os.walk(batch_dir))
+                  if file_count == 0:
+                      print(f"Batch '{batch_name}': no files, skipping")
+                      continue
+
+                  api.upload_folder(
+                      folder_path=batch_dir,
+                      repo_id=repo_id,
+                      repo_type="space",
+                      commit_message=f"deploy: {batch_name}",
+                  )
+                  print(f"Batch '{batch_name}': uploaded {file_count} files")
+              except Exception as e:
+                  print(f"Batch '{batch_name}' error: {e}")
+
+          print(f"Deployment to {repo_id} complete!")
           PYEOF
 
       - name: Trigger HF rebuild
