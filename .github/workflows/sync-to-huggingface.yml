@@ -1,10 +1,7 @@
-name: Sync to HuggingFace Spaces
+name: Sync to HuggingFace Spaces (DISABLED - use deploy-hf.yml)
 
 on:
-  push:
-    branches: [main]
-  release:
-    types: [published]
+  workflow_dispatch  # Manual trigger only
 
 jobs:
   sync-to-hf:

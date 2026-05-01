@@ -21,47 +21,13 @@ jobs:
           python-version: '3.11'
 
       - name: Install huggingface_hub
-        run: pip install huggingface_hub
+        run: pip install "huggingface_hub>=0.25.0"
 
-      - name: Create HF Space if not exists
-        env:
-          HF_TOKEN: ${{ secrets.HF_TOKEN }}
-          HF_USERNAME: arwei944
-        run: |
-          python3 << 'PYEOF'
-          from huggingface_hub import HfApi
-          import os
-
-          token = os.environ["HF_TOKEN"]
-          username = os.environ["HF_USERNAME"]
-          repo_id = f"{username}/ai-task-hub"
-
-          api = HfApi(token=token)
-
-          try:
-              api.repo_info(repo_id=repo_id, repo_type="space")
-              print(f"Space {repo_id} already exists")
-          except Exception as e:
-              print(f"Space does not exist, creating... ({e})")
-              try:
-                  api.create_repo(
-                      repo_id=repo_id,
-                      repo_type="space",
-                      space_sdk="docker",
-                      private=False,
-                      exist_ok=True,
-                  )
-                  print(f"Space {repo_id} created successfully!")
-              except Exception as e2:
-                  print(f"Failed to create space: {e2}")
-                  raise
-          PYEOF
-
-      - name: Sync project files to HF Space
+      - name: Deploy to HF Space
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
-          # Prepare files in a temp directory
+          # Prepare files in a temp directory (exclude unnecessary files)
           mkdir -p /tmp/hf-deploy
           rsync -a --delete \
             --exclude='.git' \
@@ -71,17 +37,23 @@ jobs:
             --exclude='backups' \
             --exclude='*.db' \
             --exclude='*.db-journal' \
-            --exclude='.github/workflows' \
+            --exclude='.github' \
             --exclude='DEPLOYMENT.md' \
             --exclude='ROADMAP.md' \
             --exclude='plugins' \
+            --exclude='tests' \
+            --exclude='.husky' \
+            --exclude='.prettier*' \
+            --exclude='.eslintrc*' \
+            --exclude='vitest.config.*' \
+            --exclude='playwright.config.*' \
+            --exclude='tsconfig.json' \
             $GITHUB_WORKSPACE/ /tmp/hf-deploy/
 
           cd /tmp/hf-deploy
           if [ -f Dockerfile.hf ]; then mv Dockerfile.hf Dockerfile; fi
           if [ -f README.hf.md ]; then mv README.hf.md README.md; fi
 
-          # Use huggingface_hub to upload (avoids git LFS issues)
           python3 << 'PYEOF'
           from huggingface_hub import HfApi
           import os
@@ -90,14 +62,35 @@ jobs:
           api = HfApi(token=token)
           repo_id = "arwei944/ai-task-hub"
 
-          # Get the commit SHA for the message
-          sha = os.environ.get("GITHUB_SHA", "unknown")[:7]
+          # Step 1: Clean up old unwanted files from HF repo
+          unwanted = [
+              "node_modules", ".next", "test-db", "backups",
+              "dev.db", "dev.db-journal", ".github", "tests", "plugins",
+              "DEPLOYMENT.md", "ROADMAP.md", ".husky",
+          ]
+          for path in unwanted:
+              try:
+                  api.delete_file(
+                      path_in_repo=path,
+                      repo_id=repo_id,
+                      repo_type="space",
+                      commit_message=f"cleanup: remove {path}",
+                  )
+                  print(f"Deleted: {path}")
+              except Exception:
+                  pass  # File may not exist, that's fine
 
+          # Step 2: Upload all files using upload_large_folder (handles large repos)
           api.upload_large_folder(
-              folder_path="/tmp/hf-deploy",
               repo_id=repo_id,
+              folder_path="/tmp/hf-deploy",
               repo_type="space",
-              delete_patterns=["node_modules", ".next", "*.db", "*.db-journal", "test-db", "backups"],
+              ignore_patterns=[
+                  "node_modules/**",
+                  ".next/**",
+                  "*.db",
+                  "*.db-journal",
+              ],
           )
           print(f"Successfully uploaded to {repo_id}")
           PYEOF
