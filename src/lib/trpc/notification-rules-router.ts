@@ -1,13 +1,17 @@
 import { z } from 'zod';
 import { createTRPCRouter, protectedProcedure, adminProcedure } from './server';
-import { getPrisma } from '@/lib/db';
+
+async function getPrisma() {
+  const { getPrisma: _getPrisma } = await import('@/lib/db');
+  return _getPrisma();
+}
 
 export const notificationRulesRouter = createTRPCRouter({
   // List notification rules
   list: protectedProcedure
     .input(z.object({ isActive: z.boolean().optional() }).optional())
     .query(async ({ input }) => {
-      const prisma = getPrisma();
+      const prisma = await getPrisma();
       try {
         const where: Record<string, unknown> = {};
         if (input?.isActive !== undefined) where.isActive = input.isActive;
@@ -31,7 +35,7 @@ export const notificationRulesRouter = createTRPCRouter({
       priority: z.number().optional(),
     }))
     .mutation(async ({ input }) => {
-      const prisma = getPrisma();
+      const prisma = await getPrisma();
       try {
         return await prisma.notificationRule.create({
           data: {
@@ -63,7 +67,7 @@ export const notificationRulesRouter = createTRPCRouter({
       priority: z.number().optional(),
     }))
     .mutation(async ({ input }) => {
-      const prisma = getPrisma();
+      const prisma = await getPrisma();
       try {
         const { id, ...data } = input;
         return await prisma.notificationRule.update({ where: { id }, data });
@@ -77,7 +81,7 @@ export const notificationRulesRouter = createTRPCRouter({
   delete: adminProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ input }) => {
-      const prisma = getPrisma();
+      const prisma = await getPrisma();
       try {
         await prisma.notificationRule.delete({ where: { id: input.id } });
         return { success: true };

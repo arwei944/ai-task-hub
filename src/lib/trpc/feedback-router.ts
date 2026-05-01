@@ -1,6 +1,10 @@
 import { z } from 'zod';
 import { createTRPCRouter, protectedProcedure, adminProcedure } from './server';
-import { getPrisma } from '@/lib/db';
+
+async function getPrisma() {
+  const { getPrisma: _getPrisma } = await import('@/lib/db');
+  return _getPrisma();
+}
 
 export const feedbackRouter = createTRPCRouter({
   listCheckpoints: protectedProcedure
@@ -11,7 +15,7 @@ export const feedbackRouter = createTRPCRouter({
       pageSize: z.number().min(1).max(100).optional(),
     }).optional())
     .query(async ({ input }) => {
-      const prisma = getPrisma();
+      const prisma = await getPrisma();
       const where: Record<string, unknown> = {};
       if (input?.status) where.status = input.status;
       if (input?.executionId) where.executionId = input.executionId;
@@ -38,7 +42,7 @@ export const feedbackRouter = createTRPCRouter({
       feedback: z.string().optional(),
     }))
     .mutation(async ({ input }) => {
-      const prisma = getPrisma();
+      const prisma = await getPrisma();
       return prisma.feedbackCheckpoint.update({
         where: { id: input.checkpointId },
         data: {
@@ -53,7 +57,7 @@ export const feedbackRouter = createTRPCRouter({
     }),
 
   listRules: protectedProcedure.query(async () => {
-    const prisma = getPrisma();
+    const prisma = await getPrisma();
     return prisma.feedbackRule.findMany({ where: { isActive: true }, orderBy: { createdAt: 'desc' } });
   }),
 
@@ -68,12 +72,12 @@ export const feedbackRouter = createTRPCRouter({
       scopeStepType: z.string().optional(),
     }))
     .mutation(async ({ input }) => {
-      const prisma = getPrisma();
+      const prisma = await getPrisma();
       return prisma.feedbackRule.create({ data: { ...input, createdBy: 'user' } });
     }),
 
   getStats: protectedProcedure.query(async () => {
-    const prisma = getPrisma();
+    const prisma = await getPrisma();
     const [pending, total, approved, rejected] = await Promise.all([
       prisma.feedbackCheckpoint.count({ where: { status: 'pending' } }),
       prisma.feedbackCheckpoint.count(),

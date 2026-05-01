@@ -1,16 +1,17 @@
 import { z } from 'zod';
 import { createTRPCRouter, publicProcedure, protectedProcedure, adminProcedure } from './server';
-import { AuthService } from '@/lib/modules/auth/auth.service';
-import { UserRepository } from '@/lib/modules/auth/user.repository';
-import { Logger } from '@/lib/core/logger';
-import { getPrisma } from '@/lib/db';
 
 // Lazy-initialized
-let _authService: AuthService | null = null;
-let _userRepo: UserRepository | null = null;
+let _authService: any = null;
+let _userRepo: any = null;
 
-function getServices() {
+async function getServices() {
   if (_authService && _userRepo) return { authService: _authService, userRepo: _userRepo };
+
+  const { getPrisma } = await import('@/lib/db');
+  const { AuthService } = await import('@/lib/modules/auth/auth.service');
+  const { UserRepository } = await import('@/lib/modules/auth/user.repository');
+  const { Logger } = await import('@/lib/core/logger');
 
   const prisma = getPrisma();
   const logger = new Logger('auth');
@@ -31,7 +32,7 @@ export const authRouter = createTRPCRouter({
       displayName: z.string().optional(),
     }))
     .mutation(async ({ input }) => {
-      const { authService } = getServices();
+      const { authService } = await getServices();
       return authService.register(input);
     }),
 
@@ -42,7 +43,7 @@ export const authRouter = createTRPCRouter({
       password: z.string(),
     }))
     .mutation(async ({ input }) => {
-      const { authService } = getServices();
+      const { authService } = await getServices();
       return authService.login(input);
     }),
 
@@ -58,7 +59,7 @@ export const authRouter = createTRPCRouter({
       newPassword: z.string().min(6).max(128),
     }))
     .mutation(async ({ input, ctx }) => {
-      const { authService } = getServices();
+      const { authService } = await getServices();
       await authService.changePassword(ctx.user.id, input.oldPassword, input.newPassword);
       return { success: true };
     }),
@@ -70,7 +71,7 @@ export const authRouter = createTRPCRouter({
       isActive: z.boolean().optional(),
     }).optional())
     .query(async ({ input }) => {
-      const { userRepo } = getServices();
+      const { userRepo } = await getServices();
       return userRepo.list(input);
     }),
 
@@ -81,7 +82,7 @@ export const authRouter = createTRPCRouter({
       role: z.enum(['admin', 'user', 'agent']),
     }))
     .mutation(async ({ input }) => {
-      const { userRepo } = getServices();
+      const { userRepo } = await getServices();
       return userRepo.update(input.userId, { role: input.role });
     }),
 
@@ -92,7 +93,7 @@ export const authRouter = createTRPCRouter({
       isActive: z.boolean(),
     }))
     .mutation(async ({ input }) => {
-      const { userRepo } = getServices();
+      const { userRepo } = await getServices();
       return userRepo.update(input.userId, { isActive: input.isActive });
     }),
 });

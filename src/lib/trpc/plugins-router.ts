@@ -1,15 +1,16 @@
 import { z } from 'zod';
 import { createTRPCRouter, publicProcedure, protectedProcedure, adminProcedure } from './server';
-import { PluginLoader } from '@/lib/modules/plugins/plugin-loader';
-import { getPrisma } from '@/lib/db';
-import { Logger } from '@/lib/core/logger';
-import { EventBus } from '@/lib/core/event-bus';
-import { APP_VERSION } from '@/lib/core/version';
 
-let _pluginLoader: PluginLoader | null = null;
+let _pluginLoader: any = null;
 
-function getPluginLoader(): PluginLoader {
+async function getPluginLoader() {
   if (_pluginLoader) return _pluginLoader;
+
+  const { getPrisma } = await import('@/lib/db');
+  const { PluginLoader } = await import('@/lib/modules/plugins/plugin-loader');
+  const { Logger } = await import('@/lib/core/logger');
+  const { EventBus } = await import('@/lib/core/event-bus');
+  const { APP_VERSION } = await import('@/lib/core/version');
 
   const prisma = getPrisma();
   const logger = new Logger('plugin');
@@ -22,7 +23,7 @@ function getPluginLoader(): PluginLoader {
 export const pluginsRouter = createTRPCRouter({
   // List all plugins
   list: protectedProcedure.query(async () => {
-    const loader = getPluginLoader();
+    const loader = await getPluginLoader();
     return loader.list();
   }),
 
@@ -30,7 +31,7 @@ export const pluginsRouter = createTRPCRouter({
   get: protectedProcedure
     .input(z.object({ name: z.string() }))
     .query(async ({ input }) => {
-      const loader = getPluginLoader();
+      const loader = await getPluginLoader();
       return loader.get(input.name);
     }),
 
@@ -40,12 +41,12 @@ export const pluginsRouter = createTRPCRouter({
       name: z.string().min(1).max(64),
       displayName: z.string().min(1).max(128),
       description: z.string().optional(),
-      version: z.string().default(APP_VERSION),
+      version: z.string().default('').optional(),
       author: z.string().optional(),
       entryPoint: z.string(),
     }))
     .mutation(async ({ input }) => {
-      const loader = getPluginLoader();
+      const loader = await getPluginLoader();
       return loader.install(input);
     }),
 
@@ -53,7 +54,7 @@ export const pluginsRouter = createTRPCRouter({
   enable: adminProcedure
     .input(z.object({ name: z.string() }))
     .mutation(async ({ input }) => {
-      const loader = getPluginLoader();
+      const loader = await getPluginLoader();
       return loader.enable(input.name);
     }),
 
@@ -61,7 +62,7 @@ export const pluginsRouter = createTRPCRouter({
   disable: adminProcedure
     .input(z.object({ name: z.string() }))
     .mutation(async ({ input }) => {
-      const loader = getPluginLoader();
+      const loader = await getPluginLoader();
       return loader.disable(input.name);
     }),
 
@@ -69,7 +70,7 @@ export const pluginsRouter = createTRPCRouter({
   uninstall: adminProcedure
     .input(z.object({ name: z.string() }))
     .mutation(async ({ input }) => {
-      const loader = getPluginLoader();
+      const loader = await getPluginLoader();
       await loader.uninstall(input.name);
       return { success: true };
     }),
@@ -81,14 +82,14 @@ export const pluginsRouter = createTRPCRouter({
       settings: z.record(z.string(), z.unknown()),
     }))
     .mutation(async ({ input }) => {
-      const loader = getPluginLoader();
+      const loader = await getPluginLoader();
       await loader.updateSettings(input.name, input.settings);
       return { success: true };
     }),
 
   // Get registered custom tools from plugins
   getCustomTools: protectedProcedure.query(async () => {
-    const loader = getPluginLoader();
+    const loader = await getPluginLoader();
     return loader.getCustomTools();
   }),
 });

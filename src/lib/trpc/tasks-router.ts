@@ -1,19 +1,19 @@
 import { z } from 'zod';
 import { createTRPCRouter, protectedProcedure } from './server';
-import { TaskService } from '@/lib/modules/task-core/task.service';
-import { TaskRepository } from '@/lib/modules/task-core/task.repository';
-import { TaskHistoryRepository } from '@/lib/modules/task-core/task-history.repository';
-import { TaskDependencyRepository } from '@/lib/modules/task-core/task-dependency.repository';
-import { TaskProgressService } from '@/lib/modules/task-core/task-progress.service';
-import { EventBus } from '@/lib/core/event-bus';
-import { Logger } from '@/lib/core/logger';
-import { getPrisma } from '@/lib/db';
 
 // Lazy-initialized services (for server-side only)
-let _taskService: TaskService | null = null;
+let _taskService: any = null;
 
-function getTaskService(): TaskService {
+async function getTaskService() {
   if (_taskService) return _taskService;
+  const { getPrisma } = await import('@/lib/db');
+  const { TaskService } = await import('@/lib/modules/task-core/task.service');
+  const { TaskRepository } = await import('@/lib/modules/task-core/task.repository');
+  const { TaskHistoryRepository } = await import('@/lib/modules/task-core/task-history.repository');
+  const { TaskDependencyRepository } = await import('@/lib/modules/task-core/task-dependency.repository');
+  const { TaskProgressService } = await import('@/lib/modules/task-core/task-progress.service');
+  const { EventBus } = await import('@/lib/core/event-bus');
+  const { Logger } = await import('@/lib/core/logger');
   const prisma = getPrisma();
   const eventBus = new EventBus();
   const logger = new Logger('task-core');
@@ -47,7 +47,7 @@ export const tasksRouter = createTRPCRouter({
       }),
     )
     .query(async ({ input }) => {
-      const service = getTaskService();
+      const service = await getTaskService();
       const query = {
         ...input,
         dueBefore: input.dueBefore ? new Date(input.dueBefore) : undefined,
@@ -58,7 +58,7 @@ export const tasksRouter = createTRPCRouter({
 
   // Get single task
   get: protectedProcedure.input(z.object({ id: z.string() })).query(async ({ input }) => {
-    const service = getTaskService();
+    const service = await getTaskService();
     const task = await service.getTask(input.id);
     if (!task) throw new Error('Task not found');
     return task;
@@ -83,7 +83,7 @@ export const tasksRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ input }) => {
-      const service = getTaskService();
+      const service = await getTaskService();
       return service.createTask({
         ...input,
         dueDate: input.dueDate ? new Date(input.dueDate) : undefined,
@@ -108,7 +108,7 @@ export const tasksRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ input }) => {
-      const service = getTaskService();
+      const service = await getTaskService();
       const { id, ...data } = input;
       return service.updateTask(id, {
         ...data,
@@ -120,32 +120,32 @@ export const tasksRouter = createTRPCRouter({
   updateStatus: protectedProcedure
     .input(z.object({ id: z.string(), status: z.enum(['todo', 'in_progress', 'done', 'closed']) }))
     .mutation(async ({ input }) => {
-      const service = getTaskService();
+      const service = await getTaskService();
       return service.updateStatus(input.id, input.status);
     }),
 
   // Delete task (soft delete)
   delete: protectedProcedure.input(z.object({ id: z.string() })).mutation(async ({ input }) => {
-    const service = getTaskService();
+    const service = await getTaskService();
     await service.deleteTask(input.id);
     return { success: true };
   }),
 
   // Get task history
   history: protectedProcedure.input(z.object({ taskId: z.string() })).query(async ({ input }) => {
-    const service = getTaskService();
+    const service = await getTaskService();
     return service.getTaskHistory(input.taskId);
   }),
 
   // Get subtasks
   subTasks: protectedProcedure.input(z.object({ parentTaskId: z.string() })).query(async ({ input }) => {
-    const service = getTaskService();
+    const service = await getTaskService();
     return service.getSubTasks(input.parentTaskId);
   }),
 
   // Status counts
   statusCounts: protectedProcedure.query(async () => {
-    const service = getTaskService();
+    const service = await getTaskService();
     return service.getStatusCounts();
   }),
 });
