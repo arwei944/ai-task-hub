@@ -669,7 +669,7 @@ export class TriggerDispatcher {
           steps: JSON.stringify(template.steps),
           isActive: true,
           createdBy: this.phaseChangeConfig.createdBy,
-          context: JSON.stringify({ projectId }),
+          variables: JSON.stringify({ projectId }),
         },
       });
 

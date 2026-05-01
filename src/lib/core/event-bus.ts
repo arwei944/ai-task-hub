@@ -475,9 +475,9 @@ export class EventBus implements IEventBus {
     if (!this.eventStore) {
       throw new Error('[EventBus] EventStore is not configured');
     }
-    await this.eventStore.replay(eventType, from, (event) => {
+    await this.eventStore.replay(eventType, (event) => {
       this.emit(event);
-    });
+    }, from);
   }
 
   async getEventCount(eventType?: string): Promise<number> {

@@ -69,7 +69,7 @@ export class EventStore {
   /**
    * Replay stored events of a given type, invoking the callback for each.
    */
-  async replay(eventType: string, from?: Date, callback: EventCallback): Promise<void> {
+  async replay(eventType: string, callback: EventCallback, from?: Date): Promise<void> {
     const events = await this.query({ eventType, from });
     for (const entry of events) {
       const domainEvent: DomainEvent = {

@@ -334,7 +334,7 @@ export class OutboundWebhookService {
       return {
         success: response.ok,
         statusCode: response.status,
-        body: body?.slice(0, 10000), // truncate large responses
+        body: body?.slice(0, 10000) ?? null, // truncate large responses
         duration,
         error: response.ok ? null : `HTTP ${response.status}`,
       };

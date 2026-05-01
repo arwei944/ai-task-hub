@@ -96,7 +96,7 @@ export class TaskService {
         });
       }
 
-      if (data.status === 'blocked') {
+      if ((data.status as string) === 'blocked') {
         this.emitEvent('task.blocked', {
           taskId: id,
           projectId: existing.projectId,

@@ -29,7 +29,7 @@ export class VersionMgmtService {
       // Auto-generate version if not provided
       let releaseVersion = version;
       if (!releaseVersion) {
-        releaseVersion = await this.getNextVersion(projectId, type || 'minor');
+        releaseVersion = await this.getNextVersion(projectId, (type || 'minor') as 'major' | 'minor' | 'patch');
       }
 
       // Check for duplicate version

@@ -32,7 +32,8 @@ import { EventBus } from '@/lib/core/event-bus';
 import { DIContainer } from '@/lib/core/di-container';
 import { ConfigAccessor } from '@/lib/core/config';
 import { McpToolRegistry } from '@/lib/modules/mcp-server/tool-registry';
-import { createTaskCoreToolHandlers, createAIEngineToolHandlers, createProjectToolHandlers } from '@/lib/modules/mcp-server/tools/handlers';
+import { createTaskCoreToolHandlers, createAIEngineToolHandlers } from '@/lib/modules/mcp-server/tools/handlers';
+import { createProjectToolHandlers } from '@/lib/modules/mcp-server/tools/project-handlers';
 import { createTestManagementToolHandlers } from '@/lib/modules/mcp-server/tools/test-management-handlers';
 import { createRequirementToolHandlers } from '@/lib/modules/mcp-server/tools/requirement-handlers';
 import { createKnowledgeToolHandlers } from '@/lib/modules/mcp-server/tools/knowledge-handlers';
@@ -404,11 +405,10 @@ async function main() {
   );
 
   // Register GitHub trigger tools
-  const { TriggerDispatcher } = await import('@/lib/modules/workflow-engine/triggers/trigger-dispatcher');
-  const { WorkflowOrchestrator } = await import('@/lib/modules/workflow-engine/orchestrator');
-  const workflowOrchestrator = new WorkflowOrchestrator(prisma, logger, eventBus);
-  const triggerDispatcher = new TriggerDispatcher(prisma, workflowOrchestrator, eventBus, logger);
-  const githubTriggerHandlers = createGitHubTriggerToolHandlers(() => triggerDispatcher, logger);
+  // Note: Standalone MCP server cannot instantiate WorkflowOrchestrator
+  // (requires WorkflowExecutor → TaskService, SOLOBridge, FeedbackModule).
+  // Pass null dispatcher; handlers will return "not available" gracefully.
+  const githubTriggerHandlers = createGitHubTriggerToolHandlers(() => null, logger);
   Object.assign(handlerMap, githubTriggerHandlers);
 
   await toolRegistry.registerModuleTools(

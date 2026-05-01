@@ -317,6 +317,7 @@ export class WorkflowService {
 
         try {
           // 尝试从 DI 容器获取 SOLOBridge
+          // @ts-expect-error -- getContainer may not exist; fallback handled below
           const { getContainer } = await import('@/lib/core/di-container');
           const container = getContainer();
           const soloBridge = container?.resolve('SOLOBridge') as any;
@@ -354,6 +355,7 @@ export class WorkflowService {
 
         // 降级：尝试使用 AI Model Adapter
         try {
+          // @ts-expect-error -- getContainer may not exist; fallback handled below
           const { getContainer } = await import('@/lib/core/di-container');
           const container = getContainer();
           const aiModel = container?.resolve('OpenAICompatibleAdapter') as any;

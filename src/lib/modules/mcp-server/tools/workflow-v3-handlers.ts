@@ -64,7 +64,7 @@ export function createWorkflowV3ToolHandlers(stateManager: ExecutionStateManager
               status: s.status,
               startedAt: s.startedAt,
               completedAt: s.completedAt,
-              duration: s.duration,
+              duration: s.durationMs,
               error: s.error,
             })),
           },
@@ -123,7 +123,6 @@ export function createWorkflowV3ToolHandlers(stateManager: ExecutionStateManager
         success: true,
         stepIndex: checkpoint.stepIndex,
         contextKeys: Object.keys(checkpoint.context),
-        savedAt: checkpoint.savedAt,
         message: `Execution resumed from step ${checkpoint.stepIndex}`,
       };
     },
@@ -162,8 +161,8 @@ export function createWorkflowV3ToolHandlers(stateManager: ExecutionStateManager
 
     get_workflow_templates: async () => {
       try {
-        const { projectTemplates } = await import('@/lib/modules/workflow-engine/templates/project-templates');
-        const templates = Object.entries(projectTemplates).map(([key, value]) => ({
+        const { projectWorkflowTemplates } = await import('@/lib/modules/workflow-engine/templates/project-templates');
+        const templates = Object.entries(projectWorkflowTemplates).map(([key, value]) => ({
           id: key,
           name: (value as any).name || key,
           description: (value as any).description || '',

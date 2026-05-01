@@ -2,7 +2,7 @@
 // MCP Server Module Definition
 // ============================================================
 
-import type { Module, ModuleContext } from '@/lib/core/types';
+import type { Module, ModuleContext, McpToolConfig } from '@/lib/core/types';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { McpToolRegistry } from './tool-registry';
@@ -29,7 +29,7 @@ export default class McpServerModule implements Module {
   // Declare MCP tools that this module provides
   // (In practice, tools come from task-core and ai-engine modules,
   //  but we declare them here for the module system to discover)
-  mcpTools = [...taskCoreMcpTools, ...aiEngineMcpTools, ...lifecycleMcpTools, ...requirementMcpTools, ...knowledgeMcpTools, ...promptMcpTools];
+  mcpTools = [...taskCoreMcpTools, ...aiEngineMcpTools, ...lifecycleMcpTools, ...requirementMcpTools, ...knowledgeMcpTools, ...promptMcpTools] as McpToolConfig[];
 
   private mcpServer: McpServer | null = null;
   private toolRegistry: McpToolRegistry | null = null;

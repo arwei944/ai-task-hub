@@ -92,7 +92,7 @@ export class SOLOMCPClient {
       return {
         data: responseData ?? { content: result.content },
         durationMs,
-        tokensUsed: responseData?.tokensUsed,
+        tokensUsed: (responseData as Record<string, unknown>)?.tokensUsed as number | undefined,
       };
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
@@ -194,6 +194,8 @@ export class SOLOMCPClient {
       // 动态导入 MCP SDK（保持可选依赖）
       if (this.sdkAvailable === null) {
         try {
+          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+          // @ts-expect-error -- dynamic import for optional dependency
           const sdk = await import('@modelcontextprotocol/sdk');
           this.sdkAvailable = !!sdk;
         } catch {

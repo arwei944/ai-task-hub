@@ -55,7 +55,7 @@ export function getRoleKeys(): AgentRoleKey[] {
  * Check if a role has a specific capability
  */
 export function roleHasCapability(roleKey: AgentRoleKey, capability: string): boolean {
-  return AGENT_ROLES[roleKey].capabilities.includes(capability as any);
+  return (AGENT_ROLES[roleKey].capabilities as readonly string[]).includes(capability);
 }
 
 /**
@@ -63,6 +63,6 @@ export function roleHasCapability(roleKey: AgentRoleKey, capability: string): bo
  */
 export function findRolesByCapability(capability: string): AgentRoleKey[] {
   return (Object.keys(AGENT_ROLES) as AgentRoleKey[]).filter((key) =>
-    AGENT_ROLES[key].capabilities.includes(capability as any),
+    (AGENT_ROLES[key].capabilities as readonly string[]).includes(capability),
   );
 }

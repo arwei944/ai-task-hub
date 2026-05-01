@@ -98,7 +98,7 @@ export interface ApiRouteConfig {
 export interface McpToolConfig {
   name: string;
   description?: string;
-  handler: string;
+  handler?: string;
   inputSchema?: Record<string, unknown>;
 }
 

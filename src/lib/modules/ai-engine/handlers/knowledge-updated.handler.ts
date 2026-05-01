@@ -114,7 +114,7 @@ export class KnowledgeUpdatedHandler extends BaseAIHandler {
     // Has category
     if (payload.category) {
       score += 15;
-      details.hasCategory = true;
+      details.hasCategory = 1;
     }
 
     // Content structure (has code blocks, lists, etc.)
@@ -123,11 +123,11 @@ export class KnowledgeUpdatedHandler extends BaseAIHandler {
     const hasStructure = hasCodeBlock || hasList;
     if (hasStructure) {
       score += 20;
-      details.hasStructure = true;
+      details.hasStructure = 1;
       details.structureTypes = [
-        hasCodeBlock && 'code_block',
-        hasList && 'list',
-      ].filter(Boolean);
+        hasCodeBlock ? 'code_block' : null,
+        hasList ? 'list' : null,
+      ].filter((v): v is string => v !== null).join(',');
     }
 
     score = Math.min(100, score);

@@ -558,7 +558,15 @@ async function initializeSharedTools() {
   // Register GitHub trigger tools
   const { TriggerDispatcher } = await import('@/lib/modules/workflow-engine/triggers/trigger-dispatcher');
   const { WorkflowOrchestrator } = await import('@/lib/modules/workflow-engine/orchestrator');
-  const workflowOrchestrator = new WorkflowOrchestrator(prisma, logger, eventBus);
+  const { WorkflowExecutor } = await import('@/lib/modules/workflow-engine/executor');
+  const { ConcurrencyController } = await import('@/lib/modules/workflow-engine/concurrency');
+  const { Observability } = await import('@/lib/modules/workflow-engine/observability');
+  const { FeedbackModule } = await import('@/lib/modules/workflow-engine/feedback/feedback-module');
+  const observability = new Observability(eventBus, logger);
+  const concurrencyController = new ConcurrencyController(5);
+  const feedbackModule = new FeedbackModule(prisma, soloBridge, observability, eventBus, logger);
+  const executor = new WorkflowExecutor(prisma, taskService, soloBridge, feedbackModule, observability, logger);
+  const workflowOrchestrator = new WorkflowOrchestrator(prisma, executor, concurrencyController, observability, logger);
   const triggerDispatcher = new TriggerDispatcher(prisma, workflowOrchestrator, eventBus, logger);
   const githubTriggerHandlers = createGitHubTriggerToolHandlers(() => triggerDispatcher, logger);
   for (const toolConfig of githubTriggerMcpTools) {

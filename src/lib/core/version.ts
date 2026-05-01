@@ -6,27 +6,10 @@
 // 更新版本时只需修改此文件 + package.json
 // ============================================================
 
-import { readFileSync } from 'fs';
-import { resolve, dirname } from 'path';
-import { fileURLToPath } from 'url';
-
 // ---- 应用版本 ----
-// 主版本号，从 package.json 自动读取，确保与 npm 版本一致
-// 如果读取失败，使用 fallback 值
-function readPackageVersion(): string {
-  try {
-    // 兼容 ESM 和 CJS
-    const __dirname = dirname(fileURLToPath(import.meta.url));
-    const packageJsonPath = resolve(__dirname, '../../../../package.json');
-    const pkg = JSON.parse(readFileSync(packageJsonPath, 'utf-8'));
-    return pkg.version || '0.0.0';
-  } catch {
-    return '0.0.0';
-  }
-}
-
-/** 应用主版本号 — 自动从 package.json 读取 */
-export const APP_VERSION: string = readPackageVersion();
+// 主版本号 (与 package.json 保持同步)
+// 注意: 不能使用 fs 读取 package.json，因为此文件会被客户端组件导入
+export const APP_VERSION: string = '2.4.0';
 
 /** 应用名称 */
 export const APP_NAME: string = 'AI Task Hub';

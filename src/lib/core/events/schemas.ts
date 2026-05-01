@@ -104,7 +104,7 @@ export const workflowTriggeredSchema = z.object({
   workflowId: z.string(),
   triggerType: z.string().optional(),
   triggeredBy: z.string().optional(),
-  context: z.record(z.unknown()).optional(),
+  context: z.record(z.string(), z.unknown()).optional(),
 });
 
 export const workflowStepCompletedSchema = z.object({

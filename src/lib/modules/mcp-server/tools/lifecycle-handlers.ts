@@ -15,19 +15,19 @@ export function createLifecycleToolHandlers(service: LifecycleService, logger: I
         reason,
         triggeredBy,
       });
-      return { success: true, ...result };
+      return { ...result, success: true };
     },
 
     approve_phase_transition: async (args: Record<string, unknown>) => {
       const { transitionId } = args as any;
       const result = await service.approveTransition(transitionId);
-      return { success: true, ...result };
+      return { ...result, success: true };
     },
 
     reject_phase_transition: async (args: Record<string, unknown>) => {
       const { transitionId, reason } = args as any;
       const result = await service.rejectTransition(transitionId, reason);
-      return { success: true, ...result };
+      return { ...result, success: true };
     },
 
     get_phase_validation: async (args: Record<string, unknown>) => {

@@ -79,7 +79,7 @@ function info(msg: string) {
 
 // ---- 工具函数 ----
 function run(cmd: string, opts?: ExecSyncOptions): string {
-  return execSync(cmd, { encoding: 'utf-8', cwd: ROOT, stdio: 'pipe', ...opts }).trim();
+  return (execSync(cmd, { encoding: 'utf-8', cwd: ROOT, stdio: 'pipe', ...opts }) as string).trim();
 }
 
 function pkg(): Record<string, any> {
@@ -247,7 +247,7 @@ async function main() {
 
     // 在 VERSION_HISTORY 数组中插入新条目（在第一个条目之前）
     versionTs = versionTs.replace(
-      /(export const VERSION_HISTORY.*?\[)/s,
+      /(export const VERSION_HISTORY[\s\S]*?\[)/,
       `$1\n${newEntry}`
     );
     writeFileSync(VERSION_TS_PATH, versionTs);
