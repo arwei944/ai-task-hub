@@ -35,6 +35,17 @@ jobs:
       - name: Install huggingface_hub
         run: pip install "huggingface_hub>=0.25.0"
 
+      - name: Fix pnpm-lock.yaml if LFS pointer
+        run: |
+          if head -1 pnpm-lock.yaml | grep -q "version https://git-lfs.github.com/spec/v1"; then
+            echo "pnpm-lock.yaml is an LFS pointer, regenerating..."
+            corepack enable pnpm
+            pnpm install --no-frozen-lockfile
+            echo "✓ pnpm-lock.yaml regenerated"
+          else
+            echo "✓ pnpm-lock.yaml is valid"
+          fi
+
       - name: Deploy to HF Space
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
@@ -111,19 +122,15 @@ jobs:
               shutil.copy2(readme_hf, readme)
               print("✓ Using README.hf.md as README.md")
 
-          # Ensure .gitattributes has NO LFS rules for text files
-          # (HF commit API rejects files that match LFS patterns but aren't LFS objects)
+          # Remove ALL LFS rules from .gitattributes
           ga_path = os.path.join(deploy_dir, ".gitattributes")
           if os.path.exists(ga_path):
               with open(ga_path) as f:
                   lines = f.readlines()
-              # Remove ALL LFS filter rules (keep comments and non-LFS lines)
               safe_lines = [l for l in lines if "filter=lfs" not in l]
-              # Explicitly mark pnpm-lock.yaml as text (not LFS)
-              safe_lines.append("pnpm-lock.yaml text\n")
               with open(ga_path, "w") as f:
                   f.writelines(safe_lines)
-              print(f"  Cleaned .gitattributes: removed {len(lines) - len(safe_lines) + 1} LFS rules")
+              print(f"  Cleaned .gitattributes: removed {len(lines) - len(safe_lines)} LFS rules")
 
           # Verify pnpm-lock.yaml is not an LFS pointer
           lock_path = os.path.join(deploy_dir, "pnpm-lock.yaml")
