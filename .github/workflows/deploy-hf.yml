@@ -24,6 +24,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          lfs: true
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -93,6 +95,22 @@ jobs:
               else:
                   shutil.copy2(s, d)
 
+          # Use Dockerfile.hf as Dockerfile for HF Spaces
+          dockerfile_hf = os.path.join(deploy_dir, "Dockerfile.hf")
+          dockerfile = os.path.join(deploy_dir, "Dockerfile")
+          if os.path.exists(dockerfile_hf):
+              shutil.copy2(dockerfile_hf, dockerfile)
+              print("✓ Using Dockerfile.hf as Dockerfile")
+          elif not os.path.exists(dockerfile):
+              print("✗ WARNING: No Dockerfile found!")
+
+          # Use README.hf.md as README.md for HF Spaces
+          readme_hf = os.path.join(deploy_dir, "README.hf.md")
+          readme = os.path.join(deploy_dir, "README.md")
+          if os.path.exists(readme_hf):
+              shutil.copy2(readme_hf, readme)
+              print("✓ Using README.hf.md as README.md")
+
           # Ensure .gitattributes has NO LFS rules for text files
           # (HF commit API rejects files that match LFS patterns but aren't LFS objects)
           ga_path = os.path.join(deploy_dir, ".gitattributes")
@@ -106,6 +124,17 @@ jobs:
               with open(ga_path, "w") as f:
                   f.writelines(safe_lines)
               print(f"  Cleaned .gitattributes: removed {len(lines) - len(safe_lines) + 1} LFS rules")
+
+          # Verify pnpm-lock.yaml is not an LFS pointer
+          lock_path = os.path.join(deploy_dir, "pnpm-lock.yaml")
+          if os.path.exists(lock_path):
+              with open(lock_path) as f:
+                  first_line = f.readline().strip()
+              if first_line.startswith("version https://git-lfs.github.com/spec/v1"):
+                  print("✗ ERROR: pnpm-lock.yaml is still an LFS pointer! Aborting.")
+                  raise SystemExit(1)
+              else:
+                  print(f"✓ pnpm-lock.yaml is valid ({os.path.getsize(lock_path)} bytes)")
 
           # Upload in batches
           batches = [
