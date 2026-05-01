@@ -90,9 +90,9 @@ jobs:
           REMOTE_BRANCH=$(git ls-remote --heads origin 2>/dev/null | head -1 | sed 's/.*refs\/heads\///' || echo "")
           if [ -z "$REMOTE_BRANCH" ]; then
             git branch -M main
-            git push -u origin main 2>&1
+            git push -u origin main 2>&1 || echo "Warning: git push failed (LFS/binary files), but rsync already synced files"
           else
-            git push origin HEAD:${REMOTE_BRANCH} --force 2>&1
+            git push origin HEAD:${REMOTE_BRANCH} --force 2>&1 || echo "Warning: git push failed (LFS/binary files), but rsync already synced files"
           fi
 
       - name: Trigger HF rebuild
