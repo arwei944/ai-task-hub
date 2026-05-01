@@ -1,9 +1,10 @@
-import { fetchRequestHandler } from '@trpc/server/adapters/fetch';
+import { NextRequest } from 'next/server';
 
-function handler(req: Request) {
+async function handler(req: Request) {
   try {
     const { appRouter } = await import('@/lib/trpc/root-router');
     const { createTRPCContext } = await import('@/lib/trpc/server');
+    const { fetchRequestHandler } = await import('@trpc/server/adapters/fetch');
     return fetchRequestHandler({
       endpoint: '/api/trpc',
       req,
