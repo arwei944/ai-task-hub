@@ -195,7 +195,7 @@ export class SOLOMCPClient {
       if (this.sdkAvailable === null) {
         try {
           // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-          // @ts-expect-error -- dynamic import for optional dependency
+          // @ts-ignore -- dynamic import for optional dependency
           const sdk = await import('@modelcontextprotocol/sdk');
           this.sdkAvailable = !!sdk;
         } catch {

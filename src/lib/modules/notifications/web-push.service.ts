@@ -48,6 +48,7 @@ export class WebPushService {
     privateKey: string;
   } | null> {
     try {
+      // @ts-ignore -- optional dependency, fallback handled below
       const webpush = await import('web-push');
       const vapidKeys = webpush.generateVAPIDKeys();
       return {
@@ -88,6 +89,7 @@ export class WebPushService {
     }
 
     try {
+      // @ts-ignore -- optional dependency, fallback handled below
       const webpush = await import('web-push');
       webpush.setVapidDetails(
         subject,

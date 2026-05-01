@@ -73,6 +73,7 @@ export function createEmailNotificationToolHandlers(logger: ILogger) {
       // Check if nodemailer is available
       let nodemailerAvailable = false;
       try {
+        // @ts-ignore -- optional dependency, fallback handled below
         await import('nodemailer');
         nodemailerAvailable = true;
       } catch {

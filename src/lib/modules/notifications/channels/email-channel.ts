@@ -28,6 +28,7 @@ export class EmailNotificationChannel implements INotificationChannel {
       // Dynamic import nodemailer
       let nodemailer: any;
       try {
+        // @ts-ignore -- optional dependency, fallback handled below
         nodemailer = await import('nodemailer');
       } catch {
         this.logger?.warn(
