@@ -55,12 +55,24 @@ jobs:
           if os.path.exists(deploy_dir):
               shutil.rmtree(deploy_dir)
 
-          # Clone HF Space repo (shallow, with auth)
-          hf_url = f"https://user:{token}@hf.co/{repo_id}"
+          # Clone HF Space repo (shallow, with credential helper)
+          hf_url = f"https://hf.co/{repo_id}"
+          # Use git credential store for auth
+          cred_dir = "/tmp/.hf-git"
+          os.makedirs(cred_dir, exist_ok=True)
+          with open(os.path.join(cred_dir, "credentials"), "w") as f:
+              f.write(f"https://user:{token}@hf.co\n")
           result = subprocess.run(
               ["git", "clone", "--depth", "1", "--branch", "main",
                hf_url, deploy_dir],
-              env={**os.environ, "GIT_LFS": "0", "GIT_TERMINAL_PROMPT": "0"},
+              env={
+                  **os.environ,
+                  "GIT_LFS": "0",
+                  "GIT_TERMINAL_PROMPT": "0",
+                  "GIT_CONFIG_COUNT": "1",
+                  "GIT_CONFIG_KEY_0": "credential.helper",
+                  "GIT_CONFIG_VALUE_0": f"store --file={cred_dir}/credentials",
+              },
               capture_output=True, text=True,
           )
           if result.returncode != 0:
@@ -130,7 +142,12 @@ jobs:
           result = subprocess.run(
               ["git", "push", "origin", "main"],
               cwd=deploy_dir, capture_output=True, text=True,
-              env={**os.environ, "GIT_LFS": "0", "HF_TOKEN": token},
+              env={
+                  **os.environ, "GIT_LFS": "0",
+                  "GIT_CONFIG_COUNT": "1",
+                  "GIT_CONFIG_KEY_0": "credential.helper",
+                  "GIT_CONFIG_VALUE_0": f"store --file={cred_dir}/credentials",
+              },
           )
           if result.returncode != 0:
               print(f"Push output: {result.stdout}")
