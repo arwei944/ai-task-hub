@@ -57,16 +57,12 @@ jobs:
                   raise
           PYEOF
 
-      - name: Setup HF Space repo
-        run: |
-          mkdir -p /tmp/hf-space
-          cd /tmp/hf-space
-          git clone https://arwei944:${{ secrets.HF_TOKEN }}@huggingface.co/spaces/arwei944/ai-task-hub . 2>&1
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-
       - name: Sync project files to HF Space
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
+          # Prepare files in a temp directory
+          mkdir -p /tmp/hf-deploy
           rsync -a --delete \
             --exclude='.git' \
             --exclude='node_modules' \
@@ -75,42 +71,50 @@ jobs:
             --exclude='backups' \
             --exclude='*.db' \
             --exclude='*.db-journal' \
-            --exclude='.github/workflows/deploy-hf.yml' \
-            $GITHUB_WORKSPACE/ /tmp/hf-space/
+            --exclude='.github/workflows' \
+            --exclude='DEPLOYMENT.md' \
+            --exclude='ROADMAP.md' \
+            --exclude='plugins' \
+            $GITHUB_WORKSPACE/ /tmp/hf-deploy/
 
-          cd /tmp/hf-space
+          cd /tmp/hf-deploy
           if [ -f Dockerfile.hf ]; then mv Dockerfile.hf Dockerfile; fi
           if [ -f README.hf.md ]; then mv README.hf.md README.md; fi
 
-      - name: Push to HF Spaces
-        run: |
-          cd /tmp/hf-space
-          git add -A
-          git diff --staged --quiet || git commit -m "🚀 Deploy $(echo ${{ github.sha }} | cut -c1-7)"
-          REMOTE_BRANCH=$(git ls-remote --heads origin 2>/dev/null | head -1 | sed 's/.*refs\/heads\///' || echo "")
-          if [ -z "$REMOTE_BRANCH" ]; then
-            git branch -M main
-            git push -u origin main 2>&1 || echo "Warning: git push failed (LFS/binary files), but rsync already synced files"
-          else
-            git push origin HEAD:${REMOTE_BRANCH} --force 2>&1 || echo "Warning: git push failed (LFS/binary files), but rsync already synced files"
-          fi
+          # Use huggingface_hub to upload (avoids git LFS issues)
+          python3 << 'PYEOF'
+          from huggingface_hub import HfApi
+          import os
+
+          token = os.environ["HF_TOKEN"]
+          api = HfApi(token=token)
+          repo_id = "arwei944/ai-task-hub"
+
+          # Get the commit SHA for the message
+          sha = os.environ.get("GITHUB_SHA", "unknown")[:7]
+
+          api.upload_folder(
+              folder_path="/tmp/hf-deploy",
+              repo_id=repo_id,
+              repo_type="space",
+              commit_message=f"Deploy {sha}",
+              delete_patterns=["node_modules", ".next", "*.db", "*.db-journal", "test-db", "backups"],
+          )
+          print(f"Successfully uploaded to {repo_id}")
+          PYEOF
 
       - name: Trigger HF rebuild
         if: always()
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
-          pip install huggingface_hub
           python3 -c "
           from huggingface_hub import HfApi
-          import time
-          api = HfApi(token='${{ secrets.HF_TOKEN }}')
-          # Wait for git push to propagate
-          time.sleep(10)
-          # Trigger factory rebuild
+          import os
+          api = HfApi(token=os.environ['HF_TOKEN'])
           try:
-              api.restart_space(repo_id='arwei944/ai-task-hub', token='${{ secrets.HF_TOKEN }}')
-              print('✓ HF Space rebuild triggered')
+              api.restart_space(repo_id='arwei944/ai-task-hub')
+              print('HF Space rebuild triggered')
           except Exception as e:
               print(f'Restart triggered (or already building): {e}')
           "
@@ -118,5 +122,6 @@ jobs:
       - name: Deployment summary
         if: always()
         run: |
-          echo "## 🚀 HF Spaces Deployment" >> $GITHUB_STEP_SUMMARY
+          echo "## HF Spaces Deployment" >> $GITHUB_STEP_SUMMARY
           echo "- **Space**: https://arwei944-ai-task-hub.hf.space" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
