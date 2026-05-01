@@ -93,6 +93,18 @@ jobs:
               else:
                   shutil.copy2(s, d)
 
+          # Ensure .gitattributes has NO LFS rules for text files
+          # (HF commit API rejects files that should be LFS but aren't)
+          ga_path = os.path.join(deploy_dir, ".gitattributes")
+          if os.path.exists(ga_path):
+              with open(ga_path) as f:
+                  lines = f.readlines()
+              # Remove ALL LFS filter rules (keep comments and non-LFS lines)
+              safe_lines = [l for l in lines if "filter=lfs" not in l]
+              with open(ga_path, "w") as f:
+                  f.writelines(safe_lines)
+              print(f"  Cleaned .gitattributes: removed {len(lines) - len(safe_lines)} LFS rules")
+
           # Upload in batches
           batches = [
               ("1_config", ["package.json", "pnpm-lock.yaml", ".gitignore",
