@@ -1,27 +1,36 @@
 import { initTRPC, TRPCError } from '@trpc/server';
 import superjson from 'superjson';
 import type { AuthUser } from '@/lib/modules/auth/types';
-import { AuthService } from '@/lib/modules/auth/auth.service';
-import { UserRepository } from '@/lib/modules/auth/user.repository';
-import { Logger } from '@/lib/core/logger';
-import { getPrisma } from '@/lib/db';
 import { AppErrorCode, errorCodeToMessage } from '@/lib/core/errors';
 
-// Lazy-initialized auth service
-let _authService: AuthService | null = null;
-let _userRepo: UserRepository | null = null;
+// Lazy-initialized auth service (all dynamic imports to avoid better-sqlite3 static binding crash)
+let _authService: any = null;
+let _userRepo: any = null;
 let _ensureAdminPromise: Promise<AuthUser> | null = null;
+let _logger: any = null;
 
-function getUserRepo(): UserRepository {
+async function getLogger() {
+  if (_logger) return _logger;
+  const { Logger } = await import('@/lib/core/logger');
+  _logger = new Logger('trpc');
+  return _logger;
+}
+
+async function getUserRepo() {
   if (_userRepo) return _userRepo;
-  _userRepo = new UserRepository(getPrisma());
+  const { getPrisma } = await import('@/lib/db');
+  const { UserRepository } = await import('@/lib/modules/auth/user.repository');
+  const prisma = getPrisma();
+  _userRepo = new UserRepository(prisma);
   return _userRepo;
 }
 
-function getAuthService(): AuthService {
+async function getAuthService() {
   if (_authService) return _authService;
+  const { AuthService } = await import('@/lib/modules/auth/auth.service');
+  const { Logger } = await import('@/lib/core/logger');
   const logger = new Logger('auth');
-  _authService = new AuthService(getUserRepo(), logger);
+  _authService = new AuthService(await getUserRepo(), logger);
   return _authService;
 }
 
@@ -33,8 +42,8 @@ async function ensureAdmin(): Promise<AuthUser> {
   if (_ensureAdminPromise) return _ensureAdminPromise;
 
   _ensureAdminPromise = (async () => {
-    const userRepo = getUserRepo();
-    const authService = getAuthService();
+    const userRepo = await getUserRepo();
+    const authService = await getAuthService();
 
     // Check if any admin user exists
     const existing = await userRepo.findByUsername('admin');
@@ -54,6 +63,7 @@ async function ensureAdmin(): Promise<AuthUser> {
       role: 'admin',
     });
 
+    const { Logger } = await import('@/lib/core/logger');
     const logger = new Logger('auth');
     if (!process.env.ADMIN_PASSWORD) {
       logger.warn(`Auto-created admin user with random password: ${adminPassword}. Set ADMIN_PASSWORD env var to customize.`);
@@ -72,7 +82,7 @@ export const createTRPCContext = async (opts: { req?: Request }) => {
 
   // Try JWT auth first (for REST API / Agent API calls)
   if (opts.req) {
-    const authService = getAuthService();
+    const authService = await getAuthService();
     user = await authService.getUserFromRequest(opts.req);
   }
 
@@ -87,19 +97,16 @@ export const createTRPCContext = async (opts: { req?: Request }) => {
   };
 };
 
-const logger = new Logger('trpc');
-
 const t = initTRPC.context<typeof createTRPCContext>().create({
   transformer: superjson,
   errorFormatter({ error, path }) {
     const code = error.code;
     const appCode = (error.cause as any)?.code ?? AppErrorCode.INTERNAL_ERROR;
 
-    logger.error(`[tRPC] ${path ?? 'unknown'}: [${code}] ${error.message}`, {
-      code,
-      appCode,
-      path,
-    });
+    // Lazy log - avoid static import of Logger which triggers db.ts
+    getLogger().then(logger => {
+      logger.error(`[tRPC] ${path ?? 'unknown'}: [${code}] ${error.message}`, { code, appCode, path });
+    }).catch(() => {});
 
     let message = error.message;
     if (code === 'INTERNAL_SERVER_ERROR' && !message.includes('请')) {
