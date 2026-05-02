@@ -28,6 +28,7 @@ export class AppKernel {
   private capabilities: Capability[] = [];
   private booted = false;
   private bootDuration = 0;
+  private _degradedLogged?: Set<string>;
 
   constructor(config?: AppKernelConfig) {
     // 1. 创建基础服务
@@ -40,6 +41,11 @@ export class AppKernel {
     this.healthMonitor = new HealthMonitor({
       intervalMs: config?.healthCheckInterval,
       onDegraded: (module, report) => {
+        // Deduplicate: only log once per degraded module per boot
+        const key = `${module}:${report.details}`;
+        if (!this._degradedLogged) this._degradedLogged = new Set();
+        if (this._degradedLogged.has(key)) return;
+        this._degradedLogged.add(key);
         console.warn(`[Kernel] Health degraded: ${module}`, report.details);
         this.bus.emit({
           type: 'system.health.degraded',
