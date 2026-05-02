@@ -526,7 +526,7 @@ async function initializeSharedTools() {
   const aiOrchestrator = new AIOrchestrator(eventBus, logger);
   // Register AI event handlers
   try {
-    aiOrchestrator.registerHandlers();
+    aiOrchestrator.registerHandler();
     logger.info('AI Orchestrator event handlers registered');
   } catch (err: any) {
     logger.warn(`Failed to register AI handlers: ${err.message}`);
