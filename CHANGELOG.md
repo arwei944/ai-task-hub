@@ -1,5 +1,30 @@
 # Changelog
 
+## [3.0.1] - 2026-05-02
+
+### v3.0.1 补丁 — "Kernel Reborn" 稳定化
+
+v3.0.0 发布后的稳定化修复，解决生产环境部署问题。
+
+#### 修复
+- **核心服务注册** — 修复 `kernel.boot()` 未先注册 `prisma/eventBus/logger` 导致所有 Capability 注册失败
+- **Edge Runtime 崩溃** — `instrumentation.ts` 改用动态 `import()` 避免在 Edge Runtime 中加载 Node.js 模块
+- **健康日志刷屏** — 去重 `Health degraded` 日志，每个降级模块每次启动只输出一次
+- **HF 部署初始化** — 添加 Space 创建后等待时间，确保上传完成后再触发 rebuild
+
+#### 新功能
+- **JWT 全链路认证** — SSE 改用 `fetch()+ReadableStream` 替代 `EventSource`，支持自定义 Header；tRPC 客户端自动携带 Bearer token；SSE 端点真实验证 JWT
+- **骨架屏加载** — 4 个 ops 视图（联动追踪/工作流/AI/通知）添加 `animate-pulse` 骨架屏
+- **自动刷新** — 工作流和通知视图添加 30 秒自动刷新
+- **空状态优化** — 所有 ops 视图空状态添加 Inbox 图标 + 描述文案
+
+#### 代码质量
+- **TypeScript**: 0 错误（tsconfig include 缩小到 `src/`，排除 tests/mcp-server/.next）
+- **测试**: 104 套件 / 1936 通过 / 0 失败（4 个 v2 遗留套件 skipped）
+- **版本号**: 全项目统一为 v3.0.1（version.ts + package.json + 文档 + VERSION_HISTORY）
+
+---
+
 ## [3.0.0] - 2026-05-02
 
 ### v3.0 架构重构 — "Kernel Reborn"
