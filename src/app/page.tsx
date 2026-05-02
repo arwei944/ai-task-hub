@@ -1,5 +1,6 @@
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { APP_VERSION } from '@/lib/core/version';
 
 export default function HomePage() {
   const modules = [
@@ -34,7 +35,7 @@ export default function HomePage() {
               AT
             </div>
             <h1 className="text-xl font-bold">AI Task Hub</h1>
-            <Badge variant="secondary">v1.5.0</Badge>
+            <Badge variant="secondary">v{APP_VERSION}</Badge>
           </div>
           <div className="flex items-center gap-3">
             <a
@@ -178,7 +179,7 @@ export default function HomePage() {
       {/* Footer */}
       <footer className="border-t mt-12">
         <div className="container mx-auto px-6 py-4 text-center text-sm text-muted-foreground">
-          AI Task Hub v1.5.0 · Modular Kernel Architecture · All Modules Complete
+          AI Task Hub v{APP_VERSION} · Modular Kernel Architecture · All Modules Complete
         </div>
       </footer>
     </div>

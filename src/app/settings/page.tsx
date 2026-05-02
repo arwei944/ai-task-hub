@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { APP_VERSION } from '@/lib/core/version';
 
 interface ModuleInfo {
   name: string;
@@ -145,7 +146,7 @@ export default function SettingsPage() {
             <div className="bg-white rounded-lg shadow-sm border p-4">
               <h2 className="font-semibold text-gray-900 mb-4">ℹ️ 环境信息</h2>
               <div className="grid grid-cols-2 gap-2 text-sm">
-                <div className="text-gray-500">版本</div><div className="text-gray-900">v1.0.0</div>
+                <div className="text-gray-500">版本</div><div className="text-gray-900">v{APP_VERSION}</div>
                 <div className="text-gray-500">框架</div><div className="text-gray-900">Next.js 16 + tRPC</div>
                 <div className="text-gray-500">数据库</div><div className="text-gray-900">SQLite (Prisma)</div>
                 <div className="text-gray-500">AI SDK</div><div className="text-gray-900">Vercel AI SDK</div>
