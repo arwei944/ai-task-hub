@@ -10,6 +10,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useHealthSSE, type HealthSSEEvent } from '@/lib/hooks/use-health-sse';
+import { trpc } from '@/lib/trpc/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -23,6 +24,9 @@ import {
   Zap,
   Inbox,
   Radio,
+  GitBranch,
+  Link2,
+  Bell,
 } from 'lucide-react';
 
 // ---- Types ----
@@ -113,6 +117,12 @@ export default function OpsOverviewPage() {
   const [loading, setLoading] = useState(true);
   const [triggering, setTriggering] = useState(false);
   const [recentEvents, setRecentEvents] = useState<HealthSSEEvent[]>([]);
+  const [quickStats, setQuickStats] = useState({
+    runningWorkflows: 0,
+    activeTraces: 0,
+    sent24h: 0,
+    failed24h: 0,
+  });
 
   // SSE for real-time updates
   const handleEvent = useCallback((event: HealthSSEEvent) => {
@@ -161,6 +171,33 @@ export default function OpsOverviewPage() {
     }, 2000);
     return () => clearTimeout(timer);
   }, [loading]);
+
+  // Fetch quick stats from tRPC
+  const fetchQuickStats = useCallback(async () => {
+    try {
+      const [wfCount, linkageStats, notifStats] = await Promise.allSettled([
+        trpc.workflows.getRunningCount.query(),
+        trpc.linkage.getStats.query(),
+        trpc.notificationHistory.getDeliveryStats.query(),
+      ]);
+
+      setQuickStats({
+        runningWorkflows: wfCount.status === 'fulfilled' ? (wfCount.value as any).running : 0,
+        activeTraces: linkageStats.status === 'fulfilled' ? (linkageStats.value as any).activeTraces : 0,
+        sent24h: notifStats.status === 'fulfilled' ? (notifStats.value as any).sent24h : 0,
+        failed24h: notifStats.status === 'fulfilled' ? (notifStats.value as any).failed24h : 0,
+      });
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchQuickStats();
+    // Refresh quick stats every 30s
+    const interval = setInterval(fetchQuickStats, 30000);
+    return () => clearInterval(interval);
+  }, [fetchQuickStats]);
 
   async function fetchOverview() {
     try {
@@ -289,6 +326,46 @@ export default function OpsOverviewPage() {
                 <div>
                   <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{overview?.dlq.total ?? 0}</p>
                   <p className="text-xs text-gray-500">死信队列</p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Quick stats from tRPC */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <Card size="sm">
+              <CardContent className="flex items-center gap-3">
+                <GitBranch className="w-5 h-5 text-violet-500" />
+                <div>
+                  <p className="text-lg font-bold text-gray-900 dark:text-gray-100">{quickStats.runningWorkflows}</p>
+                  <p className="text-xs text-gray-500">运行中工作流</p>
+                </div>
+              </CardContent>
+            </Card>
+            <Card size="sm">
+              <CardContent className="flex items-center gap-3">
+                <Link2 className="w-5 h-5 text-orange-500" />
+                <div>
+                  <p className="text-lg font-bold text-gray-900 dark:text-gray-100">{quickStats.activeTraces}</p>
+                  <p className="text-xs text-gray-500">活跃联动链路</p>
+                </div>
+              </CardContent>
+            </Card>
+            <Card size="sm">
+              <CardContent className="flex items-center gap-3">
+                <Bell className="w-5 h-5 text-emerald-500" />
+                <div>
+                  <p className="text-lg font-bold text-gray-900 dark:text-gray-100">{quickStats.sent24h}</p>
+                  <p className="text-xs text-gray-500">24h 通知发送</p>
+                </div>
+              </CardContent>
+            </Card>
+            <Card size="sm">
+              <CardContent className="flex items-center gap-3">
+                <XCircle className="w-5 h-5 text-red-500" />
+                <div>
+                  <p className="text-lg font-bold text-gray-900 dark:text-gray-100">{quickStats.failed24h}</p>
+                  <p className="text-xs text-gray-500">24h 通知失败</p>
                 </div>
               </CardContent>
             </Card>
