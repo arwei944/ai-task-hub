@@ -118,7 +118,7 @@ function RulesTab() {
     try {
       const res = await fetch('/api/trpc/notificationRules.list');
       const data = await res.json();
-      setRules(data?.result?.data ?? []);
+      setRules(data?.result?.data?.json ?? data?.result?.data ?? []);
     } catch (err) {
       console.error('Failed to fetch rules:', err);
     } finally {
@@ -488,7 +488,7 @@ function HistoryTab() {
       if (filterLevel) params.level = filterLevel;
       const res = await fetch('/api/trpc/notifications.list?input=' + encodeURIComponent(JSON.stringify(params)));
       const data = await res.json();
-      let items = data?.result?.data ?? [];
+      let items = data?.result?.data?.json ?? data?.result?.data ?? [];
 
       if (filterChannel) {
         items = items.filter((n: NotificationHistory) => n.channel === filterChannel);

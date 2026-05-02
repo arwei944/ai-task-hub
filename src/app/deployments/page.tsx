@@ -73,8 +73,8 @@ export default function DeploymentsPage() {
       ]);
       const envData = await envRes.json();
       const depData = await depRes.json();
-      setEnvironments(envData?.result?.data ?? []);
-      setDeployments(depData?.result?.data ?? []);
+      setEnvironments(envData?.result?.data?.json ?? envData?.result?.data ?? []);
+      setDeployments(depData?.result?.data?.json ?? depData?.result?.data ?? []);
     } catch (err) {
       console.error('Failed to fetch deployment data:', err);
     } finally {
