@@ -250,15 +250,19 @@ export function createProjectToolHandlers(logger: ILogger, eventBus?: IEventBus)
         try {
           const { getEventBus } = await import('@/lib/core/event-bus');
           const eventBus = getEventBus();
-          eventBus.emit('task.created', {
-            taskId: task.id,
-            title: task.title,
-            projectId: task.projectId,
-            priority: task.priority,
-            status: task.status,
-            assignee: task.assignee,
-            phase: task.phase,
-            timestamp: new Date().toISOString(),
+          eventBus.emit({
+            type: 'task.created',
+            payload: {
+              taskId: task.id,
+              title: task.title,
+              projectId: task.projectId,
+              priority: task.priority,
+              status: task.status,
+              assignee: task.assignee,
+              phase: task.phase,
+            },
+            timestamp: new Date(),
+            source: 'project',
           });
         } catch {}
 
@@ -314,13 +318,17 @@ export function createProjectToolHandlers(logger: ILogger, eventBus?: IEventBus)
           try {
             const { getEventBus } = await import('@/lib/core/event-bus');
             const eventBus = getEventBus();
-            eventBus.emit('task.status.changed', {
-              taskId: task.id,
-              title: task.title,
-              projectId: task.projectId,
-              previousStatus: oldTask.status,
-              newStatus: updates.status,
-              timestamp: new Date().toISOString(),
+            eventBus.emit({
+              type: 'task.status.changed',
+              payload: {
+                taskId: task.id,
+                title: task.title,
+                projectId: task.projectId,
+                previousStatus: oldTask.status,
+                newStatus: updates.status,
+              },
+              timestamp: new Date(),
+              source: 'project',
             });
           } catch {}
         }

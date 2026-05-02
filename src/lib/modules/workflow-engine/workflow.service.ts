@@ -5,7 +5,7 @@ import type { TaskService } from '@/lib/modules/task-core/task.service';
 async function emitEvent(eventType: string, payload: any) {
   try {
     const { getEventBus } = await import('@/lib/core/event-bus');
-    getEventBus().emit(eventType, payload);
+    getEventBus().emit({ type: eventType, payload, timestamp: new Date(), source: 'workflow' });
   } catch {}
 }
 
