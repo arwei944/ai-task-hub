@@ -206,6 +206,13 @@ export class LinkageTracer implements ILinkageTracer {
     return [...this.activeTraces.values()];
   }
 
+  /** 获取已完成的链路（最新的在前） */
+  getCompletedTraces(limit?: number): LinkageTrace[] {
+    const all = this.completedTraces.getAll();
+    const reversed = all.reverse();
+    return limit ? reversed.slice(0, limit) : reversed;
+  }
+
   getTopologyHeatmap(): TopologyEdge[] {
     const recent = this.buffer.getAll().slice(-5000);
     const edgeMap = new Map<string, {

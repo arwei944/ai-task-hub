@@ -13,6 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useHealthSSE, type HealthSSEEvent } from '@/lib/hooks/use-health-sse';
+import { trpc } from '@/lib/trpc/client';
 import {
   Link2,
   RefreshCw,
@@ -37,80 +38,75 @@ interface LinkageTrace {
   timestamp: number;
   error?: string;
   metadata?: Record<string, unknown>;
+  spanCount?: number;
+  completedAt?: number;
 }
 
-// ---- Mock data (will be replaced by real LinkageTracer data) ----
-
-function generateMockTraces(): LinkageTrace[] {
-  const eventTypes = [
-    'task.created', 'task.completed', 'task.failed',
-    'notification.sent', 'notification.delivered',
-    'workflow.started', 'workflow.completed',
-    'ai.request', 'ai.response',
-    'agent.action', 'integration.call',
-  ];
-  const sources = ['task', 'notification', 'workflow', 'ai', 'integration', 'agent', 'observability'];
-  const targets = ['task', 'notification', 'workflow', 'ai', 'integration', 'agent', 'observability'];
-  const statuses: LinkageTrace['status'][] = ['success', 'success', 'success', 'success', 'failed', 'pending'];
-
-  return Array.from({ length: 50 }, (_, i) => {
-    const source = sources[Math.floor(Math.random() * sources.length)];
-    let target = targets[Math.floor(Math.random() * targets.length)];
-    while (target === source) target = targets[Math.floor(Math.random() * targets.length)];
-
-    const status = statuses[Math.floor(Math.random() * statuses.length)];
-    return {
-      id: `trace-${i}`,
-      traceId: `tr-${crypto.randomUUID().slice(0, 8)}`,
-      eventType: eventTypes[Math.floor(Math.random() * eventTypes.length)],
-      source,
-      target,
-      status,
-      latencyMs: status === 'pending' ? 0 : Math.floor(Math.random() * 500) + 5,
-      timestamp: Date.now() - Math.floor(Math.random() * 3600000),
-      error: status === 'failed' ? 'Timeout: handler did not respond within 5000ms' : undefined,
-    };
-  }).sort((a, b) => b.timestamp - a.timestamp);
+interface LinkageStats {
+  activeTraces: number;
+  successRate: number;
+  avgDuration: number;
+  errorCount: number;
+  throughput: number;
 }
 
 // ---- Component ----
 
 export default function OpsLinkagePage() {
   const [traces, setTraces] = useState<LinkageTrace[]>([]);
+  const [stats, setStats] = useState<LinkageStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'success' | 'failed' | 'pending'>('all');
   const [selectedTrace, setSelectedTrace] = useState<LinkageTrace | null>(null);
 
   // SSE for real-time updates
   const handleEvent = useCallback((event: HealthSSEEvent) => {
-    // When new health events come in, we could trigger trace refresh
     if (event.type === 'health.degraded' || event.type === 'health.recovered') {
-      // In production, this would fetch new traces from LinkageTracer
+      refreshTraces();
     }
   }, []);
 
   const { isConnected } = useHealthSSE({ enabled: true, onEvent: handleEvent });
 
-  useEffect(() => {
-    // Load mock traces (in production, fetch from tRPC endpoint)
-    const timer = setTimeout(() => {
-      setTraces(generateMockTraces());
-      setLoading(false);
-    }, 500);
-    return () => clearTimeout(timer);
+  const fetchTraces = useCallback(async () => {
+    try {
+      const [activeTraces, completedTraces] = await Promise.all([
+        trpc.linkage.getActiveTraces.query(),
+        trpc.linkage.getCompletedTraces.query({ limit: 50 }),
+      ]);
+
+      // Combine active + completed traces, sort by timestamp descending
+      const combined = [...activeTraces, ...completedTraces]
+        .sort((a, b) => b.timestamp - a.timestamp);
+
+      setTraces(combined);
+    } catch (err: any) {
+      console.error('Failed to fetch traces:', err);
+    }
   }, []);
 
-  function refreshTraces() {
+  const fetchStats = useCallback(async () => {
+    try {
+      const statsData = await trpc.linkage.getStats.query();
+      setStats(statsData);
+    } catch (err: any) {
+      console.error('Failed to fetch linkage stats:', err);
+    }
+  }, []);
+
+  const refreshTraces = useCallback(async () => {
     setLoading(true);
-    setTimeout(() => {
-      setTraces(generateMockTraces());
-      setLoading(false);
-    }, 300);
-  }
+    await Promise.all([fetchTraces(), fetchStats()]);
+    setLoading(false);
+  }, [fetchTraces, fetchStats]);
+
+  useEffect(() => {
+    refreshTraces();
+  }, [refreshTraces]);
 
   const filteredTraces = filter === 'all' ? traces : traces.filter(t => t.status === filter);
 
-  // Stats
+  // Stats — prefer server stats when available, fall back to client-side calculation
   const successCount = traces.filter(t => t.status === 'success').length;
   const failedCount = traces.filter(t => t.status === 'failed').length;
   const pendingCount = traces.filter(t => t.status === 'pending').length;

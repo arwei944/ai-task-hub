@@ -9,6 +9,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { trpc } from '@/lib/trpc/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -49,37 +50,6 @@ interface NotificationRecord {
   error?: string;
 }
 
-// ---- Mock data ----
-
-function generateMockChannels(): ChannelStatus[] {
-  return [
-    { id: 'email', name: '邮件', icon: '📧', status: 'active', sent24h: 156, failed24h: 3, avgLatencyMs: 2500 },
-    { id: 'webhook', name: 'Webhook', icon: '🔗', status: 'active', sent24h: 892, failed24h: 12, avgLatencyMs: 350 },
-    { id: 'in-app', name: '站内信', icon: '💬', status: 'active', sent24h: 2341, failed24h: 0, avgLatencyMs: 50 },
-    { id: 'slack', name: 'Slack', icon: '📱', status: 'degraded', sent24h: 67, failed24h: 8, avgLatencyMs: 1200 },
-  ];
-}
-
-function generateMockNotifications(): NotificationRecord[] {
-  const channels = ['email', 'webhook', 'in-app', 'slack'];
-  const types = ['任务完成', '系统告警', '工作流通知', 'AI 响应', '集成异常'];
-  const statuses: NotificationRecord['status'][] = ['sent', 'delivered', 'delivered', 'delivered', 'failed', 'pending'];
-
-  return Array.from({ length: 40 }, (_, i) => {
-    const status = statuses[Math.floor(Math.random() * statuses.length)];
-    return {
-      id: `notif-${i}`,
-      type: types[Math.floor(Math.random() * types.length)],
-      channel: channels[Math.floor(Math.random() * channels.length)],
-      recipient: status === 'failed' ? 'user@example.com' : `user-${Math.floor(Math.random() * 10)}`,
-      subject: `${types[Math.floor(Math.random() * types.length)]} — ${status === 'failed' ? '发送失败' : '通知'}`,
-      status,
-      timestamp: Date.now() - Math.floor(Math.random() * 7200000),
-      error: status === 'failed' ? 'Connection timeout: SMTP server unreachable' : undefined,
-    };
-  }).sort((a, b) => b.timestamp - a.timestamp);
-}
-
 // ---- Component ----
 
 export default function OpsNotificationsPage() {
@@ -94,22 +64,64 @@ export default function OpsNotificationsPage() {
 
   const { isConnected } = useHealthSSE({ enabled: true, onEvent: handleEvent });
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setChannels(generateMockChannels());
-      setNotifications(generateMockNotifications());
-      setLoading(false);
-    }, 500);
-    return () => clearTimeout(timer);
+  const fetchData = useCallback(async () => {
+    try {
+      const [channelStatsRes, deliveryStatsRes, listRes] = await Promise.allSettled([
+        trpc.notificationHistory.getChannelStats.query(),
+        trpc.notificationHistory.getDeliveryStats.query(),
+        trpc.notificationHistory.list.query({ limit: 50 }),
+      ]);
+
+      // Channel stats
+      const channelStats = channelStatsRes.status === 'fulfilled' ? channelStatsRes.value : { channels: [] };
+      setChannels(
+        (channelStats.channels ?? []).map((ch: any) => ({
+          id: ch.id,
+          name: ch.name,
+          icon: ch.icon,
+          status: ch.status,
+          sent24h: ch.sent24h ?? 0,
+          failed24h: ch.failed24h ?? 0,
+          avgLatencyMs: ch.avgLatencyMs ?? 0,
+        })),
+      );
+
+      // Notification list → map to NotificationRecord
+      const listData = listRes.status === 'fulfilled' ? listRes.value : { items: [], total: 0 };
+      const items = (listData.items ?? []) as any[];
+      setNotifications(
+        items.map((n: any) => {
+          let status: NotificationRecord['status'];
+          if (n.level === 'error') {
+            status = 'failed';
+          } else if (n.isRead) {
+            status = 'delivered';
+          } else {
+            status = 'sent';
+          }
+          return {
+            id: n.id,
+            type: n.level ?? 'info',
+            channel: n.channel ?? 'unknown',
+            recipient: 'system',
+            subject: n.title ?? '',
+            status,
+            timestamp: n.createdAt instanceof Date ? n.createdAt.getTime() : new Date(n.createdAt).getTime(),
+          };
+        }),
+      );
+    } catch (err) {
+      console.error('Ops notifications fetch error:', err);
+    }
   }, []);
+
+  useEffect(() => {
+    fetchData().finally(() => setLoading(false));
+  }, [fetchData]);
 
   function refresh() {
     setLoading(true);
-    setTimeout(() => {
-      setChannels(generateMockChannels());
-      setNotifications(generateMockNotifications());
-      setLoading(false);
-    }, 300);
+    fetchData().finally(() => setLoading(false));
   }
 
   const totalSent = channels.reduce((sum, c) => sum + c.sent24h, 0);
@@ -194,6 +206,9 @@ export default function OpsNotificationsPage() {
 
       {/* Channel cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {channels.length === 0 && !loading && (
+          <div className="col-span-full text-center text-sm text-gray-400 py-8">暂无渠道数据</div>
+        )}
         {channels.map(ch => (
           <Card key={ch.id} size="sm">
             <CardContent>
@@ -257,6 +272,9 @@ export default function OpsNotificationsPage() {
         </CardHeader>
         <CardContent>
           <div className="space-y-1.5 max-h-[400px] overflow-y-auto">
+            {filteredNotifications.length === 0 && !loading && (
+              <div className="text-center text-sm text-gray-400 py-8">暂无通知记录</div>
+            )}
             {filteredNotifications.map(notif => (
               <div key={notif.id} className="flex items-center gap-3 py-1.5 px-2 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800/50">
                 <Badge variant="outline" className="text-[10px]">{notif.channel}</Badge>

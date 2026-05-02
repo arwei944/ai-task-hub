@@ -19,6 +19,21 @@ const stepSchema = z.object({
   steps: z.array(z.any()).optional(),
 });
 
+const stepLabels: Record<string, string> = {
+  'create-task': '创建任务',
+  'update-status': '更新状态',
+  'ai-analyze': 'AI 分析',
+  'send-notification': '发送通知',
+  condition: '条件判断',
+  wait: '等待',
+  'http-request': 'HTTP 请求',
+  transform: '数据转换',
+  foreach: '循环',
+  'parallel-group': '并行组',
+  approval: '审批',
+  'invoke-agent': '调用代理',
+};
+
 export const workflowsRouter = createTRPCRouter({
   // Create workflow
   create: protectedProcedure
@@ -265,6 +280,70 @@ export const workflowsRouter = createTRPCRouter({
       return { items };
     }),
 
+  // Get recent executions with full step details for ops panel
+  getRecentRunsWithSteps: protectedProcedure
+    .input(z.object({ limit: z.number().min(1).max(20).optional() }))
+    .query(async ({ input, ctx }) => {
+      const limit = input.limit ?? 10;
+      const prisma = ctx.services.prisma;
+
+      const executions = await prisma.workflowExecution.findMany({
+        orderBy: { createdAt: 'desc' },
+        take: limit,
+        include: {
+          stepExecutions: {
+            orderBy: { createdAt: 'asc' },
+          },
+          workflow: { select: { name: true, trigger: true } },
+        },
+      });
+
+      const items = executions.map((exec: any) => {
+        let workflowName = exec.workflow?.name ?? 'Unknown';
+        let trigger = exec.workflow?.trigger ?? exec.trigger ?? '手动触发';
+        
+        if (!exec.workflow?.name && exec.workflowSnapshot) {
+          try {
+            const snapshot = JSON.parse(exec.workflowSnapshot);
+            if (snapshot.name) workflowName = snapshot.name;
+            if (snapshot.trigger) trigger = snapshot.trigger;
+          } catch {}
+        }
+
+        const steps = exec.stepExecutions.map((step: any) => ({
+          id: step.id,
+          name: step.stepName ?? stepLabels[step.stepType] ?? step.stepType,
+          status: step.status,
+          startedAt: step.startedAt ?? step.createdAt,
+          completedAt: step.completedAt,
+          durationMs: step.durationMs ?? (step.startedAt && step.completedAt ? step.completedAt.getTime() - step.startedAt.getTime() : null),
+          error: step.error,
+        }));
+
+        return {
+          id: exec.id,
+          name: workflowName,
+          status: exec.status,
+          trigger,
+          startedAt: exec.startedAt ?? exec.createdAt,
+          completedAt: exec.completedAt,
+          steps,
+        };
+      });
+
+      return { items };
+    }),
+
+  getRunningCount: protectedProcedure.query(async ({ ctx }) => {
+    const prisma = ctx.services.prisma;
+    const [running, completed, failed] = await Promise.all([
+      prisma.workflowExecution.count({ where: { status: 'running' } }),
+      prisma.workflowExecution.count({ where: { status: 'completed' } }),
+      prisma.workflowExecution.count({ where: { status: 'failed' } }),
+    ]);
+    return { running, completed, failed };
+  }),
+
   getStepPerformance: protectedProcedure.query(async ({ ctx }) => {
     const prisma = ctx.services.prisma;
 
@@ -284,21 +363,6 @@ export const workflowsRouter = createTRPCRouter({
     const failCountMap = new Map(
       failCounts.map((f: any) => [f.stepType, f._count.id]),
     );
-
-    const stepLabels: Record<string, string> = {
-      'create-task': '创建任务',
-      'update-status': '更新状态',
-      'ai-analyze': 'AI 分析',
-      'send-notification': '发送通知',
-      condition: '条件判断',
-      wait: '等待',
-      'http-request': 'HTTP 请求',
-      transform: '数据转换',
-      foreach: '循环',
-      'parallel-group': '并行组',
-      approval: '审批',
-      'invoke-agent': '调用代理',
-    };
 
     const items = stepGroups.map((group: any) => {
       const totalCalls = group._count.id;

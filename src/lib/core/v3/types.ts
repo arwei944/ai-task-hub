@@ -219,8 +219,10 @@ export interface EventBusMetrics {
 export interface ILinkageTracer {
   getStats(): LinkageStats;
   getActiveTraces(): LinkageTrace[];
+  getCompletedTraces(limit?: number): LinkageTrace[];
   getTopologyHeatmap(): TopologyEdge[];
   getAlerts(): LinkageAlert[];
+  clearAlerts(): void;
 }
 
 /** 联动统计 */

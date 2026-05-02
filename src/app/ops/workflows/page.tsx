@@ -7,7 +7,8 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { trpc } from '@/lib/trpc/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -32,6 +33,7 @@ interface WorkflowStep {
   status: 'pending' | 'running' | 'completed' | 'failed' | 'skipped';
   startedAt?: number;
   completedAt?: number;
+  durationMs?: number;
   error?: string;
 }
 
@@ -45,61 +47,44 @@ interface WorkflowRun {
   steps: WorkflowStep[];
 }
 
-// ---- Mock data ----
-
-function generateMockWorkflows(): WorkflowRun[] {
-  const names = ['任务处理流水线', 'AI 响应链', '通知发送流程', '集成同步', '数据导出'];
-  const triggers = ['手动触发', '事件触发', '定时触发', 'API 调用'];
-  const statuses: WorkflowRun['status'][] = ['running', 'completed', 'completed', 'failed', 'paused'];
-
-  return names.map((name, i) => {
-    const status = statuses[i];
-    const steps: WorkflowStep[] = [
-      { id: 's1', name: '数据验证', status: 'completed', startedAt: Date.now() - 60000, completedAt: Date.now() - 55000 },
-      { id: 's2', name: '预处理', status: 'completed', startedAt: Date.now() - 55000, completedAt: Date.now() - 40000 },
-      { id: 's3', name: '核心处理', status: status === 'failed' ? 'failed' : status === 'running' ? 'running' : 'completed', startedAt: Date.now() - 40000, completedAt: status === 'completed' ? Date.now() - 20000 : undefined, error: status === 'failed' ? '处理超时: AI 模型未在 30s 内响应' : undefined },
-      { id: 's4', name: '后处理', status: status === 'running' ? 'pending' : status === 'failed' ? 'skipped' : 'completed', startedAt: status === 'completed' ? Date.now() - 20000 : undefined, completedAt: status === 'completed' ? Date.now() - 10000 : undefined },
-      { id: 's5', name: '结果通知', status: status === 'running' ? 'pending' : status === 'failed' ? 'skipped' : status === 'paused' ? 'pending' : 'completed', startedAt: status === 'completed' ? Date.now() - 10000 : undefined, completedAt: status === 'completed' ? Date.now() : undefined },
-    ];
-
-    return {
-      id: `wf-${i}`,
-      name,
-      status,
-      trigger: triggers[i % triggers.length],
-      startedAt: Date.now() - 60000 - i * 120000,
-      completedAt: status === 'completed' ? Date.now() - i * 120000 : undefined,
-      steps,
-    };
-  });
-}
-
 // ---- Component ----
 
 export default function OpsWorkflowsPage() {
   const [workflows, setWorkflows] = useState<WorkflowRun[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [runningCount, setRunningCount] = useState(0);
+  const [completedCount, setCompletedCount] = useState(0);
+  const [failedCount, setFailedCount] = useState(0);
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setWorkflows(generateMockWorkflows());
+  const fetchData = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const [runsData, countData] = await Promise.all([
+        trpc.workflows.getRecentRunsWithSteps.query({ limit: 10 }),
+        trpc.workflows.getRunningCount.query(),
+      ]);
+      setWorkflows(runsData.items ?? []);
+      setRunningCount(countData.running);
+      setCompletedCount(countData.completed);
+      setFailedCount(countData.failed);
+    } catch (err: any) {
+      console.error('Failed to fetch workflow data:', err);
+      setError(err.message || '加载工作流数据失败');
+    } finally {
       setLoading(false);
-    }, 500);
-    return () => clearTimeout(timer);
+    }
   }, []);
 
-  function refresh() {
-    setLoading(true);
-    setTimeout(() => {
-      setWorkflows(generateMockWorkflows());
-      setLoading(false);
-    }, 300);
-  }
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
-  const runningCount = workflows.filter(w => w.status === 'running').length;
-  const completedCount = workflows.filter(w => w.status === 'completed').length;
-  const failedCount = workflows.filter(w => w.status === 'failed').length;
+  function refresh() {
+    fetchData();
+  }
 
   function StatusIcon({ status }: { status: string }) {
     switch (status) {
@@ -195,6 +180,16 @@ export default function OpsWorkflowsPage() {
           {loading ? (
             <div className="flex items-center justify-center py-10">
               <RefreshCw className="w-5 h-5 animate-spin text-gray-400" />
+            </div>
+          ) : error ? (
+            <div className="flex flex-col items-center justify-center py-10 text-gray-400">
+              <XCircle className="w-5 h-5 mb-2 text-red-400" />
+              <p className="text-sm">{error}</p>
+            </div>
+          ) : workflows.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-10 text-gray-400">
+              <GitBranch className="w-5 h-5 mb-2" />
+              <p className="text-sm">暂无工作流执行记录</p>
             </div>
           ) : (
             <div className="space-y-2">
