@@ -23,6 +23,7 @@ import {
   Loader2,
   ChevronDown,
   ChevronRight,
+  Inbox,
 } from 'lucide-react';
 
 // ---- Types ----
@@ -81,6 +82,14 @@ export default function OpsWorkflowsPage() {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  // Auto-refresh every 30 seconds
+  useEffect(() => {
+    if (!loading) {
+      const interval = setInterval(fetchData, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [loading, fetchData]);
 
   function refresh() {
     fetchData();
@@ -177,9 +186,21 @@ export default function OpsWorkflowsPage() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {loading ? (
-            <div className="flex items-center justify-center py-10">
-              <RefreshCw className="w-5 h-5 animate-spin text-gray-400" />
+          {loading && workflows.length === 0 ? (
+            <div className="space-y-4 animate-pulse">
+              <div className="grid grid-cols-3 gap-4">
+                {[1, 2, 3].map(i => (
+                  <div key={i} className="h-20 bg-gray-100 dark:bg-gray-800 rounded-lg" />
+                ))}
+              </div>
+              <div className="space-y-3">
+                {[1, 2, 3].map(i => (
+                  <div key={i} className="space-y-2">
+                    <div className="h-12 bg-gray-100 dark:bg-gray-800 rounded-lg" />
+                    <div className="h-4 bg-gray-100 dark:bg-gray-800 rounded w-3/4" />
+                  </div>
+                ))}
+              </div>
             </div>
           ) : error ? (
             <div className="flex flex-col items-center justify-center py-10 text-gray-400">
@@ -187,9 +208,10 @@ export default function OpsWorkflowsPage() {
               <p className="text-sm">{error}</p>
             </div>
           ) : workflows.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-10 text-gray-400">
-              <GitBranch className="w-5 h-5 mb-2" />
-              <p className="text-sm">暂无工作流执行记录</p>
+            <div className="text-center py-10">
+              <Inbox className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+              <p className="text-sm text-gray-400">暂无工作流执行记录</p>
+              <p className="text-xs text-gray-300 mt-1">工作流执行后将在此显示</p>
             </div>
           ) : (
             <div className="space-y-2">

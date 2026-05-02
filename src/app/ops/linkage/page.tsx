@@ -23,6 +23,7 @@ import {
   CheckCircle2,
   XCircle,
   Filter,
+  Inbox,
 } from 'lucide-react';
 
 // ---- Types ----
@@ -213,9 +214,24 @@ export default function OpsLinkagePage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {loading ? (
-                <div className="flex items-center justify-center py-10">
-                  <RefreshCw className="w-5 h-5 animate-spin text-gray-400" />
+              {loading && traces.length === 0 ? (
+                <div className="space-y-4 animate-pulse">
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    {[1, 2, 3].map(i => (
+                      <div key={i} className="h-20 bg-gray-100 dark:bg-gray-800 rounded-lg" />
+                    ))}
+                  </div>
+                  <div className="space-y-2">
+                    {[1, 2, 3, 4, 5].map(i => (
+                      <div key={i} className="h-12 bg-gray-100 dark:bg-gray-800 rounded-lg" />
+                    ))}
+                  </div>
+                </div>
+              ) : filteredTraces.length === 0 ? (
+                <div className="text-center py-10">
+                  <Inbox className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+                  <p className="text-sm text-gray-400">暂无联动链路记录</p>
+                  <p className="text-xs text-gray-300 mt-1">事件触发联动后将在此显示</p>
                 </div>
               ) : (
                 <div className="space-y-1.5 max-h-[500px] overflow-y-auto">

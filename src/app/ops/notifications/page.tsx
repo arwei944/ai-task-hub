@@ -25,6 +25,7 @@ import {
   Clock,
   Send,
   BarChart3,
+  Inbox,
 } from 'lucide-react';
 
 // ---- Types ----
@@ -119,6 +120,14 @@ export default function OpsNotificationsPage() {
     fetchData().finally(() => setLoading(false));
   }, [fetchData]);
 
+  // Auto-refresh every 30 seconds
+  useEffect(() => {
+    if (!loading) {
+      const interval = setInterval(fetchData, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [loading, fetchData]);
+
   function refresh() {
     setLoading(true);
     fetchData().finally(() => setLoading(false));
@@ -206,10 +215,20 @@ export default function OpsNotificationsPage() {
 
       {/* Channel cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {channels.length === 0 && !loading && (
-          <div className="col-span-full text-center text-sm text-gray-400 py-8">暂无渠道数据</div>
-        )}
-        {channels.map(ch => (
+        {loading && channels.length === 0 ? (
+          <>
+            {[1, 2, 3, 4].map(i => (
+              <div key={i} className="h-28 bg-gray-100 dark:bg-gray-800 rounded-lg animate-pulse" />
+            ))}
+          </>
+        ) : channels.length === 0 ? (
+          <div className="col-span-full text-center py-8">
+            <Inbox className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+            <p className="text-sm text-gray-400">暂无渠道数据</p>
+            <p className="text-xs text-gray-300 mt-1">配置通知渠道后将在此显示</p>
+          </div>
+        ) : (
+          channels.map(ch => (
           <Card key={ch.id} size="sm">
             <CardContent>
               <div className="flex items-center justify-between mb-2">
@@ -244,7 +263,8 @@ export default function OpsNotificationsPage() {
               </div>
             </CardContent>
           </Card>
-        ))}
+          ))
+        )}
       </div>
 
       {/* Recent notifications */}
@@ -272,23 +292,34 @@ export default function OpsNotificationsPage() {
         </CardHeader>
         <CardContent>
           <div className="space-y-1.5 max-h-[400px] overflow-y-auto">
-            {filteredNotifications.length === 0 && !loading && (
-              <div className="text-center text-sm text-gray-400 py-8">暂无通知记录</div>
-            )}
-            {filteredNotifications.map(notif => (
-              <div key={notif.id} className="flex items-center gap-3 py-1.5 px-2 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800/50">
-                <Badge variant="outline" className="text-[10px]">{notif.channel}</Badge>
-                <span className="text-sm text-gray-900 dark:text-gray-100 truncate max-w-[200px]">{notif.subject}</span>
-                <span className="text-xs text-gray-400 truncate max-w-[120px]">{notif.recipient}</span>
-                <div className="ml-auto flex items-center gap-2">
-                  {notif.status === 'delivered' && <CheckCircle2 className="w-3 h-3 text-emerald-500" />}
-                  {notif.status === 'sent' && <Send className="w-3 h-3 text-blue-500" />}
-                  {notif.status === 'failed' && <XCircle className="w-3 h-3 text-red-500" />}
-                  {notif.status === 'pending' && <Clock className="w-3 h-3 text-amber-500" />}
-                  <span className="text-xs text-gray-400">{formatTime(notif.timestamp)}</span>
-                </div>
+            {loading && notifications.length === 0 ? (
+              <div className="space-y-2 animate-pulse">
+                {[1, 2, 3, 4, 5].map(i => (
+                  <div key={i} className="h-12 bg-gray-100 dark:bg-gray-800 rounded-lg" />
+                ))}
               </div>
-            ))}
+            ) : filteredNotifications.length === 0 ? (
+              <div className="text-center py-8">
+                <Inbox className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+                <p className="text-sm text-gray-400">暂无通知记录</p>
+                <p className="text-xs text-gray-300 mt-1">通知发送后将在此显示</p>
+              </div>
+            ) : (
+              filteredNotifications.map(notif => (
+                <div key={notif.id} className="flex items-center gap-3 py-1.5 px-2 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                  <Badge variant="outline" className="text-[10px]">{notif.channel}</Badge>
+                  <span className="text-sm text-gray-900 dark:text-gray-100 truncate max-w-[200px]">{notif.subject}</span>
+                  <span className="text-xs text-gray-400 truncate max-w-[120px]">{notif.recipient}</span>
+                  <div className="ml-auto flex items-center gap-2">
+                    {notif.status === 'delivered' && <CheckCircle2 className="w-3 h-3 text-emerald-500" />}
+                    {notif.status === 'sent' && <Send className="w-3 h-3 text-blue-500" />}
+                    {notif.status === 'failed' && <XCircle className="w-3 h-3 text-red-500" />}
+                    {notif.status === 'pending' && <Clock className="w-3 h-3 text-amber-500" />}
+                    <span className="text-xs text-gray-400">{formatTime(notif.timestamp)}</span>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </CardContent>
       </Card>
