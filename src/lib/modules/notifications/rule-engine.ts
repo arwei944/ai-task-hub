@@ -94,7 +94,7 @@ export class NotificationRuleEngine {
         where,
         orderBy: { priority: 'desc' },
       });
-      return rules.map(r => this.mapDbRule(r));
+      return rules.map((r: any) => this.mapDbRule(r));
     } finally {
       await prisma.$disconnect();
     }

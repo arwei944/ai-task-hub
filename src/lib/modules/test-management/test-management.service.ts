@@ -286,12 +286,12 @@ export class TestManagementService {
         : [];
 
     const totalExecutions = executions.length;
-    const passedExecutions = executions.filter((e) => e.status === 'passed').length;
-    const failedExecutions = executions.filter((e) => e.status === 'failed').length;
-    const durationsWithValues = executions.filter((e) => e.duration != null);
+    const passedExecutions = executions.filter((e: any) => e.status === 'passed').length;
+    const failedExecutions = executions.filter((e: any) => e.status === 'failed').length;
+    const durationsWithValues = executions.filter((e: any) => e.duration != null);
     const avgDuration =
       durationsWithValues.length > 0
-        ? Math.round(durationsWithValues.reduce((sum, e) => sum + (e.duration ?? 0), 0) / durationsWithValues.length)
+        ? Math.round(durationsWithValues.reduce((sum: any, e: any) => sum + (e.duration ?? 0), 0) / durationsWithValues.length)
         : 0;
 
     return {

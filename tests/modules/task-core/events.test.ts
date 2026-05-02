@@ -215,7 +215,7 @@ describe('TaskService Event Emission', () => {
       taskRepo.findById.mockResolvedValue(existingTask);
       taskRepo.update.mockResolvedValue(updatedTask);
 
-      await service.updateTask('task-001', { status: 'blocked' }, 'user-1');
+      await service.updateTask('task-001', { status: 'blocked' as any }, 'user-1');
 
       const calls = (eventBus.emit as any).mock.calls;
       const blockedCall = calls.find((c: any) => c[0].type === 'task.blocked');

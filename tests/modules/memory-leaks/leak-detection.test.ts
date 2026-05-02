@@ -309,7 +309,7 @@ describe('W-ML-04: MCP session management', () => {
 
       // Simulate cleanup of old sessions when exceeding max
       if (sessions.size > MAX_SESSIONS) {
-        const oldestKey = sessions.keys().next().value;
+        const oldestKey = sessions.keys().next().value as string;
         sessions.delete(oldestKey);
       }
     }

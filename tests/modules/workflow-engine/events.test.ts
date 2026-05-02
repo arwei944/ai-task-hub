@@ -20,7 +20,7 @@ function createMockEventBus(): EventBus {
     queryEvents: vi.fn(),
     replayEvents: vi.fn(),
     getEventCount: vi.fn(),
-  };
+  } as any;
 }
 
 function createMockLogger(): Logger {

@@ -95,7 +95,7 @@ describe('C-01: JWT 密钥硬编码默认值', () => {
   it('C-01-1: 未设置 JWT_SECRET 时使用随机密钥，旧默认密钥签发的 token 应被拒绝', async () => {
     delete process.env.JWT_SECRET;
 
-    const authService = new AuthService(createMockUserRepo(), createMockLogger());
+    const authService = new AuthService(createMockUserRepo() as any, createMockLogger());
 
     // 使用旧的硬编码默认密钥签发 token
     const defaultKey = new TextEncoder().encode(DEFAULT_SECRET);
@@ -118,7 +118,7 @@ describe('C-01: JWT 密钥硬编码默认值', () => {
   it('C-01-2: 未设置 JWT_SECRET 时使用随机密钥，攻击者无法伪造 token', async () => {
     delete process.env.JWT_SECRET;
 
-    const authService = new AuthService(createMockUserRepo(), createMockLogger());
+    const authService = new AuthService(createMockUserRepo() as any, createMockLogger());
 
     // 攻击者尝试用旧的硬编码默认密钥伪造 token
     const forgedKey = new TextEncoder().encode(DEFAULT_SECRET);
@@ -142,7 +142,7 @@ describe('C-01: JWT 密钥硬编码默认值', () => {
     const customSecret = 'my-super-secret-key-12345';
     process.env.JWT_SECRET = customSecret;
 
-    const authService = new AuthService(createMockUserRepo(), createMockLogger());
+    const authService = new AuthService(createMockUserRepo() as any, createMockLogger());
 
     // 使用自定义密钥签发 token
     const customKey = new TextEncoder().encode(customSecret);
@@ -168,7 +168,7 @@ describe('C-01: JWT 密钥硬编码默认值', () => {
     const customSecret = 'my-super-secret-key-12345';
     process.env.JWT_SECRET = customSecret;
 
-    const authService = new AuthService(createMockUserRepo(), createMockLogger());
+    const authService = new AuthService(createMockUserRepo() as any, createMockLogger());
 
     // 攻击者用默认密钥签发 token
     const defaultKey = new TextEncoder().encode(DEFAULT_SECRET);
@@ -191,7 +191,7 @@ describe('C-01: JWT 密钥硬编码默认值', () => {
   it('C-01-5: JWT_SECRET 为空字符串时应视为未设置，使用随机密钥', async () => {
     process.env.JWT_SECRET = '';
 
-    const authService = new AuthService(createMockUserRepo(), createMockLogger());
+    const authService = new AuthService(createMockUserRepo() as any, createMockLogger());
 
     // 空字符串走随机密钥路径，旧默认密钥签发的 token 应被拒绝
     const defaultKey = new TextEncoder().encode(DEFAULT_SECRET);

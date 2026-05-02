@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { DIContainer } from '@/lib/core/di-container';
+import { DIContainer } from '@/lib/core/v3/di';
 import { DIResolveError } from '@/lib/core/types';
 
 describe('DIContainer', () => {
@@ -52,15 +52,15 @@ describe('DIContainer', () => {
   // --- 循环依赖检测 ---
   describe('circular dependency detection', () => {
     it('should throw DIResolveError for circular dependencies', () => {
-      container.register('a', (c) => c.resolve('b'));
-      container.register('b', (c) => c.resolve('a'));
+      container.register('a', (c: any) => c.resolve('b'));
+      container.register('b', (c: any) => c.resolve('a'));
       expect(() => container.resolve('a')).toThrow(DIResolveError);
       expect(() => container.resolve('a')).toThrow(/Circular dependency/);
     });
 
     it('should include token name in circular dependency error', () => {
-      container.register('x', (c) => c.resolve('y'));
-      container.register('y', (c) => c.resolve('x'));
+      container.register('x', (c: any) => c.resolve('y'));
+      container.register('y', (c: any) => c.resolve('x'));
       try {
         container.resolve('x');
         expect.unreachable('should have thrown');
@@ -71,7 +71,7 @@ describe('DIContainer', () => {
 
     it('should not false-positive on non-circular dependencies', () => {
       container.register('service', () => ({ name: 'svc' }));
-      container.register('consumer', (c) => ({ svc: c.resolve('service') }));
+      container.register('consumer', (c: any) => ({ svc: c.resolve('service') }));
       const consumer = container.resolve<{ svc: { name: string } }>('consumer');
       expect(consumer.svc.name).toBe('svc');
     });

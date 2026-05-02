@@ -64,7 +64,7 @@ export class DeploymentService {
       const environments = await prisma.deploymentEnvironment.findMany({
         orderBy: { order: 'asc' },
       });
-      return environments.map((e) => this.mapEnvironment(e));
+      return environments.map((e: any) => this.mapEnvironment(e));
     } finally {
       await prisma.$disconnect();
     }
@@ -324,7 +324,7 @@ export class DeploymentService {
         completedAt: deployment.completedAt,
         duration: deployment.duration,
         rollbackFromId: deployment.rollbackFromId,
-        logs: deployment.logs.map((l) => ({
+        logs: deployment.logs.map((l: any) => ({
           id: l.id,
           deploymentId: l.deploymentId,
           level: l.level as any,
@@ -364,7 +364,7 @@ export class DeploymentService {
 
       return {
         total,
-        deployments: deployments.map((d) => ({
+        deployments: deployments.map((d: any) => ({
           id: d.id,
           environmentId: d.environmentId,
           environmentName: d.environment.name,
@@ -378,7 +378,7 @@ export class DeploymentService {
           completedAt: d.completedAt,
           duration: d.duration,
           rollbackFromId: d.rollbackFromId,
-          logs: d.logs.map((l) => ({
+          logs: d.logs.map((l: any) => ({
             id: l.id,
             deploymentId: l.deploymentId,
             level: l.level as any,
@@ -416,7 +416,7 @@ export class DeploymentService {
         total: allDeployments.length,
         byStatus,
         byEnvironment,
-        recentDeployments: deployments.map((d) => ({
+        recentDeployments: deployments.map((d: any) => ({
           id: d.id,
           environmentId: d.environmentId,
           environmentName: d.environment.name,
@@ -600,7 +600,7 @@ export class DeploymentService {
         where,
         orderBy: { createdAt: 'asc' },
       });
-      return checks.map((c) => this.mapHealthCheck(c));
+      return checks.map((c: any) => this.mapHealthCheck(c));
     } finally {
       await prisma.$disconnect();
     }
@@ -636,8 +636,8 @@ export class DeploymentService {
       const allChecks = await prisma.healthCheck.findMany({
         where: { environmentId: check.environmentId, isActive: true },
       });
-      const hasUnhealthy = allChecks.some((c) => c.lastStatus === 'unhealthy');
-      const allHealthy = allChecks.every((c) => c.lastStatus === 'healthy' || c.lastStatus === 'unknown');
+      const hasUnhealthy = allChecks.some((c: any) => c.lastStatus === 'unhealthy');
+      const allHealthy = allChecks.every((c: any) => c.lastStatus === 'healthy' || c.lastStatus === 'unknown');
       const envHealthStatus: HealthStatus = hasUnhealthy ? 'unhealthy' : allHealthy ? 'healthy' : 'degraded';
 
       await prisma.deploymentEnvironment.update({
@@ -686,7 +686,7 @@ export class DeploymentService {
         },
       });
 
-      return environments.map((env) => {
+      return environments.map((env: any) => {
         const lastDeploy = env.deployments[0];
         let uptime: number | null = null;
         if (lastDeploy?.completedAt) {
@@ -697,7 +697,7 @@ export class DeploymentService {
           environmentId: env.id,
           environmentName: env.displayName || env.name,
           healthStatus: env.healthStatus as HealthStatus,
-          checks: env.healthChecks.map((c) => ({
+          checks: env.healthChecks.map((c: any) => ({
             name: c.name,
             status: c.lastStatus as HealthStatus,
             lastCheckAt: c.lastCheckAt,
@@ -754,7 +754,7 @@ export class DeploymentService {
         where: { deploymentId },
         orderBy: { timestamp: 'asc' },
       });
-      return logs.map((l) => ({
+      return logs.map((l: any) => ({
         id: l.id,
         deploymentId: l.deploymentId,
         level: l.level as any,

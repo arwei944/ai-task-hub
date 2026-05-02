@@ -125,7 +125,7 @@ export class OutboundWebhookService {
         orderBy: { createdAt: 'desc' },
       });
 
-      return webhooks.map(w => ({
+      return webhooks.map((w: any) => ({
         id: w.id,
         name: w.name,
         url: w.url,
@@ -646,7 +646,7 @@ export class OutboundWebhookService {
         take: filters?.limit ?? 50,
       });
 
-      return deliveries.map(d => ({
+      return deliveries.map((d: any) => ({
         id: d.id,
         webhookId: d.webhookId,
         webhookName: '', // would need join

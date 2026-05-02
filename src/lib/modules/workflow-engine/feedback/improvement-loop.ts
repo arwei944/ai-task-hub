@@ -77,18 +77,18 @@ export class ImprovementLoop {
 
     // 计算基本统计
     const totalCheckpoints = checkpoints.length;
-    const approvedCount = checkpoints.filter(c => c.status === 'approved').length;
-    const rejectedCount = checkpoints.filter(c => c.status === 'rejected').length;
-    const timeoutCount = checkpoints.filter(c => c.status === 'timeout_expired').length;
+    const approvedCount = checkpoints.filter((c: any) => c.status === 'approved').length;
+    const rejectedCount = checkpoints.filter((c: any) => c.status === 'rejected').length;
+    const timeoutCount = checkpoints.filter((c: any) => c.status === 'timeout_expired').length;
 
     const approvalRate = totalCheckpoints > 0 ? approvedCount / totalCheckpoints : 0;
     const rejectionRate = totalCheckpoints > 0 ? rejectedCount / totalCheckpoints : 0;
     const timeoutRate = totalCheckpoints > 0 ? timeoutCount / totalCheckpoints : 0;
 
     // 计算平均评分
-    const ratedCheckpoints = checkpoints.filter(c => c.rating != null && c.rating > 0);
+    const ratedCheckpoints = checkpoints.filter((c: any) => c.rating != null && c.rating > 0);
     const avgRating = ratedCheckpoints.length > 0
-      ? ratedCheckpoints.reduce((sum, c) => sum + (c.rating ?? 0), 0) / ratedCheckpoints.length
+      ? ratedCheckpoints.reduce((sum: any, c: any) => sum + (c.rating ?? 0), 0) / ratedCheckpoints.length
       : 0;
 
     // 按步骤类型分组统计
@@ -198,7 +198,7 @@ export class ImprovementLoop {
     }
 
     // 从被拒绝的检查点中提取具体步骤名
-    const rejectedCheckpoints = checkpoints.filter(c => c.status === 'rejected');
+    const rejectedCheckpoints = checkpoints.filter((c: any) => c.status === 'rejected');
     const rejectedStepCounts = new Map<string, number>();
     for (const cp of rejectedCheckpoints) {
       const key = cp.stepName ?? cp.stepId;
@@ -206,7 +206,7 @@ export class ImprovementLoop {
     }
     for (const [stepName, count] of rejectedStepCounts.entries()) {
       if (count >= 3) {
-        const matchingCp = rejectedCheckpoints.find(c => (c.stepName ?? c.stepId) === stepName);
+        const matchingCp = rejectedCheckpoints.find((c: any) => (c.stepName ?? c.stepId) === stepName);
         if (matchingCp) {
           highRiskSteps.push({
             stepName,

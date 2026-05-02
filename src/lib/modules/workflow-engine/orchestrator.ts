@@ -201,8 +201,8 @@ export class WorkflowOrchestrator {
         where: { executionId },
       });
       const stepCount = stepExecutions.length;
-      const errorCount = stepExecutions.filter(s => s.status === 'failed').length;
-      const stepSummaries = stepExecutions.map(s => ({
+      const errorCount = stepExecutions.filter((s: any) => s.status === 'failed').length;
+      const stepSummaries = stepExecutions.map((s: any) => ({
         name: s.stepName,
         status: s.status,
         duration: s.durationMs ?? 0,

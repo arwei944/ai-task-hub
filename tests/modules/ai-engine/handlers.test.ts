@@ -51,7 +51,7 @@ describe('TaskCreatedHandler', () => {
 
   it('should classify low complexity for simple tasks', async () => {
     const emittedEvents: DomainEvent[] = [];
-    eventBus.on('task.complexity.analyzed', (e) => emittedEvents.push(e));
+    eventBus.on('task.complexity.analyzed', (e) => { emittedEvents.push(e); });
 
     handler.register();
 
@@ -77,7 +77,7 @@ describe('TaskCreatedHandler', () => {
 
   it('should classify high complexity for high priority tasks', async () => {
     const emittedEvents: DomainEvent[] = [];
-    eventBus.on('task.complexity.analyzed', (e) => emittedEvents.push(e));
+    eventBus.on('task.complexity.analyzed', (e) => { emittedEvents.push(e); });
 
     handler.register();
 
@@ -103,7 +103,7 @@ describe('TaskCreatedHandler', () => {
 
   it('should classify high complexity for long descriptions', async () => {
     const emittedEvents: DomainEvent[] = [];
-    eventBus.on('task.complexity.analyzed', (e) => emittedEvents.push(e));
+    eventBus.on('task.complexity.analyzed', (e) => { emittedEvents.push(e); });
 
     handler.register();
 
@@ -129,7 +129,7 @@ describe('TaskCreatedHandler', () => {
 
   it('should classify medium complexity for medium priority', async () => {
     const emittedEvents: DomainEvent[] = [];
-    eventBus.on('task.complexity.analyzed', (e) => emittedEvents.push(e));
+    eventBus.on('task.complexity.analyzed', (e) => { emittedEvents.push(e); });
 
     handler.register();
 
@@ -151,7 +151,7 @@ describe('TaskCreatedHandler', () => {
 
   it('should classify medium complexity for medium-length descriptions', async () => {
     const emittedEvents: DomainEvent[] = [];
-    eventBus.on('task.complexity.analyzed', (e) => emittedEvents.push(e));
+    eventBus.on('task.complexity.analyzed', (e) => { emittedEvents.push(e); });
 
     handler.register();
 
@@ -174,7 +174,7 @@ describe('TaskCreatedHandler', () => {
 
   it('should handle string priorities (urgent/high/medium/low)', async () => {
     const emittedEvents: DomainEvent[] = [];
-    eventBus.on('task.complexity.analyzed', (e) => emittedEvents.push(e));
+    eventBus.on('task.complexity.analyzed', (e) => { emittedEvents.push(e); });
 
     handler.register();
 
@@ -197,7 +197,7 @@ describe('TaskCreatedHandler', () => {
 
   it('should handle missing fields gracefully', async () => {
     const emittedEvents: DomainEvent[] = [];
-    eventBus.on('task.complexity.analyzed', (e) => emittedEvents.push(e));
+    eventBus.on('task.complexity.analyzed', (e) => { emittedEvents.push(e); });
 
     handler.register();
 
@@ -212,7 +212,7 @@ describe('TaskCreatedHandler', () => {
 
   it('should emit event with correct source', async () => {
     const emittedEvents: DomainEvent[] = [];
-    eventBus.on('task.complexity.analyzed', (e) => emittedEvents.push(e));
+    eventBus.on('task.complexity.analyzed', (e) => { emittedEvents.push(e); });
 
     handler.register();
 
@@ -252,7 +252,7 @@ describe('TaskStatusHandler', () => {
 
   it('should emit project.health.updated when status becomes done', async () => {
     const emittedEvents: DomainEvent[] = [];
-    eventBus.on('project.health.updated', (e) => emittedEvents.push(e));
+    eventBus.on('project.health.updated', (e) => { emittedEvents.push(e); });
 
     handler.register();
 
@@ -277,7 +277,7 @@ describe('TaskStatusHandler', () => {
 
   it('should emit project.health.updated when status becomes completed', async () => {
     const emittedEvents: DomainEvent[] = [];
-    eventBus.on('project.health.updated', (e) => emittedEvents.push(e));
+    eventBus.on('project.health.updated', (e) => { emittedEvents.push(e); });
 
     handler.register();
 
@@ -299,7 +299,7 @@ describe('TaskStatusHandler', () => {
 
   it('should NOT emit project.health.updated for non-completion statuses', async () => {
     const emittedEvents: DomainEvent[] = [];
-    eventBus.on('project.health.updated', (e) => emittedEvents.push(e));
+    eventBus.on('project.health.updated', (e) => { emittedEvents.push(e); });
 
     handler.register();
 
@@ -319,7 +319,7 @@ describe('TaskStatusHandler', () => {
 
   it('should handle missing fields gracefully', async () => {
     const emittedEvents: DomainEvent[] = [];
-    eventBus.on('project.health.updated', (e) => emittedEvents.push(e));
+    eventBus.on('project.health.updated', (e) => { emittedEvents.push(e); });
 
     handler.register();
 
@@ -358,7 +358,7 @@ describe('ProjectPhaseHandler', () => {
 
   it('should emit suggestion for requirements -> planning', async () => {
     const emittedEvents: DomainEvent[] = [];
-    eventBus.on('ai.suggestion', (e) => emittedEvents.push(e));
+    eventBus.on('ai.suggestion', (e) => { emittedEvents.push(e); });
 
     handler.register();
 
@@ -381,7 +381,7 @@ describe('ProjectPhaseHandler', () => {
 
   it('should emit suggestion for planning -> architecture', async () => {
     const emittedEvents: DomainEvent[] = [];
-    eventBus.on('ai.suggestion', (e) => emittedEvents.push(e));
+    eventBus.on('ai.suggestion', (e) => { emittedEvents.push(e); });
 
     handler.register();
 
@@ -402,7 +402,7 @@ describe('ProjectPhaseHandler', () => {
 
   it('should emit suggestion for architecture -> implementation', async () => {
     const emittedEvents: DomainEvent[] = [];
-    eventBus.on('ai.suggestion', (e) => emittedEvents.push(e));
+    eventBus.on('ai.suggestion', (e) => { emittedEvents.push(e); });
 
     handler.register();
 
@@ -423,7 +423,7 @@ describe('ProjectPhaseHandler', () => {
 
   it('should emit suggestion for implementation -> testing', async () => {
     const emittedEvents: DomainEvent[] = [];
-    eventBus.on('ai.suggestion', (e) => emittedEvents.push(e));
+    eventBus.on('ai.suggestion', (e) => { emittedEvents.push(e); });
 
     handler.register();
 
@@ -444,7 +444,7 @@ describe('ProjectPhaseHandler', () => {
 
   it('should emit suggestion for testing -> deployment', async () => {
     const emittedEvents: DomainEvent[] = [];
-    eventBus.on('ai.suggestion', (e) => emittedEvents.push(e));
+    eventBus.on('ai.suggestion', (e) => { emittedEvents.push(e); });
 
     handler.register();
 
@@ -465,7 +465,7 @@ describe('ProjectPhaseHandler', () => {
 
   it('should emit suggestion for deployment -> completed', async () => {
     const emittedEvents: DomainEvent[] = [];
-    eventBus.on('ai.suggestion', (e) => emittedEvents.push(e));
+    eventBus.on('ai.suggestion', (e) => { emittedEvents.push(e); });
 
     handler.register();
 
@@ -486,7 +486,7 @@ describe('ProjectPhaseHandler', () => {
 
   it('should NOT emit suggestion for unknown phase transitions', async () => {
     const emittedEvents: DomainEvent[] = [];
-    eventBus.on('ai.suggestion', (e) => emittedEvents.push(e));
+    eventBus.on('ai.suggestion', (e) => { emittedEvents.push(e); });
 
     handler.register();
 
@@ -505,7 +505,7 @@ describe('ProjectPhaseHandler', () => {
 
   it('should emit suggestion with correct source', async () => {
     const emittedEvents: DomainEvent[] = [];
-    eventBus.on('ai.suggestion', (e) => emittedEvents.push(e));
+    eventBus.on('ai.suggestion', (e) => { emittedEvents.push(e); });
 
     handler.register();
 

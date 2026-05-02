@@ -148,10 +148,10 @@ export function createProjectToolHandlers(logger: ILogger, eventBus?: IEventBus)
         const allTasks = await prisma.task.findMany({ where: { projectId: pid } });
         const stats = {
           total: allTasks.length,
-          todo: allTasks.filter(t => t.status === 'todo').length,
-          inProgress: allTasks.filter(t => t.status === 'in_progress').length,
-          done: allTasks.filter(t => t.status === 'done').length,
-          closed: allTasks.filter(t => t.status === 'closed').length,
+          todo: allTasks.filter((t: any) => t.status === 'todo').length,
+          inProgress: allTasks.filter((t: any) => t.status === 'in_progress').length,
+          done: allTasks.filter((t: any) => t.status === 'done').length,
+          closed: allTasks.filter((t: any) => t.status === 'closed').length,
           byPhase: {} as Record<string, number>,
         };
         for (const t of allTasks) {
@@ -510,10 +510,10 @@ export function createProjectToolHandlers(logger: ILogger, eventBus?: IEventBus)
 
         const taskStats = {
           total: tasks.length,
-          todo: tasks.filter(t => t.status === 'todo').length,
-          inProgress: tasks.filter(t => t.status === 'in_progress').length,
-          done: tasks.filter(t => t.status === 'done').length,
-          completionRate: tasks.length > 0 ? Math.round((tasks.filter(t => t.status === 'done').length / tasks.length) * 100) : 0,
+          todo: tasks.filter((t: any) => t.status === 'todo').length,
+          inProgress: tasks.filter((t: any) => t.status === 'in_progress').length,
+          done: tasks.filter((t: any) => t.status === 'done').length,
+          completionRate: tasks.length > 0 ? Math.round((tasks.filter((t: any) => t.status === 'done').length / tasks.length) * 100) : 0,
           byPhase: {} as Record<string, { total: number; done: number }>,
         };
         for (const t of tasks) {
@@ -523,7 +523,7 @@ export function createProjectToolHandlers(logger: ILogger, eventBus?: IEventBus)
         }
 
         // Agent stats
-        const agentIds = [...new Set(tasks.map(t => t.creator).filter((v): v is string => Boolean(v)))];
+        const agentIds = [...new Set(tasks.map((t: any) => t.creator).filter((v): v is string => Boolean(v)))];
         const agents = await prisma.agent.findMany({
           where: { id: { in: agentIds } },
           select: { id: true, name: true, clientType: true },

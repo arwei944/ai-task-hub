@@ -734,11 +734,11 @@ export class VersionMgmtService {
       const targetChangelogs = targetRelease.changelogs;
 
       // Identify new entries (in target but not in base)
-      const baseKeys = new Set(baseChangelogs.map(cl => `${cl.category}:${cl.title}`));
-      const targetKeys = new Set(targetChangelogs.map(cl => `${cl.category}:${cl.title}`));
+      const baseKeys = new Set(baseChangelogs.map((cl: any) => `${cl.category}:${cl.title}`));
+      const targetKeys = new Set(targetChangelogs.map((cl: any) => `${cl.category}:${cl.title}`));
 
-      const newEntries = targetChangelogs.filter(cl => !baseKeys.has(`${cl.category}:${cl.title}`));
-      const removedEntries = baseChangelogs.filter(cl => !targetKeys.has(`${cl.category}:${cl.title}`));
+      const newEntries = targetChangelogs.filter((cl: any) => !baseKeys.has(`${cl.category}:${cl.title}`));
+      const removedEntries = baseChangelogs.filter((cl: any) => !targetKeys.has(`${cl.category}:${cl.title}`));
 
       // Generate summary
       const categoryCounts: Record<string, number> = {};
@@ -896,7 +896,7 @@ export class VersionMgmtService {
       }
 
       // Latest published version
-      const latestPublished = releases.find(r => r.status === 'published');
+      const latestPublished = releases.find((r: any) => r.status === 'published');
 
       // Changelog counts
       const changelogCounts = await prisma.releaseChangelog.groupBy({

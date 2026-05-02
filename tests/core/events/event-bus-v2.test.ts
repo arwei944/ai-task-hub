@@ -78,15 +78,15 @@ describe('EventBus v2', () => {
       const bus = new EventBus();
       const received: any[] = [];
 
-      const callback = (event: any) => received.push(event.payload);
-      bus.on('test.event', callback);
+      const callback = (event: any) => { received.push(event.payload); };
+      bus.on('test.event', callback as any);
       bus.emit({
         type: 'test.event',
         payload: { n: 1 },
         timestamp: new Date(),
       });
 
-      bus.off('test.event', callback);
+      bus.off('test.event', callback as any);
       bus.emit({
         type: 'test.event',
         payload: { n: 2 },
@@ -130,7 +130,7 @@ describe('EventBus v2', () => {
       const bus = new EventBus();
       const received: any[] = [];
 
-      bus.on('test.event', (event) => received.push(event.payload));
+      bus.on('test.event', (event) => { received.push(event.payload); });
       bus.removeAllListeners();
 
       bus.emit({ type: 'test.event', payload: { n: 1 }, timestamp: new Date() });
@@ -267,7 +267,7 @@ describe('EventBus v2', () => {
       const bus = new EventBus({ validateEvents: true });
       const received: any[] = [];
 
-      bus.on('task.created', (event) => received.push(event.payload));
+      bus.on('task.created', (event) => { received.push(event.payload); });
 
       bus.emit({
         type: 'task.created',
@@ -282,7 +282,7 @@ describe('EventBus v2', () => {
       const bus = new EventBus({ validateEvents: true });
       const received: any[] = [];
 
-      bus.on('task.created', (event) => received.push(event.payload));
+      bus.on('task.created', (event) => { received.push(event.payload); });
 
       // Missing required 'title' field
       const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
@@ -312,7 +312,7 @@ describe('EventBus v2', () => {
       const bus = new EventBus({ validateEvents: true });
       const received: any[] = [];
 
-      bus.on('custom.unknown.event', (event) => received.push(event.payload));
+      bus.on('custom.unknown.event', (event) => { received.push(event.payload); });
 
       bus.emit({
         type: 'custom.unknown.event',
@@ -327,7 +327,7 @@ describe('EventBus v2', () => {
       const bus = new EventBus();
       const received: any[] = [];
 
-      bus.on('task.created', (event) => received.push(event.payload));
+      bus.on('task.created', (event) => { received.push(event.payload); });
 
       // This would fail validation but should pass since validation is off
       bus.emit({
@@ -356,7 +356,7 @@ describe('EventBus v2', () => {
       const bus = new EventBus({ eventStore: failingStore });
       const received: any[] = [];
 
-      bus.on('task.created', (event) => received.push(event.payload));
+      bus.on('task.created', (event) => { received.push(event.payload); });
 
       const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
       bus.emit({

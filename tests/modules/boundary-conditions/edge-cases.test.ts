@@ -308,15 +308,17 @@ describe('S-BC: 边界条件测试', () => {
         });
 
         obs.recordSOLOCall({
-          id: '', // will be overwritten internally? No - recordSOLOCall takes the record as-is
+          id: '',
           executionId: `exec-${i}`,
           stepId: `step-${i}`,
           stepName: `SOLO Step ${i}`,
           callMode: 'mcp',
           subAgentType: 'explore',
+          sessionId: `session-${i}`,
+          prompt: `test prompt ${i}`,
           durationMs: 200,
           startedAt: new Date(),
-        });
+        } as any);
       }
 
       const stepMetrics = obs.getStepMetrics({ limit: 500 });

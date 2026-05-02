@@ -134,7 +134,7 @@ class InMemoryStore {
       const val = r[by] as string;
       groups[val] = (groups[val] || 0) + 1;
     }
-    return Object.entries(groups).map(([key, count]) => ({ [by]: key, _count: { id: count } }));
+    return Object.entries(groups).map(([key, count]) => ({ [by]: key, _count: { id: count } })) as unknown as { [key: string]: number }[];
   }
 
   private matchesWhere(record: StoreRecord, where: Record<string, any>): boolean {
@@ -554,9 +554,9 @@ describe('Full Project Lifecycle Integration Test', () => {
       taskId: 'task-001',
       expectedResult: 'User receives JWT token',
       steps: [
-        { step: 'Navigate to login page', expected: 'Login form is displayed' },
-        { step: 'Enter valid email and password', expected: 'Fields accept input' },
-        { step: 'Click login button', expected: 'JWT token returned' },
+        { order: 1, action: 'Navigate to login page', expected: 'Login form is displayed' },
+        { order: 2, action: 'Enter valid email and password', expected: 'Fields accept input' },
+        { order: 3, action: 'Click login button', expected: 'JWT token returned' },
       ],
     });
 
@@ -815,7 +815,7 @@ describe('Full Project Lifecycle Integration Test', () => {
 
     const entry2 = await knowledgeService.createEntry({
       projectId: 'proj-001',
-      type: 'best_practice',
+      type: 'pattern',
       title: 'Event-driven architecture patterns',
       content: 'Use EventBus for cross-module communication. Keep handlers isolated.',
       tags: ['architecture', 'event-bus'],
@@ -859,7 +859,7 @@ describe('Full Project Lifecycle Integration Test', () => {
       projectId: 'proj-e2e',
       title: 'Unit test coverage',
       description: 'Minimum 80% coverage',
-      type: 'requirement',
+      type: 'improvement',
       priority: 4,
       tags: ['testing'],
     });
@@ -988,9 +988,10 @@ describe('Full Project Lifecycle Integration Test', () => {
 
     await knowledgeService.createEntry({
       projectId: 'proj-001',
+      type: 'lesson_learned',
       title: 'Knowledge',
       content: 'Test content',
-    });
+    } as any);
 
     expect(emittedEvents.length).toBeGreaterThanOrEqual(4);
 

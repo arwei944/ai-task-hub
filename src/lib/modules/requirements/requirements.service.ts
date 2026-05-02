@@ -450,7 +450,7 @@ export class RequirementsService {
       }
 
       // Count root requirements (no parent)
-      const rootCount = requirements.filter(r => !r.parentReqId).length;
+      const rootCount = requirements.filter((r: any) => !r.parentReqId).length;
 
       return {
         total,

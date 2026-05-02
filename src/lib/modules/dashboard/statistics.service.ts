@@ -262,7 +262,7 @@ export class StatisticsService {
         totalTokens: totalTokens._sum.tokensUsed ?? 0,
         avgDuration: avgDuration._avg.duration ?? 0,
         byProcessor,
-        recentCalls: recentCalls.map(c => ({ ...c, createdAt: c.createdAt.toISOString() })),
+        recentCalls: recentCalls.map((c: any) => ({ ...c, createdAt: c.createdAt.toISOString() })),
       };
     } catch (error: any) {
       this.logger?.warn(`AI stats unavailable: ${error.message}`);
@@ -324,7 +324,7 @@ export class StatisticsService {
     });
 
     // Get latest deployment per project
-    const projectIds = projects.map(p => p.id);
+    const projectIds = projects.map((p: any) => p.id);
     const latestDeployments = projectIds.length > 0
       ? await this.prisma.deployment.findMany({
           where: { projectId: { in: projectIds } },
@@ -333,14 +333,14 @@ export class StatisticsService {
         })
       : [];
 
-    const deploymentMap = new Map(latestDeployments.map(d => [d.projectId, d]));
+    const deploymentMap = new Map(latestDeployments.map((d: any) => [d.projectId, d]));
 
-    return projects.map(project => {
+    return projects.map((project: any) => {
       const tasks = project.tasks;
       const total = tasks.length;
-      const completed = tasks.filter(t => t.status === 'done' || t.status === 'closed').length;
-      const inProgress = tasks.filter(t => t.status === 'in_progress').length;
-      const overdue = tasks.filter(t =>
+      const completed = tasks.filter((t: any) => t.status === 'done' || t.status === 'closed').length;
+      const inProgress = tasks.filter((t: any) => t.status === 'in_progress').length;
+      const overdue = tasks.filter((t: any) =>
         t.status !== 'done' && t.status !== 'closed' && t.status !== 'deleted' &&
         t.dueDate && t.dueDate < new Date(),
       ).length;
@@ -438,7 +438,7 @@ export class StatisticsService {
         byStrategy,
         successRate: total > 0 ? successCount / total : 0,
         avgDuration: avgDurationResult._avg.duration ?? 0,
-        recentDeployments: recentDeployments.map(d => ({
+        recentDeployments: recentDeployments.map((d: any) => ({
           id: d.id,
           environment: d.environment.name,
           version: d.version,
@@ -446,7 +446,7 @@ export class StatisticsService {
           duration: d.duration,
           createdAt: d.createdAt.toISOString(),
         })),
-        environmentHealth: environments.map(e => ({
+        environmentHealth: environments.map((e: any) => ({
           environmentId: e.id,
           environmentName: e.displayName || e.name,
           healthStatus: e.healthStatus,
@@ -490,7 +490,7 @@ export class StatisticsService {
       take: 10,
     });
 
-    const topAgentIds = topAgentOps.map(g => g.agentId);
+    const topAgentIds = topAgentOps.map((g: any) => g.agentId);
     const topAgentsData = topAgentIds.length > 0
       ? await this.prisma.agent.findMany({
           where: { id: { in: topAgentIds } },
@@ -501,8 +501,8 @@ export class StatisticsService {
         })
       : [];
 
-    const agentOpMap = new Map(topAgentOps.map(g => [g.agentId, g._count.id]));
-    const topAgents = topAgentsData.map(a => {
+    const agentOpMap = new Map(topAgentOps.map((g: any) => [g.agentId, g._count.id]));
+    const topAgents = topAgentsData.map((a: any) => {
       const totalOpsForAgent = a._count.operations;
       const successOpsForAgent = agentOpMap.get(a.id) ?? 0;
       return {
@@ -565,7 +565,7 @@ export class StatisticsService {
         totalEvents: total,
         byDomain,
         topEventTypes,
-        recentEvents: recentEvents.map(e => ({
+        recentEvents: recentEvents.map((e: any) => ({
           ...e,
           timestamp: e.timestamp.toISOString(),
         })),

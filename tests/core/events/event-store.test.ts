@@ -192,7 +192,7 @@ describe('EventStore', () => {
     });
 
     const received: any[] = [];
-    await store.replay('task.created', undefined, (event) => {
+    await store.replay('task.created', (event: any) => {
       received.push(event);
     });
 

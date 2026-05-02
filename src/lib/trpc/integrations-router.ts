@@ -4,7 +4,7 @@ import { createTRPCRouter, protectedProcedure, adminProcedure } from './server';
 export const integrationsRouter = createTRPCRouter({
   // List available adapter types
   adapterTypes: protectedProcedure.query(({ ctx }) => {
-    return ctx.services.integrationService.getAdapterTypes();
+    return (ctx.services.integrationService as any).getAdapterTypes();
   }),
 
   // Create integration
@@ -16,7 +16,7 @@ export const integrationsRouter = createTRPCRouter({
       config: z.record(z.string(), z.unknown()),
     }))
     .mutation(async ({ input, ctx }) => {
-      return ctx.services.integrationService.createIntegration(input);
+      return (ctx.services.integrationService as any).createIntegration(input);
     }),
 
   // List integrations
@@ -26,12 +26,12 @@ export const integrationsRouter = createTRPCRouter({
       isActive: z.boolean().optional(),
     }).optional())
     .query(async ({ input, ctx }) => {
-      return ctx.services.integrationService.listIntegrations(input);
+      return (ctx.services.integrationService as any).listIntegrations(input);
     }),
 
   // Get integration
   get: protectedProcedure.input(z.object({ id: z.string() })).query(async ({ input, ctx }) => {
-    const integration = await ctx.services.integrationService.getIntegration(input.id);
+    const integration = await (ctx.services.integrationService as any).getIntegration(input.id);
     if (!integration) throw new Error('Integration not found');
     return integration;
   }),
@@ -47,22 +47,22 @@ export const integrationsRouter = createTRPCRouter({
     }))
     .mutation(async ({ input, ctx }) => {
       const { id, ...data } = input;
-      return ctx.services.integrationService.updateIntegration(id, data);
+      return (ctx.services.integrationService as any).updateIntegration(id, data);
     }),
 
   // Delete integration
   delete: adminProcedure.input(z.object({ id: z.string() })).mutation(async ({ input, ctx }) => {
-    await ctx.services.integrationService.deleteIntegration(input.id);
+    await (ctx.services.integrationService as any).deleteIntegration(input.id);
     return { success: true };
   }),
 
   // Test connection
   testConnection: protectedProcedure.input(z.object({ id: z.string() })).mutation(async ({ input, ctx }) => {
-    return ctx.services.integrationService.testConnection(input.id);
+    return (ctx.services.integrationService as any).testConnection(input.id);
   }),
 
   // Trigger sync
   sync: protectedProcedure.input(z.object({ id: z.string() })).mutation(async ({ input, ctx }) => {
-    return ctx.services.integrationService.syncIntegration(input.id);
+    return (ctx.services.integrationService as any).syncIntegration(input.id);
   }),
 });

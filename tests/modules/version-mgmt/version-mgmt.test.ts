@@ -417,7 +417,7 @@ describe('VersionMgmtModule', () => {
         approverId: 'agent-1',
       });
 
-      expect(updated.status).toBe('approved');
+      expect(updated!.status).toBe('approved');
     });
 
     it('should reject a release and revert to draft', async () => {
@@ -429,7 +429,7 @@ describe('VersionMgmtModule', () => {
         comment: 'Needs more work',
       });
 
-      expect(updated.status).toBe('draft');
+      expect(updated!.status).toBe('draft');
     });
 
     it('should publish an approved release', async () => {

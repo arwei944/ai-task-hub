@@ -99,7 +99,7 @@ describe('BaseCapability', () => {
       readonly id = 'error';
       protected async doRegister() {}
       protected async doSubscribe() {}
-      protected doHealthCheck() { throw new Error('health boom'); }
+      protected doHealthCheck(): any { throw new Error('health boom'); }
     }
 
     const cap = new ErrorCap();

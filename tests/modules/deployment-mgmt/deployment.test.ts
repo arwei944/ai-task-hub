@@ -38,14 +38,17 @@ const mockLogger: ILogger = {
   warn: vi.fn(),
   error: vi.fn(),
   debug: vi.fn(),
-};
+  child: vi.fn(() => mockLogger),
+} as any;
 
 const mockEventBus: IEventBus = {
   emit: vi.fn(),
+  emitAsync: vi.fn(),
   on: vi.fn(),
   off: vi.fn(),
   once: vi.fn(),
-};
+  removeAllListeners: vi.fn(),
+} as any;
 
 function createService() {
   return new DeploymentService(mockLogger, mockEventBus, () => mockPrisma as any);

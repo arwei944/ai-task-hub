@@ -59,7 +59,7 @@ export async function GET(request: NextRequest) {
 
     if (format === 'csv') {
       const headers = ['ID', '标题', '描述', '状态', '优先级', '进度', '类型', '来源', '创建者', '负责人', '截止日期', '标签', '创建时间', '更新时间'];
-      const rows = flat.map(t => [
+      const rows = flat.map((t: any) => [
         t.id, t.title, t.description, t.status, t.priority, t.progress, t.type, t.source, t.creator, t.assignee, t.dueDate, t.tags, t.createdAt, t.updatedAt,
       ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(','));
 

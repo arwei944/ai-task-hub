@@ -8,7 +8,7 @@ describe('GitHub Webhook Processing', () => {
   let adapter: GitHubAdapter;
   let logger: Logger;
   let eventBus: EventBus;
-  let emitSpy: vi.spyOn;
+  let emitSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
     logger = new Logger('test');

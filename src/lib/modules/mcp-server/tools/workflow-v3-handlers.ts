@@ -57,7 +57,7 @@ export function createWorkflowV3ToolHandlers(stateManager: ExecutionStateManager
             startedAt: execution.startedAt,
             completedAt: execution.completedAt,
             stepCount: execution.stepExecutions.length,
-            steps: execution.stepExecutions.map(s => ({
+            steps: execution.stepExecutions.map((s: any) => ({
               id: s.id,
               stepName: s.stepName,
               stepType: s.stepType,
@@ -99,7 +99,7 @@ export function createWorkflowV3ToolHandlers(stateManager: ExecutionStateManager
           where: { executionId },
           orderBy: { startedAt: 'asc' },
         });
-        const stepIndex = stepExecutions.filter(s => s.status === 'completed').length;
+        const stepIndex = stepExecutions.filter((s: any) => s.status === 'completed').length;
 
         const paused = await stateManager.pauseExecution(executionId, stepIndex, context);
         if (!paused) {

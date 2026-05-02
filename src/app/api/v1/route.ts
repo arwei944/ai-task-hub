@@ -153,9 +153,9 @@ export async function POST(request: Request) {
       const tasks = await prisma.task.findMany({ where: { projectId: id } });
       const stats = {
         total: tasks.length,
-        todo: tasks.filter(t => t.status === 'todo').length,
-        inProgress: tasks.filter(t => t.status === 'in_progress').length,
-        done: tasks.filter(t => t.status === 'done').length,
+        todo: tasks.filter((t: any) => t.status === 'todo').length,
+        inProgress: tasks.filter((t: any) => t.status === 'in_progress').length,
+        done: tasks.filter((t: any) => t.status === 'done').length,
       };
 
       return NextResponse.json({ ...project, stats });
@@ -329,7 +329,7 @@ export async function POST(request: Request) {
       return NextResponse.json({
         project: { id: project.id, name: project.name, phase: project.phase, status: project.status },
         overallProgress,
-        tasks: { total: tasks.length, todo: tasks.filter(t => t.status === 'todo').length, inProgress: tasks.filter(t => t.status === 'in_progress').length, done: tasks.filter(t => t.status === 'done').length },
+        tasks: { total: tasks.length, todo: tasks.filter((t: any) => t.status === 'todo').length, inProgress: tasks.filter((t: any) => t.status === 'in_progress').length, done: tasks.filter((t: any) => t.status === 'done').length },
         agent: { id: agent!.id, name: agent!.name, clientType: agent!.clientType },
       });
     }

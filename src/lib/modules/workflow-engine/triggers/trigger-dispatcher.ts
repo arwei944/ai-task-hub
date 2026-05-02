@@ -455,7 +455,7 @@ export class TriggerDispatcher {
         context: JSON.stringify(variables),
         startedAt: new Date(),
       },
-    }).then(execution => {
+    }).then((execution: any) => {
       // 后台执行
       this.orchestrator.startExecution({
         workflowId,

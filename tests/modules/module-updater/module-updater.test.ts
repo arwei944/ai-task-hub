@@ -1,9 +1,7 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { EventBus } from '@/lib/core/event-bus';
 import { Logger } from '@/lib/core/logger';
-import { ModuleRegistry } from '@/lib/core/registry';
-import { DIContainer } from '@/lib/core/di-container';
-import { ConfigAccessor } from '@/lib/core/config';
+import { DIContainer } from '@/lib/core/v3/di';
 import { PrismaClient } from '@/generated/prisma/client';
 import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
 import { ModuleVersionRepository } from '@/lib/modules/module-updater/module-version.repository';
@@ -11,6 +9,90 @@ import { AppVersionRepository } from '@/lib/modules/module-updater/app-version.r
 import { ModuleUpdaterService } from '@/lib/modules/module-updater/module-updater.service';
 import type { Module } from '@/lib/core/types';
 import { join } from 'node:path';
+
+// Mock the non-existent @/lib/core/registry module
+vi.mock('@/lib/core/registry', () => {
+  const { EventBus: EB } = require('@/lib/core/event-bus');
+  const { DIContainer: DC } = require('@/lib/core/v3/di');
+
+  class ModuleRegistry {
+    private modules = new Map<string, Module>();
+    private eventBus: any;
+    private container: any;
+
+    constructor(eventBus: any, container: any) {
+      this.eventBus = eventBus;
+      this.container = container;
+    }
+
+    register(mod: Module) {
+      this.modules.set(mod.id, mod);
+    }
+
+    async enable(id: string) {
+      const mod = this.modules.get(id);
+      if (mod && mod.lifecycle.enable) {
+        const ctx = {
+          logger: new Logger('test'),
+          eventBus: this.eventBus,
+          container: this.container,
+          db: {} as any,
+        };
+        await mod.lifecycle.enable(ctx as any);
+      }
+    }
+
+    async disable(id: string) {
+      const mod = this.modules.get(id);
+      if (mod && mod.lifecycle.disable) {
+        await mod.lifecycle.disable();
+      }
+    }
+
+    isEnabled(id: string) {
+      return this.modules.has(id);
+    }
+
+    get(id: string) {
+      const mod = this.modules.get(id);
+      if (!mod) return undefined;
+      return { ...mod, status: 'registered' as const };
+    }
+
+    createContext(mod: Module) {
+      return {
+        logger: new Logger('test'),
+        eventBus: this.eventBus,
+        container: this.container,
+        db: {} as any,
+      };
+    }
+  }
+
+  return { ModuleRegistry };
+});
+
+// Mock the non-existent @/lib/core/di-container module
+vi.mock('@/lib/core/di-container', () => {
+  const { DIContainer: DC } = require('@/lib/core/v3/di');
+  return { DIContainer: DC };
+});
+
+// Mock the non-existent @/lib/core/config module
+vi.mock('@/lib/core/config', () => {
+  class ConfigAccessor {
+    get() { return undefined; }
+    set() {}
+    has() { return false; }
+    reload() {}
+  }
+  return { ConfigAccessor };
+});
+
+// @ts-ignore - module is mocked via vi.mock
+import { ModuleRegistry } from '@/lib/core/registry';
+// @ts-ignore - module is mocked via vi.mock
+import { ConfigAccessor } from '@/lib/core/config';
 
 const TEST_DB_PATH = join(process.cwd(), 'test-db', 'test-task-core.db');
 

@@ -51,10 +51,10 @@ export async function GET(
 
       const taskStats = {
         total: tasks.length,
-        todo: tasks.filter(t => t.status === 'todo').length,
-        inProgress: tasks.filter(t => t.status === 'in_progress').length,
-        done: tasks.filter(t => t.status === 'done').length,
-        completionRate: tasks.length > 0 ? Math.round((tasks.filter(t => t.status === 'done').length / tasks.length) * 100) : 0,
+        todo: tasks.filter((t: any) => t.status === 'todo').length,
+        inProgress: tasks.filter((t: any) => t.status === 'in_progress').length,
+        done: tasks.filter((t: any) => t.status === 'done').length,
+        completionRate: tasks.length > 0 ? Math.round((tasks.filter((t: any) => t.status === 'done').length / tasks.length) * 100) : 0,
         byPhase: {} as Record<string, { total: number; done: number }>,
       };
       for (const t of tasks) {
@@ -63,7 +63,7 @@ export async function GET(
         if (t.status === 'done') taskStats.byPhase[t.phase].done++;
       }
 
-      const agentIds = [...new Set(tasks.map(t => t.creator).filter((v): v is string => Boolean(v)))];
+      const agentIds = [...new Set(tasks.map((t: any) => t.creator).filter((v): v is string => Boolean(v)))];
       const agents = await prisma.agent.findMany({
         where: { id: { in: agentIds } },
         select: { id: true, name: true, clientType: true },

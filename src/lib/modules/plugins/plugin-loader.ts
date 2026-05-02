@@ -276,7 +276,7 @@ export class PluginLoader {
     const plugins = await this.prisma.plugin.findMany({
       orderBy: { installedAt: 'desc' },
     });
-    return plugins.map(p => this.toPluginInstance(p));
+    return plugins.map((p: any) => this.toPluginInstance(p));
   }
 
   /**

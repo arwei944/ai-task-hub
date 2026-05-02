@@ -61,19 +61,19 @@ export function createContextToolHandlers(
 
         const taskStats = {
           total: tasks.length,
-          todo: tasks.filter(t => t.status === 'todo').length,
-          inProgress: tasks.filter(t => t.status === 'in_progress').length,
-          done: tasks.filter(t => t.status === 'done').length,
-          closed: tasks.filter(t => t.status === 'closed').length,
-          blocked: tasks.filter(t => {
+          todo: tasks.filter((t: any) => t.status === 'todo').length,
+          inProgress: tasks.filter((t: any) => t.status === 'in_progress').length,
+          done: tasks.filter((t: any) => t.status === 'done').length,
+          closed: tasks.filter((t: any) => t.status === 'closed').length,
+          blocked: tasks.filter((t: any) => {
             const dueDate = t.dueDate;
             return dueDate && new Date(dueDate) < new Date() && t.status !== 'done' && t.status !== 'closed';
           }).length,
           byPriority: {
-            urgent: tasks.filter(t => t.priority === 'urgent').length,
-            high: tasks.filter(t => t.priority === 'high').length,
-            medium: tasks.filter(t => t.priority === 'medium').length,
-            low: tasks.filter(t => t.priority === 'low').length,
+            urgent: tasks.filter((t: any) => t.priority === 'urgent').length,
+            high: tasks.filter((t: any) => t.priority === 'high').length,
+            medium: tasks.filter((t: any) => t.priority === 'medium').length,
+            low: tasks.filter((t: any) => t.priority === 'low').length,
           },
         };
 
@@ -88,17 +88,17 @@ export function createContextToolHandlers(
 
         const reqStats = {
           total: requirements.length,
-          draft: requirements.filter(r => r.status === 'draft').length,
-          reviewing: requirements.filter(r => r.status === 'reviewing').length,
-          approved: requirements.filter(r => r.status === 'approved').length,
-          implemented: requirements.filter(r => r.status === 'implemented').length,
-          verified: requirements.filter(r => r.status === 'verified').length,
-          rejected: requirements.filter(r => r.status === 'rejected').length,
+          draft: requirements.filter((r: any) => r.status === 'draft').length,
+          reviewing: requirements.filter((r: any) => r.status === 'reviewing').length,
+          approved: requirements.filter((r: any) => r.status === 'approved').length,
+          implemented: requirements.filter((r: any) => r.status === 'implemented').length,
+          verified: requirements.filter((r: any) => r.status === 'verified').length,
+          rejected: requirements.filter((r: any) => r.status === 'rejected').length,
           byType: {
-            feature: requirements.filter(r => r.type === 'feature').length,
-            bug: requirements.filter(r => r.type === 'bug').length,
-            improvement: requirements.filter(r => r.type === 'improvement').length,
-            epic: requirements.filter(r => r.type === 'epic').length,
+            feature: requirements.filter((r: any) => r.type === 'feature').length,
+            bug: requirements.filter((r: any) => r.type === 'bug').length,
+            improvement: requirements.filter((r: any) => r.type === 'improvement').length,
+            epic: requirements.filter((r: any) => r.type === 'epic').length,
           },
         };
 
@@ -113,15 +113,15 @@ export function createContextToolHandlers(
         const testStats = {
           total: testCases.length,
           byStatus: {
-            draft: testCases.filter(t => t.status === 'draft').length,
-            ready: testCases.filter(t => t.status === 'ready').length,
-            passed: testCases.filter(t => t.status === 'passed').length,
-            failed: testCases.filter(t => t.status === 'failed').length,
-            skipped: testCases.filter(t => t.status === 'skipped').length,
-            blocked: testCases.filter(t => t.status === 'blocked').length,
+            draft: testCases.filter((t: any) => t.status === 'draft').length,
+            ready: testCases.filter((t: any) => t.status === 'ready').length,
+            passed: testCases.filter((t: any) => t.status === 'passed').length,
+            failed: testCases.filter((t: any) => t.status === 'failed').length,
+            skipped: testCases.filter((t: any) => t.status === 'skipped').length,
+            blocked: testCases.filter((t: any) => t.status === 'blocked').length,
           },
           passRate: testCases.length > 0
-            ? Math.round((testCases.filter(t => t.status === 'passed').length / testCases.length) * 100)
+            ? Math.round((testCases.filter((t: any) => t.status === 'passed').length / testCases.length) * 100)
             : 0,
         };
 
@@ -151,19 +151,19 @@ export function createContextToolHandlers(
 
         // Compute risk alerts
         const risks: string[] = [];
-        const blockedTasks = tasks.filter(t => t.status === 'in_progress' && t.dueDate && new Date(t.dueDate) < new Date());
+        const blockedTasks = tasks.filter((t: any) => t.status === 'in_progress' && t.dueDate && new Date(t.dueDate) < new Date());
         if (blockedTasks.length > 0) {
           risks.push(`${blockedTasks.length} 个进行中的任务已过期`);
         }
-        const highPriorityTodo = tasks.filter(t => t.priority === 'urgent' && t.status === 'todo');
+        const highPriorityTodo = tasks.filter((t: any) => t.priority === 'urgent' && t.status === 'todo');
         if (highPriorityTodo.length > 0) {
           risks.push(`${highPriorityTodo.length} 个紧急任务待处理`);
         }
-        const failedTests = testCases.filter(t => t.status === 'failed');
+        const failedTests = testCases.filter((t: any) => t.status === 'failed');
         if (failedTests.length > 0) {
           risks.push(`${failedTests.length} 个测试用例失败`);
         }
-        const reviewingReqs = requirements.filter(r => r.status === 'reviewing');
+        const reviewingReqs = requirements.filter((r: any) => r.status === 'reviewing');
         if (reviewingReqs.length > 0) {
           risks.push(`${reviewingReqs.length} 个需求等待审核`);
         }
@@ -188,7 +188,7 @@ export function createContextToolHandlers(
           },
           overallProgress,
           taskStats,
-          ...(includeTasks && { tasks: tasks.map(t => ({
+          ...(includeTasks && { tasks: tasks.map((t: any) => ({
             id: t.id,
             title: t.title,
             status: t.status,
@@ -201,7 +201,7 @@ export function createContextToolHandlers(
             subTaskCount: (t as any)._count?.subTasks ?? 0,
           })) }),
           reqStats,
-          ...(includeRequirements && { requirements: requirements.map(r => ({
+          ...(includeRequirements && { requirements: requirements.map((r: any) => ({
             id: r.id,
             title: r.title,
             type: r.type,
@@ -313,8 +313,8 @@ export function createContextToolHandlers(
         if (task.dueDate && new Date(task.dueDate) < new Date() && task.status !== 'done' && task.status !== 'closed') {
           risks.push('任务已过期');
         }
-        if (dependencies.some(d => d.dependsOn.status !== 'done' && d.dependsOn.status !== 'closed')) {
-          const pendingDeps = dependencies.filter(d => d.dependsOn.status !== 'done' && d.dependsOn.status !== 'closed');
+        if (dependencies.some((d: any) => d.dependsOn.status !== 'done' && d.dependsOn.status !== 'closed')) {
+          const pendingDeps = dependencies.filter((d: any) => d.dependsOn.status !== 'done' && d.dependsOn.status !== 'closed');
           risks.push(`${pendingDeps.length} 个前置任务未完成`);
         }
         if (dependents.length > 0 && task.status !== 'done') {
@@ -339,7 +339,7 @@ export function createContextToolHandlers(
             completedAt: task.completedAt,
             createdAt: task.createdAt,
             updatedAt: task.updatedAt,
-            tags: task.tags.map(tt => tt.tag.name),
+            tags: task.tags.map((tt: any) => tt.tag.name),
             project: task.project ? {
               id: task.project.id,
               name: task.project.name,
@@ -347,7 +347,7 @@ export function createContextToolHandlers(
             } : null,
           },
           relatedRequirement,
-          subTasks: subTasks.map(st => ({
+          subTasks: subTasks.map((st: any) => ({
             id: st.id,
             title: st.title,
             status: st.status,
@@ -355,27 +355,27 @@ export function createContextToolHandlers(
             progress: st.progress,
           })),
           dependencies: {
-            dependsOn: dependencies.map(d => ({
+            dependsOn: dependencies.map((d: any) => ({
               id: d.dependsOn.id,
               title: d.dependsOn.title,
               status: d.dependsOn.status,
               priority: d.dependsOn.priority,
             })),
-            dependedBy: dependents.map(d => ({
+            dependedBy: dependents.map((d: any) => ({
               id: d.task.id,
               title: d.task.title,
               status: d.task.status,
               priority: d.task.priority,
             })),
           },
-          history: history.map(h => ({
+          history: history.map((h: any) => ({
             field: h.field,
             oldValue: h.oldValue,
             newValue: h.newValue,
             actor: h.actor,
             createdAt: h.createdAt,
           })),
-          relatedTests: relatedTests.map(tc => ({
+          relatedTests: relatedTests.map((tc: any) => ({
             id: tc.id,
             title: tc.title,
             status: tc.status,
