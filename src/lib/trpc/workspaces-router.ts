@@ -1,10 +1,9 @@
 import { z } from 'zod';
 import { createTRPCRouter, protectedProcedure, adminProcedure } from './server';
-import { getPrisma } from '@/lib/db';
 
 export const workspacesRouter = createTRPCRouter({
   list: protectedProcedure.query(async ({ ctx }) => {
-    const prisma = getPrisma();
+    const prisma = ctx.services.prisma;
     const members = await prisma.workspaceMember.findMany({
       where: { userId: ctx.user.id },
       include: { workspace: true },
@@ -21,7 +20,7 @@ export const workspacesRouter = createTRPCRouter({
   get: protectedProcedure
     .input(z.object({ id: z.string() }))
     .query(async ({ input, ctx }) => {
-      const prisma = getPrisma();
+      const prisma = ctx.services.prisma;
       const member = await prisma.workspaceMember.findFirst({
         where: { workspaceId: input.id, userId: ctx.user.id },
         include: { workspace: true },
@@ -38,7 +37,7 @@ export const workspacesRouter = createTRPCRouter({
       icon: z.string().optional(),
     }))
     .mutation(async ({ input, ctx }) => {
-      const prisma = getPrisma();
+      const prisma = ctx.services.prisma;
       const slug = input.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 
       const workspace = await prisma.workspace.create({
@@ -72,7 +71,7 @@ export const workspacesRouter = createTRPCRouter({
       icon: z.string().optional(),
     }))
     .mutation(async ({ input, ctx }) => {
-      const prisma = getPrisma();
+      const prisma = ctx.services.prisma;
       const member = await prisma.workspaceMember.findFirst({
         where: { workspaceId: input.id, userId: ctx.user.id, role: { in: ['owner', 'admin'] } },
       });
@@ -94,7 +93,7 @@ export const workspacesRouter = createTRPCRouter({
   delete: protectedProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ input, ctx }) => {
-      const prisma = getPrisma();
+      const prisma = ctx.services.prisma;
       const member = await prisma.workspaceMember.findFirst({
         where: { workspaceId: input.id, userId: ctx.user.id, role: 'owner' },
       });
@@ -112,7 +111,7 @@ export const workspacesRouter = createTRPCRouter({
       role: z.enum(['admin', 'member', 'viewer']).default('member'),
     }))
     .mutation(async ({ input, ctx }) => {
-      const prisma = getPrisma();
+      const prisma = ctx.services.prisma;
       const inviter = await prisma.workspaceMember.findFirst({
         where: { workspaceId: input.workspaceId, userId: ctx.user.id, role: { in: ['owner', 'admin'] } },
       });
@@ -133,7 +132,7 @@ export const workspacesRouter = createTRPCRouter({
   removeMember: protectedProcedure
     .input(z.object({ workspaceId: z.string(), userId: z.string() }))
     .mutation(async ({ input, ctx }) => {
-      const prisma = getPrisma();
+      const prisma = ctx.services.prisma;
       const remover = await prisma.workspaceMember.findFirst({
         where: { workspaceId: input.workspaceId, userId: ctx.user.id, role: { in: ['owner', 'admin'] } },
       });
@@ -149,7 +148,7 @@ export const workspacesRouter = createTRPCRouter({
   members: protectedProcedure
     .input(z.object({ workspaceId: z.string() }))
     .query(async ({ input, ctx }) => {
-      const prisma = getPrisma();
+      const prisma = ctx.services.prisma;
       const member = await prisma.workspaceMember.findFirst({
         where: { workspaceId: input.workspaceId, userId: ctx.user.id },
       });

@@ -1,31 +1,5 @@
 import { z } from 'zod';
 import { createTRPCRouter, protectedProcedure, adminProcedure } from './server';
-import { WorkflowService } from '@/lib/modules/workflow-engine/workflow.service';
-import { TaskService } from '@/lib/modules/task-core/task.service';
-import { TaskRepository } from '@/lib/modules/task-core/task.repository';
-import { TaskHistoryRepository } from '@/lib/modules/task-core/task-history.repository';
-import { TaskDependencyRepository } from '@/lib/modules/task-core/task-dependency.repository';
-import { TaskProgressService } from '@/lib/modules/task-core/task-progress.service';
-import { EventBus } from '@/lib/core/event-bus';
-import { Logger } from '@/lib/core/logger';
-import { getPrisma } from '@/lib/db';
-
-// Lazy-initialized service (for server-side only)
-let _workflowService: WorkflowService | null = null;
-
-function getWorkflowService(): WorkflowService {
-  if (_workflowService) return _workflowService;
-  const prisma = getPrisma();
-  const logger = new Logger('workflow-engine');
-  const eventBus = new EventBus();
-  const taskRepo = new TaskRepository(prisma);
-  const historyRepo = new TaskHistoryRepository(prisma);
-  const depRepo = new TaskDependencyRepository(prisma);
-  const progressService = new TaskProgressService(taskRepo, logger);
-  const taskService = new TaskService(taskRepo, historyRepo, depRepo, progressService, eventBus, logger);
-  _workflowService = new WorkflowService(prisma, taskService, logger);
-  return _workflowService;
-}
 
 const stepSchema = z.object({
   id: z.string(),
@@ -71,7 +45,7 @@ export const workflowsRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ input, ctx }) => {
-      const service = getWorkflowService();
+      const service = ctx.services.workflowService;
       const dto = { ...input, createdBy: ctx.user.id };
       return service.createWorkflow(dto as any);
     }),
@@ -102,8 +76,8 @@ export const workflowsRouter = createTRPCRouter({
         }).optional(),
       }),
     )
-    .mutation(async ({ input }) => {
-      const service = getWorkflowService();
+    .mutation(async ({ input, ctx }) => {
+      const service = ctx.services.workflowService;
       const { id, ...dto } = input;
       return service.updateWorkflow(id, dto as any);
     }),
@@ -111,16 +85,16 @@ export const workflowsRouter = createTRPCRouter({
   // Delete workflow (admin only)
   delete: adminProcedure
     .input(z.object({ id: z.string() }))
-    .mutation(async ({ input }) => {
-      const service = getWorkflowService();
+    .mutation(async ({ input, ctx }) => {
+      const service = ctx.services.workflowService;
       return service.deleteWorkflow(input.id);
     }),
 
   // Get single workflow
   get: protectedProcedure
     .input(z.object({ id: z.string() }))
-    .query(async ({ input }) => {
-      const service = getWorkflowService();
+    .query(async ({ input, ctx }) => {
+      const service = ctx.services.workflowService;
       return service.getWorkflow(input.id);
     }),
 
@@ -134,8 +108,8 @@ export const workflowsRouter = createTRPCRouter({
         createdBy: z.string().optional(),
       }),
     )
-    .query(async ({ input }) => {
-      const service = getWorkflowService();
+    .query(async ({ input, ctx }) => {
+      const service = ctx.services.workflowService;
       return service.listWorkflows(input);
     }),
 
@@ -143,23 +117,23 @@ export const workflowsRouter = createTRPCRouter({
   run: protectedProcedure
     .input(z.object({ workflowId: z.string() }))
     .mutation(async ({ input, ctx }) => {
-      const service = getWorkflowService();
+      const service = ctx.services.workflowService;
       return service.runWorkflow(input.workflowId, ctx.user.id);
     }),
 
   // Cancel execution
   cancel: protectedProcedure
     .input(z.object({ executionId: z.string() }))
-    .mutation(async ({ input }) => {
-      const service = getWorkflowService();
+    .mutation(async ({ input, ctx }) => {
+      const service = ctx.services.workflowService;
       return service.cancelExecution(input.executionId);
     }),
 
   // Get execution details
   getExecution: protectedProcedure
     .input(z.object({ executionId: z.string() }))
-    .query(async ({ input }) => {
-      const service = getWorkflowService();
+    .query(async ({ input, ctx }) => {
+      const service = ctx.services.workflowService;
       return service.getExecution(input.executionId);
     }),
 
@@ -173,8 +147,8 @@ export const workflowsRouter = createTRPCRouter({
         status: z.string().optional(),
       }),
     )
-    .query(async ({ input }) => {
-      const service = getWorkflowService();
+    .query(async ({ input, ctx }) => {
+      const service = ctx.services.workflowService;
       const { workflowId, ...options } = input;
       return service.listExecutions(workflowId, options);
     }),
@@ -182,14 +156,14 @@ export const workflowsRouter = createTRPCRouter({
   trigger: protectedProcedure.input(z.object({
     workflowId: z.string(),
   })).mutation(async ({ input, ctx }) => {
-    const service = getWorkflowService();
+    const service = ctx.services.workflowService;
     return service.runWorkflow(input.workflowId, ctx.user.id);
   }),
 
   // --- Observability procedures (real data from database) ---
 
-  getObservabilityStats: protectedProcedure.query(async () => {
-    const prisma = getPrisma();
+  getObservabilityStats: protectedProcedure.query(async ({ ctx }) => {
+    const prisma = ctx.services.prisma;
 
     const [totalExecutions, totalSteps, completedExecs, soloStats] = await Promise.all([
       prisma.workflowExecution.count(),
@@ -241,9 +215,9 @@ export const workflowsRouter = createTRPCRouter({
 
   getRecentExecutions: protectedProcedure
     .input(z.object({ limit: z.number().min(1).max(50).optional() }))
-    .query(async ({ input }) => {
+    .query(async ({ input, ctx }) => {
       const limit = input.limit ?? 10;
-      const prisma = getPrisma();
+      const prisma = ctx.services.prisma;
 
       const executions = await prisma.workflowExecution.findMany({
         orderBy: { createdAt: 'desc' },
@@ -291,8 +265,8 @@ export const workflowsRouter = createTRPCRouter({
       return { items };
     }),
 
-  getStepPerformance: protectedProcedure.query(async () => {
-    const prisma = getPrisma();
+  getStepPerformance: protectedProcedure.query(async ({ ctx }) => {
+    const prisma = ctx.services.prisma;
 
     const stepGroups = await prisma.workflowStepExecution.groupBy({
       by: ['stepType'],
@@ -347,9 +321,9 @@ export const workflowsRouter = createTRPCRouter({
 
   getSOLOCallHistory: protectedProcedure
     .input(z.object({ limit: z.number().min(1).max(50).optional() }))
-    .query(async ({ input }) => {
+    .query(async ({ input, ctx }) => {
       const limit = input.limit ?? 10;
-      const prisma = getPrisma();
+      const prisma = ctx.services.prisma;
 
       const soloSteps = await prisma.workflowStepExecution.findMany({
         where: {

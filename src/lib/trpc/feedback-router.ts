@@ -1,11 +1,6 @@
 import { z } from 'zod';
 import { createTRPCRouter, protectedProcedure, adminProcedure } from './server';
 
-async function getPrisma() {
-  const { getPrisma: _getPrisma } = await import('@/lib/db');
-  return _getPrisma();
-}
-
 export const feedbackRouter = createTRPCRouter({
   listCheckpoints: protectedProcedure
     .input(z.object({
@@ -14,8 +9,8 @@ export const feedbackRouter = createTRPCRouter({
       page: z.number().min(1).optional(),
       pageSize: z.number().min(1).max(100).optional(),
     }).optional())
-    .query(async ({ input }) => {
-      const prisma = await getPrisma();
+    .query(async ({ input, ctx }) => {
+      const prisma = ctx.services.prisma;
       const where: Record<string, unknown> = {};
       if (input?.status) where.status = input.status;
       if (input?.executionId) where.executionId = input.executionId;
@@ -41,8 +36,8 @@ export const feedbackRouter = createTRPCRouter({
       rating: z.number().min(1).max(5).optional(),
       feedback: z.string().optional(),
     }))
-    .mutation(async ({ input }) => {
-      const prisma = await getPrisma();
+    .mutation(async ({ input, ctx }) => {
+      const prisma = ctx.services.prisma;
       const result = await prisma.feedbackCheckpoint.update({
         where: { id: input.checkpointId },
         data: {
@@ -78,8 +73,8 @@ export const feedbackRouter = createTRPCRouter({
       return result;
     }),
 
-  listRules: protectedProcedure.query(async () => {
-    const prisma = await getPrisma();
+  listRules: protectedProcedure.query(async ({ ctx }) => {
+    const prisma = ctx.services.prisma;
     return prisma.feedbackRule.findMany({ where: { isActive: true }, orderBy: { createdAt: 'desc' } });
   }),
 
@@ -93,13 +88,13 @@ export const feedbackRouter = createTRPCRouter({
       scopeWorkflowId: z.string().optional(),
       scopeStepType: z.string().optional(),
     }))
-    .mutation(async ({ input }) => {
-      const prisma = await getPrisma();
+    .mutation(async ({ input, ctx }) => {
+      const prisma = ctx.services.prisma;
       return prisma.feedbackRule.create({ data: { ...input, createdBy: 'user' } });
     }),
 
-  getStats: protectedProcedure.query(async () => {
-    const prisma = await getPrisma();
+  getStats: protectedProcedure.query(async ({ ctx }) => {
+    const prisma = ctx.services.prisma;
     const [pending, total, approved, rejected] = await Promise.all([
       prisma.feedbackCheckpoint.count({ where: { status: 'pending' } }),
       prisma.feedbackCheckpoint.count(),
@@ -116,27 +111,10 @@ export const feedbackRouter = createTRPCRouter({
       days: z.number().min(1).max(90).optional(),
       autoApply: z.boolean().optional(),
     }).optional())
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       try {
-        const { getPrisma: _getPrisma } = await import('@/lib/db');
-        const prisma = await _getPrisma();
-        const { EventBus } = await import('@/lib/core/event-bus');
-        const { Logger } = await import('@/lib/core/logger');
-        const { SOLOBridge } = await import('@/lib/modules/workflow-engine/solo/solo-bridge');
-        const { Observability } = await import('@/lib/modules/workflow-engine/observability');
-        const { ImprovementLoop } = await import('@/lib/modules/workflow-engine/feedback/improvement-loop');
-
-        const eventBus = new EventBus();
-        const logger = new Logger('improvement-loop');
-        const soloBridge = new SOLOBridge({
-          defaultMode: 'mcp',
-          mcpEndpoint: process.env.SOLO_MCP_ENDPOINT || 'http://localhost:3001/mcp',
-          restEndpoint: process.env.SOLO_REST_ENDPOINT || 'http://localhost:3001/api/solo/call',
-          defaultTimeoutMs: 30000,
-          maxConcurrentSessions: 5,
-        }, eventBus, logger);
-        const observability = new Observability(eventBus, logger);
-        const improvementLoop = new ImprovementLoop(prisma, soloBridge, observability, logger);
+        const prisma = ctx.services.prisma;
+        const improvementLoop = ctx.services.improvementLoop;
 
         const result = await improvementLoop.runImprovementCycle({
           workflowId: input?.workflowId,
@@ -168,27 +146,9 @@ export const feedbackRouter = createTRPCRouter({
 
   getImprovementHistory: protectedProcedure
     .input(z.object({ limit: z.number().min(1).max(50).optional() }).optional())
-    .query(async ({ input }) => {
+    .query(async ({ input, ctx }) => {
       try {
-        const { getPrisma: _getPrisma } = await import('@/lib/db');
-        const prisma = await _getPrisma();
-        const { EventBus } = await import('@/lib/core/event-bus');
-        const { Logger } = await import('@/lib/core/logger');
-        const { SOLOBridge } = await import('@/lib/modules/workflow-engine/solo/solo-bridge');
-        const { Observability } = await import('@/lib/modules/workflow-engine/observability');
-        const { ImprovementLoop } = await import('@/lib/modules/workflow-engine/feedback/improvement-loop');
-
-        const eventBus = new EventBus();
-        const logger = new Logger('improvement-loop');
-        const soloBridge = new SOLOBridge({
-          defaultMode: 'mcp',
-          mcpEndpoint: process.env.SOLO_MCP_ENDPOINT || 'http://localhost:3001/mcp',
-          restEndpoint: process.env.SOLO_REST_ENDPOINT || 'http://localhost:3001/api/solo/call',
-          defaultTimeoutMs: 30000,
-          maxConcurrentSessions: 5,
-        }, eventBus, logger);
-        const observability = new Observability(eventBus, logger);
-        const improvementLoop = new ImprovementLoop(prisma, soloBridge, observability, logger);
+        const improvementLoop = ctx.services.improvementLoop;
 
         return { items: improvementLoop.getImprovementHistory({ limit: input?.limit ?? 20 }) };
       } catch (error: any) {

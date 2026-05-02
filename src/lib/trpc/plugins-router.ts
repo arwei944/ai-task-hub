@@ -1,37 +1,18 @@
 import { z } from 'zod';
 import { createTRPCRouter, publicProcedure, protectedProcedure, adminProcedure } from './server';
 
-let _pluginLoader: any = null;
-
-async function getPluginLoader() {
-  if (_pluginLoader) return _pluginLoader;
-
-  const { getPrisma } = await import('@/lib/db');
-  const { PluginLoader } = await import('@/lib/modules/plugins/plugin-loader');
-  const { Logger } = await import('@/lib/core/logger');
-  const { EventBus } = await import('@/lib/core/event-bus');
-  const { APP_VERSION } = await import('@/lib/core/version');
-
-  const prisma = getPrisma();
-  const logger = new Logger('plugin');
-  const eventBus = new EventBus();
-
-  _pluginLoader = new PluginLoader(prisma, eventBus, logger);
-  return _pluginLoader;
-}
-
 export const pluginsRouter = createTRPCRouter({
   // List all plugins
-  list: protectedProcedure.query(async () => {
-    const loader = await getPluginLoader();
+  list: protectedProcedure.query(async ({ ctx }) => {
+    const loader = ctx.services.pluginLoader;
     return loader.list();
   }),
 
   // Get a specific plugin
   get: protectedProcedure
     .input(z.object({ name: z.string() }))
-    .query(async ({ input }) => {
-      const loader = await getPluginLoader();
+    .query(async ({ input, ctx }) => {
+      const loader = ctx.services.pluginLoader;
       return loader.get(input.name);
     }),
 
@@ -45,32 +26,32 @@ export const pluginsRouter = createTRPCRouter({
       author: z.string().optional(),
       entryPoint: z.string(),
     }))
-    .mutation(async ({ input }) => {
-      const loader = await getPluginLoader();
+    .mutation(async ({ input, ctx }) => {
+      const loader = ctx.services.pluginLoader;
       return loader.install(input);
     }),
 
   // Enable a plugin (admin only)
   enable: adminProcedure
     .input(z.object({ name: z.string() }))
-    .mutation(async ({ input }) => {
-      const loader = await getPluginLoader();
+    .mutation(async ({ input, ctx }) => {
+      const loader = ctx.services.pluginLoader;
       return loader.enable(input.name);
     }),
 
   // Disable a plugin (admin only)
   disable: adminProcedure
     .input(z.object({ name: z.string() }))
-    .mutation(async ({ input }) => {
-      const loader = await getPluginLoader();
+    .mutation(async ({ input, ctx }) => {
+      const loader = ctx.services.pluginLoader;
       return loader.disable(input.name);
     }),
 
   // Uninstall a plugin (admin only)
   uninstall: adminProcedure
     .input(z.object({ name: z.string() }))
-    .mutation(async ({ input }) => {
-      const loader = await getPluginLoader();
+    .mutation(async ({ input, ctx }) => {
+      const loader = ctx.services.pluginLoader;
       await loader.uninstall(input.name);
       return { success: true };
     }),
@@ -81,15 +62,15 @@ export const pluginsRouter = createTRPCRouter({
       name: z.string(),
       settings: z.record(z.string(), z.unknown()),
     }))
-    .mutation(async ({ input }) => {
-      const loader = await getPluginLoader();
+    .mutation(async ({ input, ctx }) => {
+      const loader = ctx.services.pluginLoader;
       await loader.updateSettings(input.name, input.settings);
       return { success: true };
     }),
 
   // Get registered custom tools from plugins
-  getCustomTools: protectedProcedure.query(async () => {
-    const loader = await getPluginLoader();
+  getCustomTools: protectedProcedure.query(async ({ ctx }) => {
+    const loader = ctx.services.pluginLoader;
     return loader.getCustomTools();
   }),
 });

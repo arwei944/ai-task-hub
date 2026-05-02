@@ -1,17 +1,12 @@
 import { z } from 'zod';
 import { createTRPCRouter, protectedProcedure, adminProcedure } from './server';
 
-async function getPrisma() {
-  const { getPrisma: _getPrisma } = await import('@/lib/db');
-  return _getPrisma();
-}
-
 export const notificationRulesRouter = createTRPCRouter({
   // List notification rules
   list: protectedProcedure
     .input(z.object({ isActive: z.boolean().optional() }).optional())
-    .query(async ({ input }) => {
-      const prisma = await getPrisma();
+    .query(async ({ input, ctx }) => {
+      const prisma = ctx.services.prisma;
       try {
         const where: Record<string, unknown> = {};
         if (input?.isActive !== undefined) where.isActive = input.isActive;
@@ -34,8 +29,8 @@ export const notificationRulesRouter = createTRPCRouter({
       channels: z.string().optional(),
       priority: z.number().optional(),
     }))
-    .mutation(async ({ input }) => {
-      const prisma = await getPrisma();
+    .mutation(async ({ input, ctx }) => {
+      const prisma = ctx.services.prisma;
       try {
         return await prisma.notificationRule.create({
           data: {
@@ -66,8 +61,8 @@ export const notificationRulesRouter = createTRPCRouter({
       isActive: z.boolean().optional(),
       priority: z.number().optional(),
     }))
-    .mutation(async ({ input }) => {
-      const prisma = await getPrisma();
+    .mutation(async ({ input, ctx }) => {
+      const prisma = ctx.services.prisma;
       try {
         const { id, ...data } = input;
         return await prisma.notificationRule.update({ where: { id }, data });
@@ -80,8 +75,8 @@ export const notificationRulesRouter = createTRPCRouter({
   // Delete notification rule
   delete: adminProcedure
     .input(z.object({ id: z.string() }))
-    .mutation(async ({ input }) => {
-      const prisma = await getPrisma();
+    .mutation(async ({ input, ctx }) => {
+      const prisma = ctx.services.prisma;
       try {
         await prisma.notificationRule.delete({ where: { id: input.id } });
         return { success: true };

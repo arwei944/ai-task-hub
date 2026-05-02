@@ -1,15 +1,10 @@
 import { z } from 'zod';
 import { createTRPCRouter, protectedProcedure, adminProcedure } from './server';
 
-async function getPrisma() {
-  const { getPrisma: _getPrisma } = await import('@/lib/db');
-  return _getPrisma();
-}
-
 export const deploymentsRouter = createTRPCRouter({
   // List environments
-  listEnvironments: protectedProcedure.query(async () => {
-    const prisma = await getPrisma();
+  listEnvironments: protectedProcedure.query(async ({ ctx }) => {
+    const prisma = ctx.services.prisma;
     try {
       return await prisma.deploymentEnvironment.findMany({ orderBy: { order: 'asc' } });
     } finally { await prisma.$disconnect(); }
@@ -22,8 +17,8 @@ export const deploymentsRouter = createTRPCRouter({
       status: z.string().optional(),
       limit: z.number().min(1).max(100).optional(),
     }).optional())
-    .query(async ({ input }) => {
-      const prisma = await getPrisma();
+    .query(async ({ ctx, input }) => {
+      const prisma = ctx.services.prisma;
       try {
         const where: Record<string, unknown> = {};
         if (input?.environmentId) where.environmentId = input.environmentId;
@@ -39,8 +34,8 @@ export const deploymentsRouter = createTRPCRouter({
     }),
 
   // Get deployment summary
-  getSummary: protectedProcedure.query(async () => {
-    const prisma = await getPrisma();
+  getSummary: protectedProcedure.query(async ({ ctx }) => {
+    const prisma = ctx.services.prisma;
     try {
       const [total, byStatus, environments] = await Promise.all([
         prisma.deployment.count(),
@@ -73,8 +68,8 @@ export const deploymentsRouter = createTRPCRouter({
   }),
 
   // Get environment health
-  getEnvironmentHealth: protectedProcedure.query(async () => {
-    const prisma = await getPrisma();
+  getEnvironmentHealth: protectedProcedure.query(async ({ ctx }) => {
+    const prisma = ctx.services.prisma;
     try {
       return await prisma.deploymentEnvironment.findMany({
         orderBy: { order: 'asc' },

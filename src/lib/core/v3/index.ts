@@ -49,3 +49,10 @@ export { AppKernel, getKernel, initKernel } from './kernel';
 export { McpAutoRegistry, jsonSchemaToZodShape } from './mcp-registry';
 export type { ResolvedTool, ModuleContext, McpToolModuleDescriptor } from './mcp-registry';
 export { mcpToolModules } from './mcp-modules';
+
+// Service Factory (centralized service instantiation for tRPC)
+export { ServiceTokens, registerAllServices, resolveService } from './service-factory';
+export type { ServiceRegistry, ServiceToken } from './service-factory';
+
+// tRPC Context Extension
+export { ServiceAccessor } from './trpc-context';

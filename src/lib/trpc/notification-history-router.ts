@@ -1,6 +1,5 @@
 import { z } from 'zod';
 import { createTRPCRouter, protectedProcedure } from './server';
-import { getPrisma } from '@/lib/db';
 
 /**
  * tRPC router for notification history management.
@@ -18,8 +17,8 @@ export const notificationHistoryRouter = createTRPCRouter({
       limit: z.number().min(1).max(200).optional(),
       offset: z.number().min(0).optional(),
     }).optional())
-    .query(async ({ input }) => {
-      const prisma = getPrisma();
+    .query(async ({ input, ctx }) => {
+      const prisma = ctx.services.prisma;
       try {
         const where: Record<string, unknown> = {};
         if (input?.level) where.level = input.level;
@@ -47,8 +46,8 @@ export const notificationHistoryRouter = createTRPCRouter({
    */
   markRead: protectedProcedure
     .input(z.object({ id: z.string() }))
-    .mutation(async ({ input }) => {
-      const prisma = getPrisma();
+    .mutation(async ({ input, ctx }) => {
+      const prisma = ctx.services.prisma;
       try {
         await prisma.notification.update({
           where: { id: input.id },
@@ -67,8 +66,8 @@ export const notificationHistoryRouter = createTRPCRouter({
    * Mark all notifications as read for the current user
    */
   markAllRead: protectedProcedure
-    .mutation(async () => {
-      const prisma = getPrisma();
+    .mutation(async ({ ctx }) => {
+      const prisma = ctx.services.prisma;
       try {
         const result = await prisma.notification.updateMany({
           where: { isRead: false },
@@ -84,8 +83,8 @@ export const notificationHistoryRouter = createTRPCRouter({
    * Get notification statistics
    */
   getStats: protectedProcedure
-    .query(async () => {
-      const prisma = getPrisma();
+    .query(async ({ ctx }) => {
+      const prisma = ctx.services.prisma;
       try {
         const [total, unread, byLevel, byChannel] = await Promise.all([
           prisma.notification.count(),
@@ -116,8 +115,8 @@ export const notificationHistoryRouter = createTRPCRouter({
    */
   delete: protectedProcedure
     .input(z.object({ id: z.string() }))
-    .mutation(async ({ input }) => {
-      const prisma = getPrisma();
+    .mutation(async ({ input, ctx }) => {
+      const prisma = ctx.services.prisma;
       try {
         await prisma.notification.delete({ where: { id: input.id } });
         return { success: true };

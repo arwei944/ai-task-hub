@@ -1,45 +1,36 @@
 import { z } from 'zod';
 import { createTRPCRouter, protectedProcedure, adminProcedure } from './server';
 
-async function getStatsService() {
-  const { getPrisma } = await import('@/lib/db');
-  const { StatisticsService } = await import('@/lib/modules/dashboard/statistics.service');
-  const { Logger } = await import('@/lib/core/logger');
-  const prisma = getPrisma();
-  const logger = new Logger('stats');
-  return new StatisticsService(prisma, logger);
-}
-
 export const statsRouter = createTRPCRouter({
   // Task statistics overview
-  taskStats: protectedProcedure.query(async () => {
-    const service = await getStatsService();
+  taskStats: protectedProcedure.query(async ({ ctx }) => {
+    const service = ctx.services.statisticsService;
     return service.getTaskStats();
   }),
 
   // Daily task trends
   dailyTrends: protectedProcedure
     .input(z.object({ days: z.number().min(7).max(90).optional() }).optional())
-    .query(async ({ input }) => {
-      const service = await getStatsService();
+    .query(async ({ ctx, input }) => {
+      const service = ctx.services.statisticsService;
       return service.getDailyTrends(input?.days ?? 30);
     }),
 
   // AI engine statistics
-  aiStats: protectedProcedure.query(async () => {
-    const service = await getStatsService();
+  aiStats: protectedProcedure.query(async ({ ctx }) => {
+    const service = ctx.services.statisticsService;
     return service.getAIStats();
   }),
 
   // System overview
-  systemStats: adminProcedure.query(async () => {
-    const service = await getStatsService();
+  systemStats: adminProcedure.query(async ({ ctx }) => {
+    const service = ctx.services.statisticsService;
     return service.getSystemStats();
   }),
 
   // Combined dashboard data (legacy)
-  dashboard: protectedProcedure.query(async () => {
-    const service = await getStatsService();
+  dashboard: protectedProcedure.query(async ({ ctx }) => {
+    const service = ctx.services.statisticsService;
     const [taskStats, dailyTrends, aiStats, systemStats] = await Promise.all([
       service.getTaskStats(),
       service.getDailyTrends(14),
@@ -50,32 +41,32 @@ export const statsRouter = createTRPCRouter({
   }),
 
   // ---- NEW: Project health scores ----
-  projectHealth: protectedProcedure.query(async () => {
-    const service = await getStatsService();
+  projectHealth: protectedProcedure.query(async ({ ctx }) => {
+    const service = ctx.services.statisticsService;
     return service.getProjectHealth();
   }),
 
   // ---- NEW: Deployment statistics ----
-  deploymentStats: protectedProcedure.query(async () => {
-    const service = await getStatsService();
+  deploymentStats: protectedProcedure.query(async ({ ctx }) => {
+    const service = ctx.services.statisticsService;
     return service.getDeploymentStats();
   }),
 
   // ---- NEW: Agent efficiency metrics ----
-  agentEfficiency: protectedProcedure.query(async () => {
-    const service = await getStatsService();
+  agentEfficiency: protectedProcedure.query(async ({ ctx }) => {
+    const service = ctx.services.statisticsService;
     return service.getAgentEfficiency();
   }),
 
   // ---- NEW: Event bus metrics ----
-  eventMetrics: protectedProcedure.query(async () => {
-    const service = await getStatsService();
+  eventMetrics: protectedProcedure.query(async ({ ctx }) => {
+    const service = ctx.services.statisticsService;
     return service.getEventMetrics();
   }),
 
   // ---- NEW: Full project dashboard (all metrics) ----
-  projectDashboard: protectedProcedure.query(async () => {
-    const service = await getStatsService();
+  projectDashboard: protectedProcedure.query(async ({ ctx }) => {
+    const service = ctx.services.statisticsService;
     return service.getProjectDashboard();
   }),
 });

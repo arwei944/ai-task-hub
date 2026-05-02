@@ -1,30 +1,6 @@
 import { z } from 'zod';
 import { createTRPCRouter, publicProcedure, protectedProcedure } from './server';
-import { TaskExtractor } from '@/lib/modules/ai-engine/extractors/task-extractor';
-import { TaskDecomposer } from '@/lib/modules/ai-engine/decomposers/task-decomposer';
-import { AutoTaskDecomposer } from '@/lib/modules/ai-engine/decomposers/auto-task-decomposer';
-import { StatusInferencer } from '@/lib/modules/ai-engine/inferencers/status-inferencer';
-import { TaskAnalyzer } from '@/lib/modules/ai-engine/analyzers/task-analyzer';
-import { NLTaskQuery } from '@/lib/modules/ai-engine/queries/nl-task-query';
-import { ScheduleAdvisor, type TaskSummary } from '@/lib/modules/ai-engine/advisors/schedule-advisor';
-import { OpenAICompatibleAdapter } from '@/lib/modules/ai-engine/ai-model-adapter';
-import { Logger } from '@/lib/core/logger';
-
-function getAI() {
-  const logger = new Logger('ai-engine');
-  return new OpenAICompatibleAdapter(
-    {
-      model: process.env.AI_MODEL ?? 'gpt-4o',
-      baseURL: process.env.OPENAI_BASE_URL,
-      apiKey: process.env.OPENAI_API_KEY,
-    },
-    logger,
-  );
-}
-
-function getLogger() {
-  return new Logger('ai-engine');
-}
+import type { TaskSummary } from '@/lib/modules/ai-engine/advisors/schedule-advisor';
 
 export const aiRouter = createTRPCRouter({
   // ====== Existing AI capabilities ======
@@ -32,20 +8,18 @@ export const aiRouter = createTRPCRouter({
   // Extract tasks from text
   extractTasks: publicProcedure
     .input(z.object({ text: z.string().min(1) }))
-    .mutation(async ({ input }) => {
-      const ai = getAI();
-      const logger = getLogger();
-      const extractor = new TaskExtractor(ai, logger);
+    .mutation(async ({ input, ctx }) => {
+      const ai = ctx.services.aiModel;
+      const logger = ctx.services.logger;
+      const extractor = ctx.services.taskExtractor;
       return extractor.extract(input.text);
     }),
 
   // Decompose a task into subtasks (preview only)
   decomposeTask: publicProcedure
     .input(z.object({ title: z.string().min(1), description: z.string().optional() }))
-    .mutation(async ({ input }) => {
-      const ai = getAI();
-      const logger = getLogger();
-      const decomposer = new TaskDecomposer(ai, logger);
+    .mutation(async ({ input, ctx }) => {
+      const decomposer = ctx.services.taskDecomposer;
       return decomposer.decompose(input.title, input.description);
     }),
 
@@ -56,10 +30,8 @@ export const aiRouter = createTRPCRouter({
       currentStatus: z.string(),
       context: z.string(),
     }))
-    .mutation(async ({ input }) => {
-      const ai = getAI();
-      const logger = getLogger();
-      const inferencer = new StatusInferencer(ai, logger);
+    .mutation(async ({ input, ctx }) => {
+      const inferencer = ctx.services.statusInferencer;
       return inferencer.infer(input.taskTitle, input.currentStatus, input.context);
     }),
 
@@ -76,10 +48,8 @@ export const aiRouter = createTRPCRouter({
         createdAt: z.string(),
       })),
     }))
-    .mutation(async ({ input }) => {
-      const ai = getAI();
-      const logger = getLogger();
-      const analyzer = new TaskAnalyzer(ai, logger);
+    .mutation(async ({ input, ctx }) => {
+      const analyzer = ctx.services.taskAnalyzer;
       return analyzer.generateReport(input);
     }),
 
@@ -88,10 +58,8 @@ export const aiRouter = createTRPCRouter({
   // Natural language task query
   nlQuery: protectedProcedure
     .input(z.object({ query: z.string().min(1) }))
-    .mutation(async ({ input }) => {
-      const ai = getAI();
-      const logger = getLogger();
-      const nlQuery = new NLTaskQuery(ai, logger);
+    .mutation(async ({ input, ctx }) => {
+      const nlQuery = ctx.services.nlTaskQuery;
       return nlQuery.query(input.query);
     }),
 
@@ -109,10 +77,8 @@ export const aiRouter = createTRPCRouter({
         createdAt: z.string(),
       })),
     }))
-    .mutation(async ({ input }) => {
-      const ai = getAI();
-      const logger = getLogger();
-      const advisor = new ScheduleAdvisor(ai, logger);
+    .mutation(async ({ input, ctx }) => {
+      const advisor = ctx.services.scheduleAdvisor;
       return advisor.analyze(input.tasks as TaskSummary[]);
     }),
 
@@ -123,10 +89,8 @@ export const aiRouter = createTRPCRouter({
       title: z.string().min(1),
       description: z.string().optional(),
     }))
-    .mutation(async ({ input }) => {
-      const ai = getAI();
-      const logger = getLogger();
-      const decomposer = new AutoTaskDecomposer(ai, logger);
+    .mutation(async ({ input, ctx }) => {
+      const decomposer = ctx.services.autoTaskDecomposer;
 
       // Preview mode (no auto-creation without task service)
       return decomposer.preview(input.title, input.description);

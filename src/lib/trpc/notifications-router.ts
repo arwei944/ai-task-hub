@@ -1,29 +1,6 @@
 import { z } from 'zod';
 import { createTRPCRouter, protectedProcedure } from './server';
-import { NotificationRepository } from '@/lib/modules/notifications/notification.repository';
-import { WebPushService } from '@/lib/modules/notifications/web-push.service';
 import type { PushSubscriptionLike } from '@/lib/modules/notifications/web-push.service';
-import { Logger } from '@/lib/core/logger';
-import { getPrisma } from '@/lib/db';
-
-let _repo: NotificationRepository | null = null;
-
-function getRepo() {
-  if (_repo) return _repo;
-  const prisma = getPrisma();
-  _repo = new NotificationRepository(prisma);
-  return _repo;
-}
-
-// Singleton WebPushService (in-memory subscriptions)
-let _pushService: WebPushService | null = null;
-
-function getPushService(): WebPushService {
-  if (!_pushService) {
-    _pushService = new WebPushService(new Logger('WebPush'));
-  }
-  return _pushService;
-}
 
 /** Zod schema matching the PushSubscription JSON structure */
 const pushSubscriptionSchema = z.object({
@@ -43,30 +20,30 @@ export const notificationsRouter = createTRPCRouter({
       limit: z.number().min(1).max(200).optional(),
       offset: z.number().min(0).optional(),
     }).optional())
-    .query(async ({ input }) => {
-      const repo = getRepo();
+    .query(async ({ ctx, input }) => {
+      const repo = ctx.services.notificationRepo;
       return repo.findMany(input);
     }),
 
-  unreadCount: protectedProcedure.query(async () => {
-    const repo = getRepo();
-    return getRepo().findUnreadCount();
+  unreadCount: protectedProcedure.query(async ({ ctx }) => {
+    const repo = ctx.services.notificationRepo;
+    return repo.findUnreadCount();
   }),
 
-  markAsRead: protectedProcedure.input(z.object({ id: z.string() })).mutation(async ({ input }) => {
-    const repo = getRepo();
+  markAsRead: protectedProcedure.input(z.object({ id: z.string() })).mutation(async ({ ctx, input }) => {
+    const repo = ctx.services.notificationRepo;
     await repo.markAsRead(input.id);
     return { success: true };
   }),
 
-  markAllAsRead: protectedProcedure.mutation(async () => {
-    const repo = getRepo();
+  markAllAsRead: protectedProcedure.mutation(async ({ ctx }) => {
+    const repo = ctx.services.notificationRepo;
     await repo.markAllAsRead();
     return { success: true };
   }),
 
-  delete: protectedProcedure.input(z.object({ id: z.string() })).mutation(async ({ input }) => {
-    const repo = getRepo();
+  delete: protectedProcedure.input(z.object({ id: z.string() })).mutation(async ({ ctx, input }) => {
+    const repo = ctx.services.notificationRepo;
     await repo.delete(input.id);
     return { success: true };
   }),
@@ -78,7 +55,7 @@ export const notificationsRouter = createTRPCRouter({
   pushSubscribe: protectedProcedure
     .input(pushSubscriptionSchema)
     .mutation(async ({ ctx, input }) => {
-      const push = getPushService();
+      const push = ctx.services.webPushService;
       const userId = ctx.user.id;
       push.subscribe(userId, input as unknown as PushSubscriptionLike);
       return { success: true };
@@ -86,7 +63,7 @@ export const notificationsRouter = createTRPCRouter({
 
   pushUnsubscribe: protectedProcedure
     .mutation(async ({ ctx }) => {
-      const push = getPushService();
+      const push = ctx.services.webPushService;
       const userId = ctx.user.id;
       push.unsubscribe(userId);
       return { success: true };
@@ -94,7 +71,7 @@ export const notificationsRouter = createTRPCRouter({
 
   pushTest: protectedProcedure
     .mutation(async ({ ctx }) => {
-      const push = getPushService();
+      const push = ctx.services.webPushService;
       const userId = ctx.user.id;
       const sent = await push.sendNotification(
         userId,
