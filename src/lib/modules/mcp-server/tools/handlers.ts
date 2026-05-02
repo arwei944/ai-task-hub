@@ -71,6 +71,10 @@ export function createTaskCoreToolHandlers(
         sortBy: args.sortBy as any,
         sortOrder: args.sortOrder as any,
       };
+      // Default: return all tasks if no filters specified
+      if (!query.status && !query.priority && !query.type && !query.creator && !query.search) {
+        query.pageSize = query.pageSize || 50;
+      }
       return taskService.listTasks(query);
     },
 
@@ -81,9 +85,9 @@ export function createTaskCoreToolHandlers(
     },
 
     update_task_status: async (args: Record<string, unknown>) => {
-      logger.info(`MCP: update_task_status called for ${args.id} -> ${args.status}`);
+      logger.info(`MCP: update_task_status called for ${args.id || args.taskId} -> ${args.status}`);
       const task = await taskService.updateStatus(
-        args.id as string,
+        (args.id || args.taskId) as string,
         args.status as 'todo' | 'in_progress' | 'done' | 'closed',
       );
       return { success: true, task };

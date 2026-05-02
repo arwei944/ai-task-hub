@@ -131,9 +131,10 @@ export function createProjectToolHandlers(logger: ILogger, eventBus?: IEventBus)
     get_project: async (args: Record<string, unknown>) => {
       const prisma = getPrisma();
       try {
-        const { id } = args as any;
+        const { id, projectId } = args as any;
+        const pid = id || projectId;
         const project = await prisma.project.findUnique({
-          where: { id },
+          where: { id: pid },
           include: {
             tasks: { orderBy: { createdAt: 'desc' }, take: 20 },
             activities: { orderBy: { createdAt: 'desc' }, take: 20 },
@@ -144,7 +145,7 @@ export function createProjectToolHandlers(logger: ILogger, eventBus?: IEventBus)
         if (!project) return { error: 'Project not found' };
 
         // Compute stats
-        const allTasks = await prisma.task.findMany({ where: { projectId: id } });
+        const allTasks = await prisma.task.findMany({ where: { projectId: pid } });
         const stats = {
           total: allTasks.length,
           todo: allTasks.filter(t => t.status === 'todo').length,

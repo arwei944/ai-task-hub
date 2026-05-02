@@ -404,6 +404,52 @@ async function initializeSharedTools() {
   const notificationRepo = new NotificationRepository(prisma);
   const { NotificationRuleEngine } = await import('@/lib/modules/notifications/rule-engine');
   const ruleEngine = new NotificationRuleEngine(notificationRepo, eventBus, logger, () => prisma);
+  // Start notification rule engine - register event listeners
+  ruleEngine.start();
+  logger.info('NotificationRuleEngine started - event listeners registered');
+  
+  // Add default notification rules for key events
+  ruleEngine.addRule({
+    id: 'default-task-created',
+    name: '任务创建通知',
+    pattern: 'task.created',
+    action: 'notify',
+    channel: 'system',
+    level: 'info',
+    isActive: true,
+    priority: 10,
+  });
+  ruleEngine.addRule({
+    id: 'default-task-status-changed',
+    name: '任务状态变更通知',
+    pattern: 'task.status.changed',
+    action: 'notify',
+    channel: 'system',
+    level: 'info',
+    isActive: true,
+    priority: 10,
+  });
+  ruleEngine.addRule({
+    id: 'default-project-phase-changed',
+    name: '项目阶段变更通知',
+    pattern: 'project.phase.changed',
+    action: 'notify',
+    channel: 'system',
+    level: 'info',
+    isActive: true,
+    priority: 10,
+  });
+  ruleEngine.addRule({
+    id: 'default-workflow-completed',
+    name: '工作流完成通知',
+    pattern: 'workflow.completed',
+    action: 'notify',
+    channel: 'system',
+    level: 'success',
+    isActive: true,
+    priority: 10,
+  });
+  logger.info('Default notification rules added (4 rules)');
   const notifRuleHandlers = createNotificationRuleToolHandlers(ruleEngine, logger);
   for (const toolConfig of notificationRuleMcpTools) {
     const handler = (notifRuleHandlers as any)[toolConfig.name];
@@ -514,6 +560,13 @@ async function initializeSharedTools() {
   // Register AI handler management tools
   const { AIOrchestrator } = await import('@/lib/modules/ai-engine/ai-orchestrator');
   const aiOrchestrator = new AIOrchestrator(eventBus, logger);
+  // Register AI event handlers
+  try {
+    aiOrchestrator.registerHandlers();
+    logger.info('AI Orchestrator event handlers registered');
+  } catch (err: any) {
+    logger.warn(`Failed to register AI handlers: ${err.message}`);
+  }
   const aiHandlerHandlers = createAIHandlerToolHandlers(() => aiOrchestrator, eventBus, logger);
   for (const toolConfig of aiHandlerMcpTools) {
     const handler = (aiHandlerHandlers as any)[toolConfig.name];

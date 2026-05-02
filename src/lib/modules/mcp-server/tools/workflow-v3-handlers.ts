@@ -173,5 +173,42 @@ export function createWorkflowV3ToolHandlers(stateManager: ExecutionStateManager
         return { success: false, error: error.message };
       }
     },
+
+    execute_workflow_template: async (args: Record<string, unknown>) => {
+      const { templateId, projectId, variables } = args as any;
+      const prisma = getPrisma();
+      try {
+        const { projectWorkflowTemplates } = await import('@/lib/modules/workflow-engine/templates/project-templates');
+        const template = (projectWorkflowTemplates as any)[templateId];
+        if (!template) {
+          return { success: false, error: `Template not found: ${templateId}. Available: ${Object.keys(projectWorkflowTemplates).join(', ')}` };
+        }
+
+        // Create workflow from template
+        const workflow = await prisma.workflow.create({
+          data: {
+            name: `${template.name || templateId} - ${projectId ? projectId.substring(0, 8) : 'manual'}`,
+            description: template.description || `Auto-created from template: ${templateId}`,
+            trigger: 'manual',
+            steps: JSON.stringify(template.steps || []),
+            variables: variables ? JSON.stringify(variables) : JSON.stringify({ projectId }),
+            isActive: true,
+            createdBy: 'mcp',
+          },
+        });
+
+        return {
+          success: true,
+          workflowId: workflow.id,
+          workflowName: workflow.name,
+          stepCount: template.steps?.length || 0,
+          message: `Workflow created from template "${templateId}". Use workflow execution to run it.`,
+        };
+      } catch (error: any) {
+        return { success: false, error: error.message };
+      } finally {
+        await prisma.$disconnect();
+      }
+    },
   };
 }

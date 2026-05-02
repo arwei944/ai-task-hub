@@ -65,4 +65,17 @@ export const workflowV3McpTools: McpToolConfig[] = [
     description: '获取所有可用的工作流模板（项目阶段模板）',
     inputSchema: { type: 'object', properties: {} },
   },
+  {
+    name: 'execute_workflow_template',
+    description: '根据模板创建并执行工作流，支持项目阶段模板',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        templateId: { type: 'string', description: '模板 ID (requirements/planning/architecture/implementation/testing/deployment)' },
+        projectId: { type: 'string', description: '关联项目 ID' },
+        variables: { type: 'object', description: '工作流变量' },
+      },
+      required: ['templateId'],
+    },
+  },
 ];
