@@ -74,7 +74,7 @@ export const deploymentMcpTools: McpToolConfig[] = [
       properties: {
         environmentId: { type: 'string', description: '目标环境 ID' },
         projectId: { type: 'string', description: '关联项目 ID（可选）' },
-        version: { type: 'string', description: '部署版本号 (如 "2.1.0")' },
+        version: { type: 'string', description: '部署版本号 (如 "2.7.0")' },
         strategy: {
           type: 'string',
           enum: ['rolling', 'blue_green', 'canary', 'recreate'],

@@ -221,7 +221,7 @@ export class SOLOMCPClient {
       // 创建 MCP 客户端
       const client = new Client({
         name: 'ai-task-hub-solo-bridge',
-        version: '1.0.0',
+        version: process.env.npm_package_version ?? '0.0.0',
       });
       this.clientInstance = client as unknown as MCPClientInstance;
 

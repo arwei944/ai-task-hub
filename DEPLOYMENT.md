@@ -2,7 +2,7 @@
 
 > 本文档记录 AI Task Hub 项目的所有 Token、密钥、部署流程和运维操作，供所有智能体和开发者复用。
 >
-> **最后更新**: 2026-05-01 | **当前版本**: v2.4.0 "AI Unleashed"
+> **最后更新**: 2026-05-02 | **当前版本**: v2.7.0 "Project Nova"
 
 ---
 
@@ -27,7 +27,7 @@
 | 项目名称 | AI Task Hub |
 | 项目代号 | Project Nova |
 | 技术栈 | Next.js 16 + React 19 + tRPC v11 + Prisma 7 + SQLite + Tailwind CSS v4 |
-| 当前版本 | v2.4.0 |
+| 当前版本 | v2.7.0 "Project Nova" |
 | MCP 工具数 | 162+ |
 | 测试用例 | 1875 (99 文件) |
 | tRPC 路由 | 15 |
