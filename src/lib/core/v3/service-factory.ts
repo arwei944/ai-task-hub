@@ -26,6 +26,43 @@ import { getPrisma } from '@/lib/db';
 import { Logger } from '@/lib/core/logger';
 import { EventBus as V3EventBus } from '@/lib/core/v3/event-bus';
 
+// PrismaClient is generated at build time — use the same path as db.ts
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type PrismaClient = any;
+
+// ---- Forward type references for ServiceRegistry ----
+// These are type-only imports resolved at compile time.
+// The actual classes are imported dynamically in register functions.
+
+type UserRepository = import('@/lib/modules/auth/user.repository').UserRepository;
+type AuthService = import('@/lib/modules/auth/auth.service').AuthService;
+type TaskRepository = import('@/lib/modules/task-core/task.repository').TaskRepository;
+type TaskHistoryRepository = import('@/lib/modules/task-core/task-history.repository').TaskHistoryRepository;
+type TaskDependencyRepository = import('@/lib/modules/task-core/task-dependency.repository').TaskDependencyRepository;
+type TaskProgressService = import('@/lib/modules/task-core/task-progress.service').TaskProgressService;
+type TaskService = import('@/lib/modules/task-core/task.service').TaskService;
+type IAIModelAdapter = import('@/lib/modules/ai-engine/ai-model-adapter').IAIModelAdapter;
+type TaskExtractor = import('@/lib/modules/ai-engine/extractors/task-extractor').TaskExtractor;
+type TaskDecomposer = import('@/lib/modules/ai-engine/decomposers/task-decomposer').TaskDecomposer;
+type AutoTaskDecomposer = import('@/lib/modules/ai-engine/decomposers/auto-task-decomposer').AutoTaskDecomposer;
+type StatusInferencer = import('@/lib/modules/ai-engine/inferencers/status-inferencer').StatusInferencer;
+type TaskAnalyzer = import('@/lib/modules/ai-engine/analyzers/task-analyzer').TaskAnalyzer;
+type NLTaskQuery = import('@/lib/modules/ai-engine/queries/nl-task-query').NLTaskQuery;
+type ScheduleAdvisor = import('@/lib/modules/ai-engine/advisors/schedule-advisor').ScheduleAdvisor;
+type AgentRepository = import('@/lib/modules/agent-collab/agent.repository').AgentRepository;
+type AgentOperationRepository = import('@/lib/modules/agent-collab/agent-operation.repository').AgentOperationRepository;
+type AgentService = import('@/lib/modules/agent-collab/agent.service').AgentService;
+type PermissionService = import('@/lib/modules/agent-collab/permission.service').PermissionService;
+type AgentOperationLogger = import('@/lib/modules/agent-collab/operation-logger').AgentOperationLogger;
+type NotificationRepository = import('@/lib/modules/notifications/notification.repository').NotificationRepository;
+type WebPushService = import('@/lib/modules/notifications/web-push.service').WebPushService;
+type NotificationRuleEngine = import('@/lib/modules/notifications/rule-engine').NotificationRuleEngine;
+type StatisticsService = import('@/lib/modules/dashboard/statistics.service').StatisticsService;
+type WorkflowService = import('@/lib/modules/workflow-engine/workflow.service').WorkflowService;
+type PluginLoader = import('@/lib/modules/plugins/plugin-loader').PluginLoader;
+type ModuleUpdaterService = import('@/lib/modules/module-updater/module-updater.service').ModuleUpdaterService;
+type ImprovementLoop = import('@/lib/modules/workflow-engine/feedback/improvement-loop').ImprovementLoop;
+
 // ---- Service Token Constants ----
 
 export const ServiceTokens = {
@@ -90,8 +127,63 @@ export type ServiceToken = (typeof ServiceTokens)[keyof typeof ServiceTokens];
 
 // ---- Service Registry Map (typed) ----
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type ServiceRegistry = Record<ServiceToken, any>;
+export interface ServiceRegistry {
+  // Core
+  [ServiceTokens.prisma]: PrismaClient;
+  [ServiceTokens.eventBus]: V3EventBus;
+  [ServiceTokens.logger]: Logger;
+
+  // Auth
+  [ServiceTokens.authService]: AuthService;
+  [ServiceTokens.userRepo]: UserRepository;
+
+  // Task
+  [ServiceTokens.taskService]: TaskService;
+  [ServiceTokens.taskRepo]: TaskRepository;
+  [ServiceTokens.taskHistoryRepo]: TaskHistoryRepository;
+  [ServiceTokens.taskDepRepo]: TaskDependencyRepository;
+  [ServiceTokens.taskProgressService]: TaskProgressService;
+
+  // AI
+  [ServiceTokens.aiModel]: IAIModelAdapter;
+  [ServiceTokens.taskExtractor]: TaskExtractor;
+  [ServiceTokens.taskDecomposer]: TaskDecomposer;
+  [ServiceTokens.autoTaskDecomposer]: AutoTaskDecomposer;
+  [ServiceTokens.statusInferencer]: StatusInferencer;
+  [ServiceTokens.taskAnalyzer]: TaskAnalyzer;
+  [ServiceTokens.nlTaskQuery]: NLTaskQuery;
+  [ServiceTokens.scheduleAdvisor]: ScheduleAdvisor;
+
+  // Agent
+  [ServiceTokens.agentService]: AgentService;
+  [ServiceTokens.permissionService]: PermissionService;
+  [ServiceTokens.agentOperationLogger]: AgentOperationLogger;
+  [ServiceTokens.agentRepo]: AgentRepository;
+  [ServiceTokens.agentOpRepo]: AgentOperationRepository;
+
+  // Integration (adapter array)
+  [ServiceTokens.integrationService]: unknown[];
+
+  // Notification
+  [ServiceTokens.notificationRepo]: NotificationRepository;
+  [ServiceTokens.webPushService]: WebPushService;
+  [ServiceTokens.ruleEngine]: NotificationRuleEngine;
+
+  // Stats
+  [ServiceTokens.statisticsService]: StatisticsService;
+
+  // Workflow
+  [ServiceTokens.workflowService]: WorkflowService;
+
+  // Plugin
+  [ServiceTokens.pluginLoader]: PluginLoader;
+
+  // Updater
+  [ServiceTokens.moduleUpdaterService]: ModuleUpdaterService;
+
+  // Feedback
+  [ServiceTokens.improvementLoop]: ImprovementLoop;
+}
 
 // ---- Registration Functions ----
 
