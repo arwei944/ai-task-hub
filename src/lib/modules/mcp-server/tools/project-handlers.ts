@@ -246,6 +246,22 @@ export function createProjectToolHandlers(logger: ILogger, eventBus?: IEventBus)
           },
         });
 
+        // Emit event for notification and AI engine integration
+        try {
+          const { getEventBus } = await import('@/lib/core/event-bus');
+          const eventBus = getEventBus();
+          eventBus.emit('task.created', {
+            taskId: task.id,
+            title: task.title,
+            projectId: task.projectId,
+            priority: task.priority,
+            status: task.status,
+            assignee: task.assignee,
+            phase: task.phase,
+            timestamp: new Date().toISOString(),
+          });
+        } catch {}
+
         return { taskId: task.id, title: task.title, phase: task.phase, message: `任务「${title}」创建成功` };
       } finally {
         await prisma.$disconnect();
@@ -291,6 +307,22 @@ export function createProjectToolHandlers(logger: ILogger, eventBus?: IEventBus)
               title: `更新任务「${task.title}」: ${changes.join(', ')}`,
             },
           });
+        }
+
+        // Emit task.status.changed event when status is updated
+        if (updates.status && updates.status !== oldTask.status) {
+          try {
+            const { getEventBus } = await import('@/lib/core/event-bus');
+            const eventBus = getEventBus();
+            eventBus.emit('task.status.changed', {
+              taskId: task.id,
+              title: task.title,
+              projectId: task.projectId,
+              previousStatus: oldTask.status,
+              newStatus: updates.status,
+              timestamp: new Date().toISOString(),
+            });
+          } catch {}
         }
 
         return { taskId: task.id, title: task.title, status: task.status, progress: task.progress };

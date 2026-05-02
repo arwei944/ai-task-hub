@@ -167,12 +167,22 @@ export class TaskRepository {
     }) as Promise<TaskWithRelations[]>;
   }
 
-  async countByStatus() {
+  async countByStatus(): Promise<Record<string, number>> {
     const result = await this.prisma.task.groupBy({
       by: ['status'],
       where: { status: { not: 'deleted' } },
       _count: { status: true },
     });
-    return Object.fromEntries(result.map((r) => [r.status, r._count.status]));
+    const counts: Record<string, number> = {
+      todo: 0,
+      in_progress: 0,
+      done: 0,
+      closed: 0,
+      blocked: 0,
+    };
+    for (const r of result) {
+      counts[r.status] = r._count.status;
+    }
+    return counts;
   }
 }

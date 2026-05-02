@@ -2,6 +2,13 @@ import type { PrismaClient } from '@/generated/prisma/client';
 import { Logger } from '@/lib/core/logger';
 import type { TaskService } from '@/lib/modules/task-core/task.service';
 
+async function emitEvent(eventType: string, payload: any) {
+  try {
+    const { getEventBus } = await import('@/lib/core/event-bus');
+    getEventBus().emit(eventType, payload);
+  } catch {}
+}
+
 // ==================== Types ====================
 
 export interface WorkflowStep {
@@ -227,6 +234,8 @@ export class WorkflowService {
               durationMs,
             },
           });
+
+          await emitEvent('workflow.step.completed', { workflowId: executionId, stepId: step.id, stepType: step.type, duration: durationMs, timestamp: new Date().toISOString() });
         } catch (stepError) {
           const durationMs = Date.now() - startTime;
           const errorMsg = stepError instanceof Error ? stepError.message : String(stepError);
@@ -242,6 +251,8 @@ export class WorkflowService {
           });
 
           this.logger.warn(`Step ${step.name} failed: ${errorMsg}`);
+
+          await emitEvent('workflow.step.failed', { workflowId: executionId, stepId: step.id, stepType: step.type, error: errorMsg, timestamp: new Date().toISOString() });
 
           if (step.onError === 'continue') {
             context = { ...context, [`_error_${step.id}`]: errorMsg };
@@ -269,6 +280,8 @@ export class WorkflowService {
           context: JSON.stringify(context),
         },
       });
+
+      await emitEvent('workflow.completed', { workflowId: executionId, executionId, status: 'completed', timestamp: new Date().toISOString() });
 
       this.logger.info(`Workflow execution completed: ${executionId}`);
     } finally {

@@ -52,7 +52,7 @@ function DashboardContent() {
 
   const fetchData = useCallback(async () => {
     try {
-      const [counts, tasksRes, notifs, unread, trends] = await Promise.all([
+      const results = await Promise.allSettled([
         trpc.tasks.statusCounts.query(),
         trpc.tasks.list.query({ pageSize: 10, sortBy: 'createdAt', sortOrder: 'desc' }),
         trpc.notifications.list.query({ limit: 10 }),
@@ -60,9 +60,15 @@ function DashboardContent() {
         trpc.stats.dailyTrends.query({ days: 14 }),
       ]);
 
+      const counts = results[0].status === 'fulfilled' ? results[0].value : { todo: 0, in_progress: 0, done: 0, closed: 0 };
+      const tasksRes = results[1].status === 'fulfilled' ? results[1].value : { items: [], total: 0 };
+      const notifs = results[2].status === 'fulfilled' ? results[2].value : { notifications: [] };
+      const unread = results[3].status === 'fulfilled' ? results[3].value : 0;
+      const trends = results[4].status === 'fulfilled' ? results[4].value : [];
+
       setStatusCounts(counts as unknown as StatusCount);
       setRecentTasks((tasksRes as any).items ?? []);
-      setNotifications(notifs.notifications);
+      setNotifications((notifs as any).notifications ?? []);
       setUnreadCount(unread);
       setDailyTrends(trends as unknown as DailyTrend[]);
 
@@ -90,8 +96,8 @@ function DashboardContent() {
     },
   });
 
-  const totalTasks = Object.values(statusCounts).reduce((a, b) => a + b, 0);
-  const completionRate = totalTasks > 0 ? Math.round(((statusCounts.done + statusCounts.closed) / totalTasks) * 100) : 0;
+  const totalTasks = (statusCounts.todo || 0) + (statusCounts.in_progress || 0) + (statusCounts.done || 0) + (statusCounts.closed || 0);
+  const completionRate = totalTasks > 0 ? Math.round(((statusCounts.done || 0) / totalTasks) * 100) : 0;
 
   const statusColors: Record<string, string> = {
     todo: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300',

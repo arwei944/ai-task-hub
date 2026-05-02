@@ -487,3 +487,18 @@ export class EventBus implements IEventBus {
     return this.eventStore.getEventCount(eventType);
   }
 }
+
+// 模块级单例实例
+let _globalEventBus: EventBus | null = null;
+
+/**
+ * 获取全局 EventBus 单例实例。
+ * 所有模块（tRPC routers、MCP handlers、services）都应使用此函数获取 EventBus，
+ * 确保事件能被所有监听者（通知、AI引擎、SSE）接收。
+ */
+export function getEventBus(): EventBus {
+  if (!_globalEventBus) {
+    _globalEventBus = new EventBus();
+  }
+  return _globalEventBus;
+}

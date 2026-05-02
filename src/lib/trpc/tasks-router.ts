@@ -12,10 +12,10 @@ async function getTaskService() {
   const { TaskHistoryRepository } = await import('@/lib/modules/task-core/task-history.repository');
   const { TaskDependencyRepository } = await import('@/lib/modules/task-core/task-dependency.repository');
   const { TaskProgressService } = await import('@/lib/modules/task-core/task-progress.service');
-  const { EventBus } = await import('@/lib/core/event-bus');
+  const { getEventBus } = await import('@/lib/core/event-bus');
   const { Logger } = await import('@/lib/core/logger');
   const prisma = getPrisma();
-  const eventBus = new EventBus();
+  const eventBus = getEventBus();
   const logger = new Logger('task-core');
   const taskRepo = new TaskRepository(prisma);
   const historyRepo = new TaskHistoryRepository(prisma);
