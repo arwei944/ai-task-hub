@@ -409,46 +409,10 @@ async function initializeSharedTools() {
   logger.info('NotificationRuleEngine started - event listeners registered');
   
   // Add default notification rules for key events
-  ruleEngine.addRule({
-    id: 'default-task-created',
-    name: '任务创建通知',
-    pattern: 'task.created',
-    action: 'notify',
-    channel: 'system',
-    level: 'info',
-    isActive: true,
-    priority: 10,
-  });
-  ruleEngine.addRule({
-    id: 'default-task-status-changed',
-    name: '任务状态变更通知',
-    pattern: 'task.status.changed',
-    action: 'notify',
-    channel: 'system',
-    level: 'info',
-    isActive: true,
-    priority: 10,
-  });
-  ruleEngine.addRule({
-    id: 'default-project-phase-changed',
-    name: '项目阶段变更通知',
-    pattern: 'project.phase.changed',
-    action: 'notify',
-    channel: 'system',
-    level: 'info',
-    isActive: true,
-    priority: 10,
-  });
-  ruleEngine.addRule({
-    id: 'default-workflow-completed',
-    name: '工作流完成通知',
-    pattern: 'workflow.completed',
-    action: 'notify',
-    channel: 'system',
-    level: 'success',
-    isActive: true,
-    priority: 10,
-  });
+  ruleEngine.addRule({ event: 'task.created', action: 'notify', level: 'info' });
+  ruleEngine.addRule({ event: 'task.status.changed', action: 'notify', level: 'info' });
+  ruleEngine.addRule({ event: 'project.phase.changed', action: 'notify', level: 'info' });
+  ruleEngine.addRule({ event: 'workflow.completed', action: 'notify', level: 'success' });
   logger.info('Default notification rules added (4 rules)');
   const notifRuleHandlers = createNotificationRuleToolHandlers(ruleEngine, logger);
   for (const toolConfig of notificationRuleMcpTools) {
