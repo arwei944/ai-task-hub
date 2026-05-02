@@ -8,6 +8,7 @@ import { DIContainer } from './di';
 import { EventBus } from './event-bus';
 import { LinkageTracer } from './linkage-tracer';
 import { HealthMonitor } from './health';
+import { registerCoreServices } from './service-factory';
 import type {
   Capability,
   AppKernelConfig,
@@ -78,6 +79,10 @@ export class AppKernel {
 
     const startTime = Date.now();
     console.info(`[Kernel] Booting with ${capabilities.length} capabilities...`);
+
+    // 0. Register core services first (prisma, eventBus, logger)
+    registerCoreServices(this.container);
+    console.info('[Kernel] Core services registered (prisma, eventBus, logger)');
 
     // 1. 注册所有积木的服务
     for (const cap of capabilities) {
