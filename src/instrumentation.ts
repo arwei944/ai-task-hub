@@ -2,36 +2,36 @@
 // AI Task Hub v3.0 — Next.js Instrumentation (启动钩子)
 // ============================================================
 // 在 Next.js 启动时调用 AppKernel.boot()
-// 这是整个应用的唯一启动点
+// 标记为 Node.js runtime 以使用 Prisma、crypto 等 Node.js API
 // ============================================================
 
-import {
-  initKernel,
-  getKernel,
-  getSelfHealingManager,
-  TaskCapability,
-  NotificationCapability,
-  WorkflowCapability,
-  AICapability,
-  IntegrationCapability,
-  AgentCapability,
-  ObservabilityCapability,
-} from '@/lib/core/v3';
+export const runtime = 'nodejs';
 
 export async function register() {
-  console.log('[Instrumentation] v3.0 — Booting AppKernel with 7 capabilities...');
-
-  const capabilities = [
-    new TaskCapability(),
-    new NotificationCapability(),
-    new WorkflowCapability(),
-    new AICapability(),
-    new IntegrationCapability(),
-    new AgentCapability(),
-    new ObservabilityCapability(),
-  ];
+  console.log('[Instrumentation] v3.0 — Initializing...');
 
   try {
+    const { initKernel, getKernel, getSelfHealingManager } = await import('@/lib/core/v3');
+    const {
+      TaskCapability,
+      NotificationCapability,
+      WorkflowCapability,
+      AICapability,
+      IntegrationCapability,
+      AgentCapability,
+      ObservabilityCapability,
+    } = await import('@/lib/core/v3');
+
+    const capabilities = [
+      new TaskCapability(),
+      new NotificationCapability(),
+      new WorkflowCapability(),
+      new AICapability(),
+      new IntegrationCapability(),
+      new AgentCapability(),
+      new ObservabilityCapability(),
+    ];
+
     await initKernel(capabilities);
 
     const kernel = getKernel();
@@ -57,6 +57,7 @@ export async function register() {
 
 export async function shutdown() {
   try {
+    const { getKernel, getSelfHealingManager } = await import('@/lib/core/v3');
     const selfHealing = getSelfHealingManager();
     selfHealing.stop();
 
