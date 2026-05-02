@@ -1,6 +1,6 @@
 # AI Task Hub 部署指南
 
-> 版本：v2.7.0 "Project Nova" | 最后更新：2026-05-02
+> 版本：v3.0.0 "Kernel Reborn" | 最后更新：2026-05-02
 
 ## 目录
 

@@ -1,8 +1,17 @@
 # AI Task Hub - Roadmap
 
-## Current Version: v2.7.0 "Project Nova"
+## Current Version: v3.0.0 "Kernel Reborn"
 
 ### Completed
+
+- **v3.0.0** "Kernel Reborn" (2026-05-02)
+  - Real-time collaboration
+  - Whiteboard/flowchart for workflow design
+  - Mobile app (React Native)
+  - Desktop app (Electron)
+  - AI copilot chat interface
+  - Voice commands
+  - Graph-based task dependency visualization
 
 - **v2.7.0** (2026-05-02)
   - 智能闭环
@@ -114,16 +123,7 @@
   - 首次发布
   - 全功能上线
 
-### Planned (v3.0.0+)
-
-#### v3.0.0 - "Next Generation"
-- [ ] Real-time collaboration
-- [ ] Whiteboard/flowchart for workflow design
-- [ ] Mobile app (React Native)
-- [ ] Desktop app (Electron)
-- [ ] AI copilot chat interface
-- [ ] Voice commands
-- [ ] Graph-based task dependency visualization
+### Planned (v3.1.0+)
 
 #### v3.1.0 - "Global Reach"
 - [ ] PostgreSQL adapter support

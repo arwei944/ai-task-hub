@@ -2,7 +2,7 @@
 // Service Worker - Offline Cache
 // ============================================================
 
-const CACHE_NAME = 'ai-task-hub-v1';
+const CACHE_NAME = 'ai-task-hub-v3';
 const STATIC_ASSETS = [
   '/',
   '/dashboard',

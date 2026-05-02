@@ -9,13 +9,13 @@
 // ---- 应用版本 ----
 // 主版本号 (与 package.json 保持同步)
 // 注意: 不能使用 fs 读取 package.json，因为此文件会被客户端组件导入
-export const APP_VERSION: string = '2.7.0';
+export const APP_VERSION: string = '3.0.0';
 
 /** 应用名称 */
 export const APP_NAME: string = 'AI Task Hub';
 
 /** 应用代号 */
-export const APP_CODENAME: string = 'Project Nova';
+export const APP_CODENAME: string = 'Kernel Reborn';
 
 // ---- 模块版本 ----
 // 所有模块统一使用应用版本号，不再单独维护
@@ -105,6 +105,7 @@ export const VERSION_HISTORY: ReadonlyArray<{
   date: string;
   highlights: string[];
 }> = [
+  { version: '3.0.0', date: '2026-05-02', highlights: ['v3 内核架构重构', 'AppKernel + 7 Capability', 'DI Container + 32 typed services', '运维面板 8 视图', '自愈系统 + 熔断器 + 死信队列', 'SSE 实时推送', 'JWT 全链路认证', '0 TS 错误 + 1936 测试通过'] },
   { version: '2.7.0', date: '2026-05-02', highlights: ['智能闭环', '可观测性真实数据', '反馈审批事件链', 'workflow.completed 载荷补全', 'ImprovementLoop 激活', 'SOLO 自省 Handler', 'Dashboard 全局视野', '5 个 AI Handler'] },
   { version: '2.6.0', date: '2026-05-02', highlights: ['taskId 别名', '通知规则持久化', 'BrowserPush 渠道', 'AI Handler 实例化', 'ruleEngine.start()'] },
   { version: '2.4.0-beta.1', date: '2026-04-30', highlights: ['出站 Webhook 重试机制', 'GitHub Issue 触发器', '通知管理前端页面', '通知历史 tRPC', '5 个新 MCP 工具', '162+ MCP 工具'] },
