@@ -201,7 +201,7 @@ export function createProjectToolHandlers(logger: ILogger, eventBus?: IEventBus)
             where: { projectId: projectId as string, title: title as string },
           });
           if (existing) {
-            return { error: `Task "${title}" already exists in this project`, existingTaskId: existing.id };
+            return { taskId: existing.id, title: existing.title, phase: existing.phase, message: `任务「${title}」已存在`, existingTaskId: existing.id };
           }
         }
 

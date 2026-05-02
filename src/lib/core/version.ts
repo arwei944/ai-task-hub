@@ -9,7 +9,7 @@
 // ---- 应用版本 ----
 // 主版本号 (与 package.json 保持同步)
 // 注意: 不能使用 fs 读取 package.json，因为此文件会被客户端组件导入
-export const APP_VERSION: string = '2.5.0';
+export const APP_VERSION: string = '2.6.0';
 
 /** 应用名称 */
 export const APP_NAME: string = 'AI Task Hub';

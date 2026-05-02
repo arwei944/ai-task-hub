@@ -408,12 +408,31 @@ async function initializeSharedTools() {
   ruleEngine.start();
   logger.info('NotificationRuleEngine started - event listeners registered');
   
-  // Add default notification rules for key events
-  ruleEngine.addRule({ event: 'task.created', action: 'notify', level: 'info' });
-  ruleEngine.addRule({ event: 'task.status.changed', action: 'notify', level: 'info' });
-  ruleEngine.addRule({ event: 'project.phase.changed', action: 'notify', level: 'info' });
-  ruleEngine.addRule({ event: 'workflow.completed', action: 'notify', level: 'success' });
-  logger.info('Default notification rules added (4 rules)');
+  // Add default notification rules - persist to DB so list_notification_rules can find them
+  try {
+    await ruleEngine.createRule({ name: '任务创建通知', eventPattern: 'task.created', action: 'notify', level: 'info', priority: 10 });
+    await ruleEngine.createRule({ name: '任务状态变更通知', eventPattern: 'task.status.changed', action: 'notify', level: 'info', priority: 10 });
+    await ruleEngine.createRule({ name: '项目阶段变更通知', eventPattern: 'project.phase.changed', action: 'notify', level: 'info', priority: 10 });
+    await ruleEngine.createRule({ name: '工作流完成通知', eventPattern: 'workflow.completed', action: 'notify', level: 'success', priority: 10 });
+    logger.info('Default notification rules persisted to DB (4 rules)');
+  } catch (err: any) {
+    // Rules may already exist from previous initialization, add to memory as fallback
+    ruleEngine.addRule({ event: 'task.created', action: 'notify', level: 'info' });
+    ruleEngine.addRule({ event: 'task.status.changed', action: 'notify', level: 'info' });
+    ruleEngine.addRule({ event: 'project.phase.changed', action: 'notify', level: 'info' });
+    ruleEngine.addRule({ event: 'workflow.completed', action: 'notify', level: 'success' });
+    logger.info(`Default notification rules added to memory (DB create failed: ${err.message})`);
+  }
+
+  // Register BrowserPush channel for notification delivery
+  try {
+    const { BrowserPushChannel } = await import('@/lib/modules/notifications/channels/browser-push-channel');
+    const browserPush = new BrowserPushChannel(logger);
+    ruleEngine.registerChannel(browserPush);
+    logger.info('BrowserPush channel registered');
+  } catch (err: any) {
+    logger.warn(`Failed to register BrowserPush channel: ${err.message}`);
+  }
   const notifRuleHandlers = createNotificationRuleToolHandlers(ruleEngine, logger);
   for (const toolConfig of notificationRuleMcpTools) {
     const handler = (notifRuleHandlers as any)[toolConfig.name];

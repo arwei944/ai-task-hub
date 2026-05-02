@@ -57,6 +57,7 @@ export const taskCoreMcpTools: McpToolConfig[] = [
       type: 'object',
       properties: {
         id: { type: 'string', description: '任务 ID' },
+        taskId: { type: 'string', description: '任务 ID (别名)' },
       },
       required: ['id'],
     },
@@ -100,6 +101,7 @@ export const taskCoreMcpTools: McpToolConfig[] = [
       type: 'object',
       properties: {
         id: { type: 'string', description: '任务 ID' },
+        taskId: { type: 'string', description: '任务 ID (别名)' },
         status: { type: 'string', enum: ['todo', 'in_progress', 'done', 'closed'], description: '目标状态' },
       },
       required: ['id', 'status'],
