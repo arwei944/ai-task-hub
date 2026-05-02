@@ -70,3 +70,7 @@ export {
   AgentCapability,
   ObservabilityCapability,
 } from './capabilities';
+
+// Self-Healing Manager
+export { SelfHealingManager, getSelfHealingManager } from './self-healing';
+export type { HealthEvent, HealthListener, DLQEntry } from './self-healing';

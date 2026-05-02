@@ -14,6 +14,7 @@ import { feedbackRouter } from './feedback-router';
 import { deploymentsRouter } from './deployments-router';
 import { notificationRulesRouter } from './notification-rules-router';
 import { notificationHistoryRouter } from './notification-history-router';
+import { selfHealingRouter } from './self-healing-router';
 
 export const appRouter = createTRPCRouter({
   auth: authRouter,
@@ -31,6 +32,7 @@ export const appRouter = createTRPCRouter({
   deployments: deploymentsRouter,
   notificationRules: notificationRulesRouter,
   notificationHistory: notificationHistoryRouter,
+  selfHealing: selfHealingRouter,
 });
 
 export type AppRouter = typeof appRouter;

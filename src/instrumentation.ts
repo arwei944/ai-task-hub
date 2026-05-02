@@ -6,6 +6,7 @@
 // ============================================================
 
 import { initKernel, getKernel } from '@/lib/core/v3';
+import { getSelfHealingManager } from '@/lib/core/v3/self-healing';
 import {
   TaskCapability,
   NotificationCapability,
@@ -38,6 +39,12 @@ export async function register() {
       `boot ${status.bootDuration}ms, ` +
       `health: ${status.healthStatus}`,
     );
+
+    // Start self-healing system
+    const selfHealing = getSelfHealingManager();
+    selfHealing.registerCapabilities(status.capabilities);
+    selfHealing.start();
+    console.log('[Instrumentation] v3.0 — Self-healing system started (30s health check interval)');
   } catch (err: any) {
     console.error(`[Instrumentation] v3.0 — AppKernel boot failed: ${err.message}`);
     // Don't throw — allow the app to start in degraded mode
@@ -47,6 +54,9 @@ export async function register() {
 
 export async function shutdown() {
   try {
+    const selfHealing = getSelfHealingManager();
+    selfHealing.stop();
+
     const kernel = getKernel();
     await kernel.shutdown();
     console.log('[Instrumentation] v3.0 — AppKernel shutdown complete.');
