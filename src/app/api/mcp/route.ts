@@ -521,13 +521,20 @@ async function initializeSharedTools() {
     }
   }
 
-  // Register AI handler management tools
+  // Register AI handler management tools + event handlers
   const { AIOrchestrator } = await import('@/lib/modules/ai-engine/ai-orchestrator');
   const aiOrchestrator = new AIOrchestrator(eventBus, logger);
-  // Register AI event handlers
+  // Register AI event handlers (same pattern as ai-engine.module.ts)
   try {
-    aiOrchestrator.registerHandler();
-    logger.info('AI Orchestrator event handlers registered');
+    const { TaskCreatedHandler } = await import('@/lib/modules/ai-engine/handlers/task-created.handler');
+    const { TaskStatusHandler } = await import('@/lib/modules/ai-engine/handlers/task-status.handler');
+    const { ProjectPhaseHandler } = await import('@/lib/modules/ai-engine/handlers/project-phase.handler');
+    const { WorkflowCompletedHandler } = await import('@/lib/modules/ai-engine/handlers/workflow-completed.handler');
+    aiOrchestrator.registerHandler(new TaskCreatedHandler(eventBus, logger));
+    aiOrchestrator.registerHandler(new TaskStatusHandler(eventBus, logger));
+    aiOrchestrator.registerHandler(new ProjectPhaseHandler(eventBus, logger));
+    aiOrchestrator.registerHandler(new WorkflowCompletedHandler(eventBus, logger));
+    logger.info(`AI Orchestrator event handlers registered (${aiOrchestrator.getRegisteredHandlers().length})`);
   } catch (err: any) {
     logger.warn(`Failed to register AI handlers: ${err.message}`);
   }
