@@ -79,6 +79,10 @@ jobs:
                   space_sdk="docker", private=False, exist_ok=True,
               )
               print(f"✓ Space {repo_id} created")
+              # Wait for Space to be ready after creation
+              import time
+              print("  Waiting 10s for Space initialization...")
+              time.sleep(10)
 
           # Prepare deploy directory
           deploy_dir = "/tmp/hf-deploy"
@@ -191,9 +195,10 @@ jobs:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           HF_REPO: ${{ vars.HF_REPO || 'arwei944/ai-task-hub' }}
         run: |
+          sleep 5
           python3 -c "
           from huggingface_hub import HfApi
-          import os
+          import os, time
           api = HfApi(token=os.environ['HF_TOKEN'])
           repo = os.environ.get('HF_REPO', 'arwei944/ai-task-hub')
           try:
