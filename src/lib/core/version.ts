@@ -9,7 +9,7 @@
 // ---- 应用版本 ----
 // 主版本号 (与 package.json 保持同步)
 // 注意: 不能使用 fs 读取 package.json，因为此文件会被客户端组件导入
-export const APP_VERSION: string = '2.6.0';
+export const APP_VERSION: string = '2.7.0';
 
 /** 应用名称 */
 export const APP_NAME: string = 'AI Task Hub';
@@ -105,7 +105,8 @@ export const VERSION_HISTORY: ReadonlyArray<{
   date: string;
   highlights: string[];
 }> = [
-  { version: '2.4.1', date: '2026-04-30', highlights: ['AI Unleashed', 'SOLO Bridge 真实实现', '7 AI 事件处理器', 'Email + WebPush 真实推送', 'Webhook 重试 + GitHub 触发器', '通知管理页面', '3 示例插件', '162+ MCP 工具', '1875 测试'] },
+  { version: '2.7.0', date: '2026-05-02', highlights: ['智能闭环', '可观测性真实数据', '反馈审批事件链', 'workflow.completed 载荷补全', 'ImprovementLoop 激活', 'SOLO 自省 Handler', 'Dashboard 全局视野', '5 个 AI Handler'] },
+  { version: '2.6.0', date: '2026-05-02', highlights: ['taskId 别名', '通知规则持久化', 'BrowserPush 渠道', 'AI Handler 实例化', 'ruleEngine.start()'] },
   { version: '2.4.0-beta.1', date: '2026-04-30', highlights: ['出站 Webhook 重试机制', 'GitHub Issue 触发器', '通知管理前端页面', '通知历史 tRPC', '5 个新 MCP 工具', '162+ MCP 工具'] },
   { version: '2.4.0-alpha.2', date: '2026-04-30', highlights: ['7 个 AI 事件处理器', 'Email 通知渠道', 'Web Push 真实推送', '10 个新 MCP 工具', '157+ MCP 工具'] },
   { version: '2.4.0-alpha.1', date: '2026-04-30', highlights: ['SOLO Bridge Phase B', 'MCP/REST/Pull 真实客户端', '熔断器 + 健康检查', 'ai-analyze 优雅降级', '7 个 SOLO Bridge MCP 工具', '147+ MCP 工具'] },

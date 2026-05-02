@@ -553,6 +553,8 @@ async function initializeSharedTools() {
     aiOrchestrator.registerHandler(new TaskStatusHandler(eventBus, logger));
     aiOrchestrator.registerHandler(new ProjectPhaseHandler(eventBus, logger));
     aiOrchestrator.registerHandler(new WorkflowCompletedHandler(eventBus, logger));
+    const { SOLOCallHandler } = await import('@/lib/modules/ai-engine/handlers/solo-call-handler');
+    aiOrchestrator.registerHandler(new SOLOCallHandler(eventBus, logger));
     logger.info(`AI Orchestrator event handlers registered (${aiOrchestrator.getRegisteredHandlers().length})`);
   } catch (err: any) {
     logger.warn(`Failed to register AI handlers: ${err.message}`);

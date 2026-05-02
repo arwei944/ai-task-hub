@@ -43,7 +43,7 @@ export const feedbackRouter = createTRPCRouter({
     }))
     .mutation(async ({ input }) => {
       const prisma = await getPrisma();
-      return prisma.feedbackCheckpoint.update({
+      const result = await prisma.feedbackCheckpoint.update({
         where: { id: input.checkpointId },
         data: {
           status: input.action,
@@ -54,6 +54,28 @@ export const feedbackRouter = createTRPCRouter({
           resolvedAt: new Date(),
         },
       });
+
+      // Emit EventBus event so downstream listeners react to the resolution
+      try {
+        const { getEventBus } = await import('@/lib/core/event-bus');
+        getEventBus().emit({
+          type: 'feedback.checkpoint.resolved',
+          payload: { checkpointId: input.checkpointId, action: input.action },
+          timestamp: new Date(),
+          source: 'feedback-router',
+        });
+      } catch {}
+
+      // Broadcast via SSE so other clients are notified in real time
+      try {
+        const { getSSEService } = await import('@/lib/modules/realtime/sse.service');
+        getSSEService().broadcast('feedback', {
+          type: 'checkpoint.resolved',
+          data: { checkpointId: input.checkpointId, action: input.action },
+        });
+      } catch {}
+
+      return result;
     }),
 
   listRules: protectedProcedure.query(async () => {
@@ -86,4 +108,91 @@ export const feedbackRouter = createTRPCRouter({
     ]);
     return { pending, total, approved, rejected };
   }),
+
+  // Improvement Loop procedures
+  runImprovementCycle: protectedProcedure
+    .input(z.object({
+      workflowId: z.string().optional(),
+      days: z.number().min(1).max(90).optional(),
+      autoApply: z.boolean().optional(),
+    }).optional())
+    .mutation(async ({ input }) => {
+      try {
+        const { getPrisma: _getPrisma } = await import('@/lib/db');
+        const prisma = await _getPrisma();
+        const { EventBus } = await import('@/lib/core/event-bus');
+        const { Logger } = await import('@/lib/core/logger');
+        const { SOLOBridge } = await import('@/lib/modules/workflow-engine/solo/solo-bridge');
+        const { Observability } = await import('@/lib/modules/workflow-engine/observability');
+        const { ImprovementLoop } = await import('@/lib/modules/workflow-engine/feedback/improvement-loop');
+
+        const eventBus = new EventBus();
+        const logger = new Logger('improvement-loop');
+        const soloBridge = new SOLOBridge({
+          defaultMode: 'mcp',
+          mcpEndpoint: process.env.SOLO_MCP_ENDPOINT || 'http://localhost:3001/mcp',
+          restEndpoint: process.env.SOLO_REST_ENDPOINT || 'http://localhost:3001/api/solo/call',
+          defaultTimeoutMs: 30000,
+          maxConcurrentSessions: 5,
+        }, eventBus, logger);
+        const observability = new Observability(eventBus, logger);
+        const improvementLoop = new ImprovementLoop(prisma, soloBridge, observability, logger);
+
+        const result = await improvementLoop.runImprovementCycle({
+          workflowId: input?.workflowId,
+          days: input?.days ?? 7,
+          autoApply: input?.autoApply ?? false,
+        });
+
+        return {
+          success: true,
+          analysis: {
+            totalCheckpoints: result.analysis.totalCheckpoints,
+            approvalRate: result.analysis.approvalRate,
+            rejectionRate: result.analysis.rejectionRate,
+            highRiskSteps: (result.analysis as any).highRiskSteps?.length ?? 0,
+          },
+          recommendationsCount: result.recommendations.length,
+          appliedCount: result.appliedCount,
+          recommendations: result.recommendations.map(r => ({
+            type: r.type,
+            description: r.description,
+            confidence: r.confidence,
+            targetStepType: r.targetStepType,
+          })),
+        };
+      } catch (error: any) {
+        return { success: false, error: error.message };
+      }
+    }),
+
+  getImprovementHistory: protectedProcedure
+    .input(z.object({ limit: z.number().min(1).max(50).optional() }).optional())
+    .query(async ({ input }) => {
+      try {
+        const { getPrisma: _getPrisma } = await import('@/lib/db');
+        const prisma = await _getPrisma();
+        const { EventBus } = await import('@/lib/core/event-bus');
+        const { Logger } = await import('@/lib/core/logger');
+        const { SOLOBridge } = await import('@/lib/modules/workflow-engine/solo/solo-bridge');
+        const { Observability } = await import('@/lib/modules/workflow-engine/observability');
+        const { ImprovementLoop } = await import('@/lib/modules/workflow-engine/feedback/improvement-loop');
+
+        const eventBus = new EventBus();
+        const logger = new Logger('improvement-loop');
+        const soloBridge = new SOLOBridge({
+          defaultMode: 'mcp',
+          mcpEndpoint: process.env.SOLO_MCP_ENDPOINT || 'http://localhost:3001/mcp',
+          restEndpoint: process.env.SOLO_REST_ENDPOINT || 'http://localhost:3001/api/solo/call',
+          defaultTimeoutMs: 30000,
+          maxConcurrentSessions: 5,
+        }, eventBus, logger);
+        const observability = new Observability(eventBus, logger);
+        const improvementLoop = new ImprovementLoop(prisma, soloBridge, observability, logger);
+
+        return { items: improvementLoop.getImprovementHistory({ limit: input?.limit ?? 20 }) };
+      } catch (error: any) {
+        return { items: [], error: error.message };
+      }
+    }),
 });

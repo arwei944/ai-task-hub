@@ -48,6 +48,8 @@ function DashboardContent() {
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [dailyTrends, setDailyTrends] = useState<DailyTrend[]>([]);
+  const [workflowStats, setWorkflowStats] = useState<{ totalExecutions: number; successRate: number; avgDurationMs: number; totalSOLOCalls: number } | null>(null);
+  const [pendingFeedback, setPendingFeedback] = useState(0);
   const [loading, setLoading] = useState(true);
 
   const fetchData = useCallback(async () => {
@@ -58,6 +60,8 @@ function DashboardContent() {
         trpc.notifications.list.query({ limit: 10 }),
         trpc.notifications.unreadCount.query(),
         trpc.stats.dailyTrends.query({ days: 14 }),
+        trpc.workflows.getObservabilityStats.query(),
+        trpc.feedback.getStats.query(),
       ]);
 
       const counts = results[0].status === 'fulfilled' ? results[0].value : { todo: 0, in_progress: 0, done: 0, closed: 0 };
@@ -65,12 +69,16 @@ function DashboardContent() {
       const notifs = results[2].status === 'fulfilled' ? results[2].value : { notifications: [] };
       const unread = results[3].status === 'fulfilled' ? results[3].value : 0;
       const trends = results[4].status === 'fulfilled' ? results[4].value : [];
+      const wfStats = results[5].status === 'fulfilled' ? results[5].value : null;
+      const fbStats = results[6].status === 'fulfilled' ? results[6].value : null;
 
       setStatusCounts(counts as unknown as StatusCount);
       setRecentTasks((tasksRes as any).items ?? []);
       setNotifications((notifs as any).notifications ?? []);
       setUnreadCount(unread);
       setDailyTrends(trends as unknown as DailyTrend[]);
+      setWorkflowStats(wfStats as any);
+      setPendingFeedback((fbStats as any)?.pending ?? 0);
 
       const now = new Date();
       const overdue = ((tasksRes as any).items ?? []).filter(
@@ -88,7 +96,7 @@ function DashboardContent() {
 
   // SSE real-time refresh
   useSSE({
-    channels: ['tasks', 'notifications'],
+    channels: ['tasks', 'notifications', 'workflows', 'feedback'],
     onEvent: (event) => {
       if (event.type?.startsWith('task.') || event.type?.startsWith('notification.')) {
         fetchData();
@@ -138,6 +146,8 @@ function DashboardContent() {
           <StatCard label="完成率" value={`${completionRate}%`} color="text-green-600 dark:text-green-400" />
           <StatCard label="进行中" value={statusCounts.in_progress} color="text-blue-600 dark:text-blue-400" />
           <StatCard label="超期任务" value={overdueTasks.length} color="text-red-600 dark:text-red-400" />
+          <StatCard label="工作流执行" value={workflowStats?.totalExecutions ?? 0} color="text-indigo-600 dark:text-indigo-400" />
+          <StatCard label="待审批" value={pendingFeedback} color="text-orange-600 dark:text-orange-400" />
         </div>
 
         {/* Daily Trend Mini Chart */}
@@ -227,6 +237,37 @@ function DashboardContent() {
 
           {/* Right Panel */}
           <div className="space-y-6">
+            {/* AI Agent Status */}
+            <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 p-5">
+              <h2 className="font-semibold text-gray-900 dark:text-gray-100 mb-4">🤖 AI 智能体状态</h2>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-500 dark:text-gray-400">工作流成功率</span>
+                  <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                    {workflowStats ? `${(workflowStats.successRate * 100).toFixed(1)}%` : '-'}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-500 dark:text-gray-400">平均执行时长</span>
+                  <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                    {workflowStats ? `${(workflowStats.avgDurationMs / 1000).toFixed(1)}s` : '-'}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-500 dark:text-gray-400">SOLO 调用次数</span>
+                  <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                    {workflowStats?.totalSOLOCalls ?? 0}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-500 dark:text-gray-400">待审批检查点</span>
+                  <span className={`text-sm font-medium ${pendingFeedback > 0 ? 'text-orange-600 dark:text-orange-400' : 'text-gray-900 dark:text-gray-100'}`}>
+                    {pendingFeedback}
+                  </span>
+                </div>
+              </div>
+            </div>
+
             {/* Risk Alerts */}
             <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 p-5">
               <h2 className="font-semibold text-gray-900 dark:text-gray-100 mb-4">⚠️ 风险预警</h2>

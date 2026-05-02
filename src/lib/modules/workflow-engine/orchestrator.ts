@@ -189,10 +189,36 @@ export class WorkflowOrchestrator {
         },
       });
 
-      // 发射事件 (catalog-matched types)
+      // 发射事件 (catalog-matched types) — enriched payload
+      const executionRecord = await this.prisma.workflowExecution.findUnique({
+        where: { id: executionId },
+      });
+      const workflowId = executionRecord?.workflowId ?? '';
+      const startedAt = executionRecord?.startedAt ?? new Date();
+      const duration = Date.now() - startedAt.getTime();
+
+      const stepExecutions = await this.prisma.workflowStepExecution.findMany({
+        where: { executionId },
+      });
+      const stepCount = stepExecutions.length;
+      const errorCount = stepExecutions.filter(s => s.status === 'failed').length;
+      const stepSummaries = stepExecutions.map(s => ({
+        name: s.stepName,
+        status: s.status,
+        duration: s.durationMs ?? 0,
+      }));
+
       this.observability.emitWorkflowEvent(
         finalStatus === 'completed' ? 'completed' : 'failed',
-        { executionId, status: finalStatus },
+        {
+          workflowId,
+          executionId,
+          status: finalStatus,
+          duration,
+          stepCount,
+          errorCount,
+          steps: stepSummaries,
+        },
       );
 
       // Also emit the execution-scoped events for backward compatibility
