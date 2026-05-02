@@ -44,3 +44,8 @@ export type { HealthMonitorConfig, CircuitBreakerConfig } from './health';
 
 // AppKernel
 export { AppKernel, getKernel, initKernel } from './kernel';
+
+// MCP Auto-Discovery Registry
+export { McpAutoRegistry, jsonSchemaToZodShape } from './mcp-registry';
+export type { ResolvedTool, ModuleContext, McpToolModuleDescriptor } from './mcp-registry';
+export { mcpToolModules } from './mcp-modules';
