@@ -56,3 +56,17 @@ export type { ServiceRegistry, ServiceToken } from './service-factory';
 
 // tRPC Context Extension
 export { ServiceAccessor } from './trpc-context';
+
+// Base Capability
+export { BaseCapability } from './base-capability';
+
+// Capability Implementations
+export {
+  TaskCapability,
+  NotificationCapability,
+  WorkflowCapability,
+  AICapability,
+  IntegrationCapability,
+  AgentCapability,
+  ObservabilityCapability,
+} from './capabilities';

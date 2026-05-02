@@ -5,39 +5,52 @@
 // 这是整个应用的唯一启动点
 // ============================================================
 
-export async function register() {
-  // v3.0 基座层延迟初始化
-  // 当前阶段（Phase 1）：基座层已就绪，但积木尚未迁移
-  // 积木将在 Phase 4 逐个迁移后注册到这里
-  //
-  // Phase 4 完成后的代码：
-  // import { initKernel } from '@/lib/core/v3';
-  // import { TaskCapability } from '@/lib/capabilities/task';
-  // import { ProjectCapability } from '@/lib/capabilities/project';
-  // import { NotificationCapability } from '@/lib/capabilities/notification';
-  // import { WorkflowCapability } from '@/lib/capabilities/workflow';
-  // import { AICapability } from '@/lib/capabilities/ai';
-  // import { IntegrationCapability } from '@/lib/capabilities/integration';
-  // import { ObservabilityCapability } from '@/lib/capabilities/observability';
-  //
-  // await initKernel([
-  //   new TaskCapability(),
-  //   new ProjectCapability(),
-  //   new NotificationCapability(),
-  //   new WorkflowCapability(),
-  //   new AICapability(),
-  //   new IntegrationCapability(),
-  //   new ObservabilityCapability(),
-  // ]);
+import { initKernel, getKernel } from '@/lib/core/v3';
+import {
+  TaskCapability,
+  NotificationCapability,
+  WorkflowCapability,
+  AICapability,
+  IntegrationCapability,
+  AgentCapability,
+  ObservabilityCapability,
+} from '@/lib/core/v3/capabilities';
 
-  console.log('[Instrumentation] v3.0 Phase 1: Foundation layer ready. Awaiting Phase 4 for capability registration.');
+export async function register() {
+  console.log('[Instrumentation] v3.0 — Booting AppKernel with 7 capabilities...');
+
+  try {
+    await initKernel([
+      new TaskCapability(),
+      new NotificationCapability(),
+      new WorkflowCapability(),
+      new AICapability(),
+      new IntegrationCapability(),
+      new AgentCapability(),
+      new ObservabilityCapability(),
+    ]);
+
+    const kernel = getKernel();
+    const status = kernel.getStatus();
+    console.log(
+      `[Instrumentation] v3.0 — AppKernel ready! ` +
+      `${status.capabilities.length} capabilities, ` +
+      `boot ${status.bootDuration}ms, ` +
+      `health: ${status.healthStatus}`,
+    );
+  } catch (err: any) {
+    console.error(`[Instrumentation] v3.0 — AppKernel boot failed: ${err.message}`);
+    // Don't throw — allow the app to start in degraded mode
+    // tRPC routes will initialize services on-demand via service-factory
+  }
 }
 
 export async function shutdown() {
-  // v3.0 关闭
-  // Phase 4 完成后：
-  // import { getKernel } from '@/lib/core/v3';
-  // await getKernel().shutdown();
-
-  console.log('[Instrumentation] Shutdown.');
+  try {
+    const kernel = getKernel();
+    await kernel.shutdown();
+    console.log('[Instrumentation] v3.0 — AppKernel shutdown complete.');
+  } catch {
+    console.log('[Instrumentation] Shutdown.');
+  }
 }
