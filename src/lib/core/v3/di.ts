@@ -5,6 +5,7 @@
 // ============================================================
 
 import type { IDIContainer } from './types';
+import { DIResolveError } from '@/lib/core/types';
 
 interface RegisteredService {
   factory: (container: IDIContainer) => unknown;
@@ -35,12 +36,12 @@ export class DIContainer implements IDIContainer {
   resolve<T>(token: string): T {
     const service = this.services.get(token);
     if (!service) {
-      throw new Error(`[DI:v3] Cannot resolve: "${token}"`);
+      throw new DIResolveError(token, `[DI:v3] Cannot resolve: "${token}"`);
     }
 
     // 循环依赖检测
     if (this.resolving.has(token)) {
-      throw new Error(`[DI:v3] Circular dependency: ${token}`);
+      throw new DIResolveError(token, `[DI:v3] Circular dependency: ${token}`);
     }
 
     // 单例直接返回

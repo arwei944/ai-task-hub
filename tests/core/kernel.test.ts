@@ -1,7 +1,9 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import type { Module } from '../../src/lib/core/types';
 
-// Mock the non-existent kernel module
+// [v3 Migration] Entire test skipped — v2 ModuleKernel replaced by v3 AppKernel
+// Mock and import of non-existent v2 modules commented out
+/*
 vi.mock('../../src/lib/core/kernel', () => {
   const { EventBus } = require('../../../src/lib/core/event-bus');
   const { DIContainer } = require('../../../src/lib/core/di-container');
@@ -58,6 +60,7 @@ vi.mock('../../src/lib/core/kernel', () => {
 
 // @ts-ignore - module is mocked via vi.mock
 import { ModuleKernel } from '../../src/lib/core/kernel';
+*/
 
 // Create a test module
 function createTestModule(id: string, deps: string[] = []): Module {
@@ -89,7 +92,7 @@ function createTestModule(id: string, deps: string[] = []): Module {
   };
 }
 
-describe('ModuleKernel', () => {
+describe.skip('ModuleKernel (v2 — replaced by v3 AppKernel)', () => {
   let kernel: ModuleKernel;
 
   beforeEach(() => {

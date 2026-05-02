@@ -1,35 +1,66 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach, beforeAll, afterAll } from 'vitest';
 import { PrismaClient } from '@/generated/prisma/client';
 import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
 import { VersionMgmtService } from '@/lib/modules/version-mgmt/version-mgmt.service';
 import { Logger } from '@/lib/core/logger';
 import { join } from 'node:path';
+import { mkdtempSync, rmSync, mkdirSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { execSync } from 'node:child_process';
 
-// Use a test database - set DATABASE_URL so getPrisma() in the service uses the same db
-const TEST_DB_PATH = join(process.cwd(), 'test-db', 'test-version-mgmt.db');
+// Use a temporary test database
+const TEST_TMP_DIR = mkdtempSync(join(tmpdir(), 'version-mgmt-test-'));
+const TEST_DB_PATH = join(TEST_TMP_DIR, 'test.db');
 process.env.DATABASE_URL = `file:${TEST_DB_PATH}`;
+
+// Mock getPrisma to return our test PrismaClient instance
+let testPrisma: PrismaClient;
+
+vi.mock('@/lib/db', () => ({
+  getPrisma: () => testPrisma,
+}));
 
 function createTestServices() {
   const adapter = new PrismaBetterSqlite3({ url: TEST_DB_PATH });
-  const prisma = new PrismaClient({ adapter });
+  testPrisma = new PrismaClient({ adapter });
   const logger = new Logger('test');
   const service = new VersionMgmtService(logger);
-  return { prisma, logger, service };
+  return { prisma: testPrisma, logger, service };
 }
 
 describe('VersionMgmtModule', () => {
   let services: ReturnType<typeof createTestServices>;
   let projectId: string;
 
+  beforeAll(async () => {
+    // Push schema to test database
+    const projectRoot = join(__dirname, '..', '..', '..');
+    execSync(
+      `npx prisma db push --url "file:${TEST_DB_PATH}" --accept-data-loss 2>&1`,
+      { stdio: 'pipe', cwd: projectRoot },
+    );
+  }, 60000);
+
+  afterAll(async () => {
+    // Clean up temp directory
+    try {
+      rmSync(TEST_TMP_DIR, { recursive: true, force: true });
+    } catch {
+      // Ignore cleanup errors
+    }
+  });
+
   beforeEach(async () => {
     services = createTestServices();
 
-    // Clean up all version-related data (order matters due to foreign keys)
+    // Clean up all data (order matters due to foreign keys)
     await services.prisma.releaseMilestone.deleteMany();
     await services.prisma.releaseApproval.deleteMany();
     await services.prisma.releaseTag.deleteMany();
     await services.prisma.releaseChangelog.deleteMany();
     await services.prisma.release.deleteMany();
+    await services.prisma.activityLog.deleteMany();
+    await services.prisma.project.deleteMany();
 
     // Create a test project
     const project = await services.prisma.project.create({
@@ -48,6 +79,8 @@ describe('VersionMgmtModule', () => {
     await services.prisma.releaseTag.deleteMany();
     await services.prisma.releaseChangelog.deleteMany();
     await services.prisma.release.deleteMany();
+    await services.prisma.activityLog.deleteMany();
+    await services.prisma.project.deleteMany();
     await services.prisma.$disconnect();
   });
 

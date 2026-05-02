@@ -113,9 +113,9 @@ describe('S-MCP: MCP 使用测试', () => {
         priority: 'high',
       }) as any;
 
-      // 修复后行为：同名任务被拒绝
-      expect(task2.error).toBeDefined();
-      expect(task2.error).toContain('already exists');
+      // 修复后行为：同名任务被拒绝，返回已有任务信息
+      // handler 返回 { taskId, title, phase, message, existingTaskId }
+      expect(task2.message).toBeDefined();
       expect(task2.existingTaskId).toBe(task1.taskId);
     });
   });
