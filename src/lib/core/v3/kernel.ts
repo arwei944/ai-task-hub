@@ -27,7 +27,6 @@ export class AppKernel {
   private capabilities: Capability[] = [];
   private booted = false;
   private bootDuration = 0;
-  private bootTime = 0;
 
   constructor(config?: AppKernelConfig) {
     // 1. 创建基础服务
@@ -126,7 +125,6 @@ export class AppKernel {
     this.capabilities = capabilities;
     this.booted = true;
     this.bootDuration = Date.now() - startTime;
-    this.bootTime = Date.now();
 
     console.info(
       `[Kernel] Boot complete in ${this.bootDuration}ms. ` +

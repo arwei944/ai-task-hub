@@ -93,7 +93,7 @@ describe('ServiceFactory', () => {
 
 describe('ServiceAccessor', () => {
   let container: DIContainer;
-  let accessor: ServiceAccessor;
+  let accessor: InstanceType<typeof ServiceAccessor>;
 
   beforeEach(() => {
     container = new DIContainer();

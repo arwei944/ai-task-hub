@@ -25,6 +25,7 @@ import {
   GitBranch,
   Activity,
   Bell,
+  Wrench,
 } from 'lucide-react';
 import { ThemeToggle } from './theme-toggle';
 import { LanguageSwitcher } from './language-switcher';
@@ -47,6 +48,7 @@ const mainNavItems: NavItem[] = [
   { href: '/integrations', label: '集成', icon: Link2 },
   { href: '/deployments', label: '部署管理', icon: Rocket },
   { href: '/notifications', label: '通知管理', icon: Bell },
+  { href: '/ops', label: '运维面板', icon: Wrench },
   { href: '/plugins', label: '插件', icon: Puzzle },
 ];
 

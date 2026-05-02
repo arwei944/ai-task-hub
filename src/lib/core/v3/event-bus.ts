@@ -16,8 +16,6 @@ export interface EventBusConfig {
   enableDLQ?: boolean;
   maxDLQSize?: number;
   maxRetries?: number;
-  /** 事件 TTL（小时，默认 168 = 7 天，0 = 不过期） */
-  eventTTLHours?: number;
 }
 
 export interface DeadLetterEntry {

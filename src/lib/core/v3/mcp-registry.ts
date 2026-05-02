@@ -24,7 +24,8 @@ export interface ResolvedTool {
 
 /** Shared context passed to all module initializers */
 export interface ModuleContext {
-  logger: Console;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  logger: any;
   eventBus: any;
   prisma: any;
   /** Shared service instances that modules can register for cross-module deps */

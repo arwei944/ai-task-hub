@@ -109,7 +109,7 @@ export const mcpToolModules: McpToolModuleDescriptor[] = [
     name: 'Version',
     init: async (ctx: ModuleContext) => {
       const { VersionMgmtService } = await import('@/lib/modules/version-mgmt/version-mgmt.service');
-      const service = new VersionMgmtService(ctx.prisma, ctx.eventBus, ctx.logger);
+      const service = new VersionMgmtService(ctx.logger, ctx.eventBus);
       ctx.services.set('versionService', service);
       return [service, ctx.logger];
     },

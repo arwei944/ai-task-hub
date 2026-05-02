@@ -28,11 +28,12 @@ export class ServiceAccessor {
   constructor(private container: IDIContainer) {}
 
   /**
-   * Get a service by token with full type safety.
+   * Get a service by token.
    * Usage: services.get(ServiceTokens.taskService)
    */
-  get<T extends ServiceRegistry[ServiceToken]>(token: ServiceToken): T {
-    return this.container.resolve<T>(token);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  get<T = any>(token: ServiceToken): T {
+    return this.container.resolve(token) as unknown as T;
   }
 
   // ---- Convenience shortcuts ----

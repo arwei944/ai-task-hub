@@ -102,8 +102,8 @@ export const notificationHistoryRouter = createTRPCRouter({
         return {
           total,
           unread,
-          byLevel: Object.fromEntries(byLevel.map(g => [g.level, g._count])),
-          byChannel: Object.fromEntries(byChannel.map(g => [g.channel, g._count])),
+          byLevel: Object.fromEntries(byLevel.map((g: any) => [g.level, g._count])),
+          byChannel: Object.fromEntries(byChannel.map((g: any) => [g.channel, g._count])),
         };
       } finally {
         await prisma.$disconnect();

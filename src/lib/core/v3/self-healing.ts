@@ -11,9 +11,8 @@
 // This module is registered as part of the AppKernel boot process.
 // ============================================================
 
-import type { Capability, HealthReport, IEventBus } from './types';
+import type { Capability, HealthReport } from './types';
 import { HealthMonitor, CircuitBreaker } from './health';
-import { EventBus } from './event-bus';
 
 // ---- SSE Health Push ----
 

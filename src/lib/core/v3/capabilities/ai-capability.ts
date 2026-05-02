@@ -8,7 +8,7 @@
 
 import type { IDIContainer, IEventBus, HealthReport } from '@/lib/core/v3/types';
 import { BaseCapability } from '../base-capability';
-import { ServiceTokens, registerAIServices } from '../service-factory';
+import { registerAIServices } from '../service-factory';
 
 export class AICapability extends BaseCapability {
   readonly id = 'ai';

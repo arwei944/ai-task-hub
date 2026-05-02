@@ -10,7 +10,7 @@ export const workspacesRouter = createTRPCRouter({
       orderBy: { joinedAt: 'desc' },
     });
     await prisma.$disconnect();
-    return members.map(m => ({
+    return members.map((m: any) => ({
       ...m.workspace,
       role: m.role,
       joinedAt: m.joinedAt,

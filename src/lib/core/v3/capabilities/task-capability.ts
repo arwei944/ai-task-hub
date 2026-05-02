@@ -9,7 +9,7 @@
 
 import type { IDIContainer, IEventBus, HealthReport } from '@/lib/core/v3/types';
 import { BaseCapability } from '../base-capability';
-import { ServiceTokens, registerTaskServices } from '../service-factory';
+import { registerTaskServices } from '../service-factory';
 
 export class TaskCapability extends BaseCapability {
   readonly id = 'task';

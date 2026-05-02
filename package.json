@@ -1,6 +1,6 @@
 {
   "name": "ai-task-hub",
-  "version": "2.7.0",
+  "version": "3.0.0",
   "private": true,
   "packageManager": "pnpm@10.33.2",
   "pnpm": {
@@ -33,6 +33,7 @@
     "@trpc/client": "^11.16.0",
     "@trpc/react-query": "^11.16.0",
     "@trpc/server": "^11.16.0",
+    "@xyflow/react": "^12.10.2",
     "ai": "^6.0.168",
     "bcryptjs": "^3.0.3",
     "better-sqlite3": "^12.9.0",

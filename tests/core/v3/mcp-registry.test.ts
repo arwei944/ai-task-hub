@@ -17,16 +17,16 @@ function createMockContext(): ModuleContext {
   };
 }
 
-// Paths relative to mcp-registry.ts location
-const base = '@/lib/core/v3';
+// Paths for test fixtures (moved from src/ to tests/)
+const fixturesBase = '@/../tests/core/v3/mcp-test-fixtures';
 
 function testModule(id: string, opts?: Partial<Pick<McpToolModuleDescriptor, 'init' | 'dependsOn' | 'optional'>>): McpToolModuleDescriptor {
   return {
     id,
     name: id,
-    toolsPath: `${base}/__test_tools_${id}`,
+    toolsPath: `${fixturesBase}/__test_tools_${id}`,
     toolsExport: 'tools',
-    handlersPath: `${base}/__test_handlers_${id}`,
+    handlersPath: `${fixturesBase}/__test_handlers_${id}`,
     handlersExport: 'createHandlers',
     init: opts?.init ?? (async (ctx) => [ctx]),
     dependsOn: opts?.dependsOn,

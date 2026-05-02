@@ -25,7 +25,8 @@ export class NotificationCapability extends BaseCapability {
     // For v3 kernel boot, ensure rule engine is active
     if (this._container) {
       try {
-        const ruleEngine = this._container.resolve(ServiceTokens.ruleEngine);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const ruleEngine = this._container.resolve(ServiceTokens.ruleEngine) as any;
         if (ruleEngine && typeof ruleEngine.start === 'function') {
           ruleEngine.start();
         }

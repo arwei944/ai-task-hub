@@ -55,7 +55,7 @@ export const deploymentsRouter = createTRPCRouter({
       return {
         total,
         byStatus: statusMap,
-        environments: environments.map(e => ({
+        environments: environments.map((e: any) => ({
           id: e.id,
           name: e.name,
           displayName: e.displayName,

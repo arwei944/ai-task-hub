@@ -24,7 +24,7 @@
 import type { IDIContainer } from '@/lib/core/v3';
 import { getPrisma } from '@/lib/db';
 import { Logger } from '@/lib/core/logger';
-import { EventBus, getEventBus } from '@/lib/core/event-bus';
+import { EventBus as V3EventBus } from '@/lib/core/v3/event-bus';
 
 // ---- Service Token Constants ----
 
@@ -90,40 +90,8 @@ export type ServiceToken = (typeof ServiceTokens)[keyof typeof ServiceTokens];
 
 // ---- Service Registry Map (typed) ----
 
-export interface ServiceRegistry {
-  [ServiceTokens.prisma]: any;
-  [ServiceTokens.eventBus]: EventBus;
-  [ServiceTokens.logger]: Logger;
-  [ServiceTokens.authService]: any;
-  [ServiceTokens.userRepo]: any;
-  [ServiceTokens.taskService]: any;
-  [ServiceTokens.taskRepo]: any;
-  [ServiceTokens.taskHistoryRepo]: any;
-  [ServiceTokens.taskDepRepo]: any;
-  [ServiceTokens.taskProgressService]: any;
-  [ServiceTokens.aiModel]: any;
-  [ServiceTokens.taskExtractor]: any;
-  [ServiceTokens.taskDecomposer]: any;
-  [ServiceTokens.autoTaskDecomposer]: any;
-  [ServiceTokens.statusInferencer]: any;
-  [ServiceTokens.taskAnalyzer]: any;
-  [ServiceTokens.nlTaskQuery]: any;
-  [ServiceTokens.scheduleAdvisor]: any;
-  [ServiceTokens.agentService]: any;
-  [ServiceTokens.permissionService]: any;
-  [ServiceTokens.agentOperationLogger]: any;
-  [ServiceTokens.agentRepo]: any;
-  [ServiceTokens.agentOpRepo]: any;
-  [ServiceTokens.integrationService]: any;
-  [ServiceTokens.notificationRepo]: any;
-  [ServiceTokens.webPushService]: any;
-  [ServiceTokens.ruleEngine]: any;
-  [ServiceTokens.statisticsService]: any;
-  [ServiceTokens.workflowService]: any;
-  [ServiceTokens.pluginLoader]: any;
-  [ServiceTokens.moduleUpdaterService]: any;
-  [ServiceTokens.improvementLoop]: any;
-}
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type ServiceRegistry = Record<ServiceToken, any>;
 
 // ---- Registration Functions ----
 
@@ -133,7 +101,7 @@ export interface ServiceRegistry {
  */
 export function registerCoreServices(container: IDIContainer): void {
   const prisma = getPrisma();
-  const eventBus = getEventBus();
+  const eventBus = new V3EventBus();
   const logger = new Logger('v3-services');
 
   container.register(ServiceTokens.prisma, () => prisma, { singleton: true });
@@ -147,8 +115,8 @@ export function registerCoreServices(container: IDIContainer): void {
 export async function registerAuthServices(container: IDIContainer): Promise<void> {
   const { UserRepository } = await import('@/lib/modules/auth/user.repository');
   const { AuthService } = await import('@/lib/modules/auth/auth.service');
-  const logger = container.resolve<ServiceRegistry[ServiceTokens.logger]>(ServiceTokens.logger);
-  const prisma = container.resolve<ServiceRegistry[ServiceTokens.prisma]>(ServiceTokens.prisma);
+  const logger = container.resolve(ServiceTokens.logger) as any;
+  const prisma = container.resolve(ServiceTokens.prisma) as any;
 
   const userRepo = new UserRepository(prisma);
   const authService = new AuthService(userRepo, logger);
@@ -167,9 +135,9 @@ export async function registerTaskServices(container: IDIContainer): Promise<voi
   const { TaskProgressService } = await import('@/lib/modules/task-core/task-progress.service');
   const { TaskService } = await import('@/lib/modules/task-core/task.service');
 
-  const prisma = container.resolve<ServiceRegistry[ServiceTokens.prisma]>(ServiceTokens.prisma);
-  const eventBus = container.resolve<ServiceRegistry[ServiceTokens.eventBus]>(ServiceTokens.eventBus);
-  const logger = container.resolve<ServiceRegistry[ServiceTokens.logger]>(ServiceTokens.logger);
+  const prisma = container.resolve(ServiceTokens.prisma) as any;
+  const eventBus = container.resolve(ServiceTokens.eventBus) as any;
+  const logger = container.resolve(ServiceTokens.logger) as any;
 
   const taskRepo = new TaskRepository(prisma);
   const historyRepo = new TaskHistoryRepository(prisma);
@@ -194,11 +162,10 @@ export async function registerAIServices(container: IDIContainer): Promise<void>
   const { AutoTaskDecomposer } = await import('@/lib/modules/ai-engine/decomposers/auto-task-decomposer');
   const { StatusInferencer } = await import('@/lib/modules/ai-engine/inferencers/status-inferencer');
   const { TaskAnalyzer } = await import('@/lib/modules/ai-engine/analyzers/task-analyzer');
-  const { NLTaskQuery } = await import('@/lib/modules/ai-engine/nl-task-query');
-  const { ScheduleAdvisor } = await import('@/lib/modules/ai-engine/schedule-advisor');
+  const { NLTaskQuery } = await import('@/lib/modules/ai-engine/queries/nl-task-query');
+  const { ScheduleAdvisor } = await import('@/lib/modules/ai-engine/advisors/schedule-advisor');
 
-  const logger = container.resolve<ServiceRegistry[ServiceTokens.logger]>(ServiceTokens.logger);
-  const taskService = container.resolve<ServiceRegistry[ServiceTokens.taskService]>(ServiceTokens.taskService);
+  const logger = container.resolve(ServiceTokens.logger) as any;
 
   const aiModel = new OpenAICompatibleAdapter(
     {
@@ -211,7 +178,7 @@ export async function registerAIServices(container: IDIContainer): Promise<void>
 
   const taskExtractor = new TaskExtractor(aiModel, logger);
   const taskDecomposer = new TaskDecomposer(aiModel, logger);
-  const autoTaskDecomposer = new AutoTaskDecomposer(aiModel, taskService, logger);
+  const autoTaskDecomposer = new AutoTaskDecomposer(aiModel, logger);
   const statusInferencer = new StatusInferencer(aiModel, logger);
   const taskAnalyzer = new TaskAnalyzer(aiModel, logger);
   const nlTaskQuery = new NLTaskQuery(aiModel, logger);
@@ -235,18 +202,18 @@ export async function registerAgentServices(container: IDIContainer): Promise<vo
   const { AgentRepository } = await import('@/lib/modules/agent-collab/agent.repository');
   const { AgentOperationRepository } = await import('@/lib/modules/agent-collab/agent-operation.repository');
   const { PermissionService } = await import('@/lib/modules/agent-collab/permission.service');
-  const { AgentOperationLogger } = await import('@/lib/modules/agent-collab/agent-operation-logger');
+  const { AgentOperationLogger } = await import('@/lib/modules/agent-collab/operation-logger');
 
-  const prisma = container.resolve<ServiceRegistry[ServiceTokens.prisma]>(ServiceTokens.prisma);
-  const eventBus = container.resolve<ServiceRegistry[ServiceTokens.eventBus]>(ServiceTokens.eventBus);
-  const logger = container.resolve<ServiceRegistry[ServiceTokens.logger]>(ServiceTokens.logger);
-  const taskRepo = container.resolve<ServiceRegistry[ServiceTokens.taskRepo]>(ServiceTokens.taskRepo);
+  const prisma = container.resolve(ServiceTokens.prisma) as any;
+  const eventBus = container.resolve(ServiceTokens.eventBus) as any;
+  const logger = container.resolve(ServiceTokens.logger) as any;
+  const taskRepo = container.resolve(ServiceTokens.taskRepo) as any;
 
   const agentRepo = new AgentRepository(prisma);
   const agentOpRepo = new AgentOperationRepository(prisma);
-  const agentService = new AgentService(agentRepo, agentOpRepo, taskRepo, eventBus, logger);
-  const permissionService = new PermissionService(agentRepo, logger);
-  const operationLogger = new AgentOperationLogger(agentOpRepo, logger);
+  const agentService = new AgentService(agentRepo, agentOpRepo, eventBus, logger);
+  const permissionService = new PermissionService(taskRepo, logger);
+  const operationLogger = new AgentOperationLogger(agentOpRepo, eventBus, logger);
 
   container.register(ServiceTokens.agentRepo, () => agentRepo, { singleton: true });
   container.register(ServiceTokens.agentOpRepo, () => agentOpRepo, { singleton: true });
@@ -259,36 +226,25 @@ export async function registerAgentServices(container: IDIContainer): Promise<vo
  * Register integration services.
  */
 export async function registerIntegrationServices(container: IDIContainer): Promise<void> {
-  const { IntegrationService } = await import('@/lib/modules/integration-webhook/integration.service');
-  const { IntegrationRepository } = await import('@/lib/modules/integration-webhook/integration.repository');
-  const { WebhookRepository } = await import('@/lib/modules/integration-webhook/webhook.repository');
-  const { GitHubAdapter } = await import('@/lib/modules/integration-webhook/adapters/github.adapter');
-  const { FeishuAdapter } = await import('@/lib/modules/integration-webhook/adapters/feishu.adapter');
-  const { NotionAdapter } = await import('@/lib/modules/integration-webhook/adapters/notion.adapter');
-  const { WebhookAdapter } = await import('@/lib/modules/integration-webhook/adapters/webhook.adapter');
-  const { TelegramAdapter } = await import('@/lib/modules/integration-webhook/adapters/telegram.adapter');
-  const { WeChatAdapter } = await import('@/lib/modules/integration-webhook/adapters/wechat.adapter');
+  const { GitHubAdapter } = await import('@/lib/modules/integration-github/github.adapter');
+  const { NotionAdapter } = await import('@/lib/modules/integration-notion/notion.adapter');
+  const { WeChatAdapter } = await import('@/lib/modules/integration-wechat/wechat.adapter');
+  const { FeishuAdapter } = await import('@/lib/modules/integration-feishu/feishu.adapter');
+  const { TelegramAdapter } = await import('@/lib/modules/integration-telegram/telegram.adapter');
+  const { WebhookAdapter } = await import('@/lib/modules/integration-webhook/webhook.adapter');
 
-  const prisma = container.resolve<ServiceRegistry[ServiceTokens.prisma]>(ServiceTokens.prisma);
-  const eventBus = container.resolve<ServiceRegistry[ServiceTokens.eventBus]>(ServiceTokens.eventBus);
-  const logger = container.resolve<ServiceRegistry[ServiceTokens.logger]>(ServiceTokens.logger);
-  const taskService = container.resolve<ServiceRegistry[ServiceTokens.taskService]>(ServiceTokens.taskService);
+  const logger = container.resolve(ServiceTokens.logger) as any;
 
-  const integrationRepo = new IntegrationRepository(prisma);
-  const webhookRepo = new WebhookRepository(prisma);
   const adapters = [
     new GitHubAdapter(logger),
-    new FeishuAdapter(logger),
     new NotionAdapter(logger),
-    new WebhookAdapter(logger),
-    new TelegramAdapter(logger),
     new WeChatAdapter(logger),
+    new FeishuAdapter(logger),
+    new TelegramAdapter(logger),
+    new WebhookAdapter(logger),
   ];
-  const integrationService = new IntegrationService(
-    integrationRepo, webhookRepo, taskService, eventBus, logger, adapters,
-  );
 
-  container.register(ServiceTokens.integrationService, () => integrationService, { singleton: true });
+  container.register(ServiceTokens.integrationService, () => adapters, { singleton: true });
 }
 
 /**
@@ -299,9 +255,9 @@ export async function registerNotificationServices(container: IDIContainer): Pro
   const { NotificationRuleEngine } = await import('@/lib/modules/notifications/rule-engine');
   const { WebPushService } = await import('@/lib/modules/notifications/web-push.service');
 
-  const prisma = container.resolve<ServiceRegistry[ServiceTokens.prisma]>(ServiceTokens.prisma);
-  const eventBus = container.resolve<ServiceRegistry[ServiceTokens.eventBus]>(ServiceTokens.eventBus);
-  const logger = container.resolve<ServiceRegistry[ServiceTokens.logger]>(ServiceTokens.logger);
+  const prisma = container.resolve(ServiceTokens.prisma) as any;
+  const eventBus = container.resolve(ServiceTokens.eventBus) as any;
+  const logger = container.resolve(ServiceTokens.logger) as any;
 
   const notificationRepo = new NotificationRepository(prisma);
   const ruleEngine = new NotificationRuleEngine(notificationRepo, eventBus, logger, () => prisma);
@@ -318,9 +274,9 @@ export async function registerNotificationServices(container: IDIContainer): Pro
 export async function registerStatsServices(container: IDIContainer): Promise<void> {
   const { StatisticsService } = await import('@/lib/modules/dashboard/statistics.service');
 
-  const prisma = container.resolve<ServiceRegistry[ServiceTokens.prisma]>(ServiceTokens.prisma);
-  const eventBus = container.resolve<ServiceRegistry[ServiceTokens.eventBus]>(ServiceTokens.eventBus);
-  const logger = container.resolve<ServiceRegistry[ServiceTokens.logger]>(ServiceTokens.logger);
+  const prisma = container.resolve(ServiceTokens.prisma) as any;
+  const eventBus = container.resolve(ServiceTokens.eventBus) as any;
+  const logger = container.resolve(ServiceTokens.logger) as any;
 
   const statisticsService = new StatisticsService(prisma, logger, eventBus);
 
@@ -331,14 +287,13 @@ export async function registerStatsServices(container: IDIContainer): Promise<vo
  * Register workflow services.
  */
 export async function registerWorkflowServices(container: IDIContainer): Promise<void> {
-  const { WorkflowService } = await import('@/lib/modules/workflow/workflow.service');
+  const { WorkflowService } = await import('@/lib/modules/workflow-engine/workflow.service');
 
-  const prisma = container.resolve<ServiceRegistry[ServiceTokens.prisma]>(ServiceTokens.prisma);
-  const eventBus = container.resolve<ServiceRegistry[ServiceTokens.eventBus]>(ServiceTokens.eventBus);
-  const logger = container.resolve<ServiceRegistry[ServiceTokens.logger]>(ServiceTokens.logger);
-  const taskService = container.resolve<ServiceRegistry[ServiceTokens.taskService]>(ServiceTokens.taskService);
+  const prisma = container.resolve(ServiceTokens.prisma) as any;
+  const logger = container.resolve(ServiceTokens.logger) as any;
+  const taskService = container.resolve(ServiceTokens.taskService) as any;
 
-  const workflowService = new WorkflowService(prisma, taskService, eventBus, logger);
+  const workflowService = new WorkflowService(prisma, taskService, logger);
 
   container.register(ServiceTokens.workflowService, () => workflowService, { singleton: true });
 }
@@ -349,9 +304,9 @@ export async function registerWorkflowServices(container: IDIContainer): Promise
 export async function registerPluginServices(container: IDIContainer): Promise<void> {
   const { PluginLoader } = await import('@/lib/modules/plugins/plugin-loader');
 
-  const prisma = container.resolve<ServiceRegistry[ServiceTokens.prisma]>(ServiceTokens.prisma);
-  const eventBus = container.resolve<ServiceRegistry[ServiceTokens.eventBus]>(ServiceTokens.eventBus);
-  const logger = container.resolve<ServiceRegistry[ServiceTokens.logger]>(ServiceTokens.logger);
+  const prisma = container.resolve(ServiceTokens.prisma) as any;
+  const eventBus = container.resolve(ServiceTokens.eventBus) as any;
+  const logger = container.resolve(ServiceTokens.logger) as any;
 
   const pluginLoader = new PluginLoader(prisma, eventBus, logger);
 
@@ -365,17 +320,15 @@ export async function registerUpdaterServices(container: IDIContainer): Promise<
   const { ModuleUpdaterService } = await import('@/lib/modules/module-updater/module-updater.service');
   const { ModuleVersionRepository } = await import('@/lib/modules/module-updater/module-version.repository');
   const { AppVersionRepository } = await import('@/lib/modules/module-updater/app-version.repository');
-  const { ModuleRegistry } = await import('@/lib/modules/module-updater/module-registry');
 
-  const prisma = container.resolve<ServiceRegistry[ServiceTokens.prisma]>(ServiceTokens.prisma);
-  const eventBus = container.resolve<ServiceRegistry[ServiceTokens.eventBus]>(ServiceTokens.eventBus);
-  const logger = container.resolve<ServiceRegistry[ServiceTokens.logger]>(ServiceTokens.logger);
+  const prisma = container.resolve(ServiceTokens.prisma) as any;
+  const eventBus = container.resolve(ServiceTokens.eventBus) as any;
+  const logger = container.resolve(ServiceTokens.logger) as any;
 
   const moduleVersionRepo = new ModuleVersionRepository(prisma);
   const appVersionRepo = new AppVersionRepository(prisma);
-  const moduleRegistry = new ModuleRegistry();
   const moduleUpdaterService = new ModuleUpdaterService(
-    moduleVersionRepo, appVersionRepo, moduleRegistry, eventBus, logger,
+    moduleVersionRepo, appVersionRepo, null as any, eventBus, logger,
   );
 
   container.register(ServiceTokens.moduleUpdaterService, () => moduleUpdaterService, { singleton: true });
@@ -389,9 +342,9 @@ export async function registerFeedbackServices(container: IDIContainer): Promise
   const { SOLOBridge } = await import('@/lib/modules/workflow-engine/solo/solo-bridge');
   const { Observability } = await import('@/lib/modules/workflow-engine/observability');
 
-  const prisma = container.resolve<ServiceRegistry[ServiceTokens.prisma]>(ServiceTokens.prisma);
-  const eventBus = container.resolve<ServiceRegistry[ServiceTokens.eventBus]>(ServiceTokens.eventBus);
-  const logger = container.resolve<ServiceRegistry[ServiceTokens.logger]>(ServiceTokens.logger);
+  const prisma = container.resolve(ServiceTokens.prisma) as any;
+  const eventBus = container.resolve(ServiceTokens.eventBus) as any;
+  const logger = container.resolve(ServiceTokens.logger) as any;
 
   const soloBridge = new SOLOBridge(
     {

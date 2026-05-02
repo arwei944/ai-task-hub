@@ -8,7 +8,7 @@
 
 import type { IDIContainer, IEventBus, HealthReport } from '@/lib/core/v3/types';
 import { BaseCapability } from '../base-capability';
-import { ServiceTokens, registerWorkflowServices } from '../service-factory';
+import { registerWorkflowServices } from '../service-factory';
 
 export class WorkflowCapability extends BaseCapability {
   readonly id = 'workflow';

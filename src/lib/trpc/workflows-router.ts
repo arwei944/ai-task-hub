@@ -183,7 +183,7 @@ export const workflowsRouter = createTRPCRouter({
     // Calculate avg duration from startedAt -> completedAt
     let avgDurationMs = 0;
     if (completedExecs.length > 0) {
-      const totalDuration = completedExecs.reduce((sum, e) => {
+      const totalDuration = completedExecs.reduce((sum: any, e: any) => {
         return sum + ((e.completedAt?.getTime() ?? 0) - (e.startedAt?.getTime() ?? 0));
       }, 0);
       avgDurationMs = Math.round(totalDuration / completedExecs.length);
@@ -228,7 +228,7 @@ export const workflowsRouter = createTRPCRouter({
         },
       });
 
-      const items = executions.map((exec) => {
+      const items = executions.map((exec: any) => {
         let workflowName = exec.workflow?.name ?? 'Unknown';
         // Fallback: try to extract name from workflowSnapshot JSON
         if (!exec.workflow?.name && exec.workflowSnapshot) {
@@ -241,7 +241,7 @@ export const workflowsRouter = createTRPCRouter({
         }
 
         const stepsCompleted = exec.stepExecutions.filter(
-          (s) => s.status === 'completed',
+          (s: any) => s.status === 'completed',
         ).length;
         const totalSteps = exec.stepExecutions.length;
         const durationMs =
@@ -282,7 +282,7 @@ export const workflowsRouter = createTRPCRouter({
     });
 
     const failCountMap = new Map(
-      failCounts.map((f) => [f.stepType, f._count.id]),
+      failCounts.map((f: any) => [f.stepType, f._count.id]),
     );
 
     const stepLabels: Record<string, string> = {
@@ -300,17 +300,17 @@ export const workflowsRouter = createTRPCRouter({
       'invoke-agent': '调用代理',
     };
 
-    const items = stepGroups.map((group) => {
+    const items = stepGroups.map((group: any) => {
       const totalCalls = group._count.id;
       const failCount = failCountMap.get(group.stepType) ?? 0;
-      const successCount = totalCalls - failCount;
+      const successCount = Number(totalCalls) - Number(failCount);
 
       return {
         stepType: group.stepType,
         label: stepLabels[group.stepType] ?? group.stepType,
         totalCalls,
-        avgDurationMs: Math.round(group._avg.durationMs ?? 0),
-        failureRate: totalCalls > 0 ? failCount / totalCalls : 0,
+        avgDurationMs: Math.round(Number(group._avg.durationMs) || 0),
+        failureRate: Number(totalCalls) > 0 ? Number(failCount) / Number(totalCalls) : 0,
         successCount,
         failCount,
       };
@@ -333,7 +333,7 @@ export const workflowsRouter = createTRPCRouter({
         take: limit,
       });
 
-      const items = soloSteps.map((step) => {
+      const items = soloSteps.map((step: any) => {
         let prompt = '';
         if (step.input) {
           try {

@@ -132,7 +132,7 @@ export const feedbackRouter = createTRPCRouter({
           },
           recommendationsCount: result.recommendations.length,
           appliedCount: result.appliedCount,
-          recommendations: result.recommendations.map(r => ({
+          recommendations: result.recommendations.map((r: any) => ({
             type: r.type,
             description: r.description,
             confidence: r.confidence,
