@@ -7,7 +7,15 @@ export const trpc = createTRPCClient<AppRouter>({
     httpBatchLink({
       url: '/api/trpc',
       transformer: superjson,
-      // No auth headers needed - server auto-authenticates as admin
+      headers() {
+        if (typeof window !== 'undefined') {
+          const token = localStorage.getItem('token');
+          if (token) {
+            return { Authorization: `Bearer ${token}` };
+          }
+        }
+        return {};
+      },
     }),
   ],
 });

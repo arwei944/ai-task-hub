@@ -10,16 +10,38 @@
 // ============================================================
 
 import { getSelfHealingManager } from '@/lib/core/v3/self-healing';
+import { getServices, ensureServicesInitialized } from '@/lib/trpc/server';
 import { Logger } from '@/lib/core/logger';
 
 const logger = new Logger('sse-health');
 
 export async function GET(request: Request) {
-  // Auth check: admin only
+  // Auth check: admin only — actually verify the token
   const authHeader = request.headers.get('authorization');
   if (!authHeader?.startsWith('Bearer ')) {
     return new Response(
       JSON.stringify({ error: 'Authentication required' }),
+      { status: 401, headers: { 'Content-Type': 'application/json' } },
+    );
+  }
+
+  const token = authHeader.slice(7);
+
+  try {
+    await ensureServicesInitialized();
+    const services = getServices();
+    const user = await services.authService.verifyToken(token);
+
+    if (!user) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid or expired token' }),
+        { status: 401, headers: { 'Content-Type': 'application/json' } },
+      );
+    }
+  } catch (err) {
+    logger.error('SSE auth verification failed', err);
+    return new Response(
+      JSON.stringify({ error: 'Authentication verification failed' }),
       { status: 401, headers: { 'Content-Type': 'application/json' } },
     );
   }
