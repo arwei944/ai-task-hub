@@ -1,12 +1,16 @@
 // ============================================================
-// MCP Auto-Discovery Registry (v3)
+// MCP Auto-Discovery Registry (v3.1)
 // ============================================================
 //
 // Replaces the 525-line initializeSharedTools() in route.ts.
 // Each tool module declares itself via McpToolModuleDescriptor,
-// and the registry handles dynamic import, dependency injection,
-// handler creation, and tool registration automatically.
+// and the registry handles dependency injection, handler creation,
+// and tool registration automatically.
 //
+// v3.1: Removed dynamic import() for tools/handlers paths.
+//       Each module's init() now returns { toolConfigs, handlerFactory, handlerArgs }
+//       so all imports use static paths that bundlers can resolve.
+// ============================================================
 
 import type { McpToolConfig } from '@/lib/core/types';
 import { z } from 'zod';
@@ -32,31 +36,27 @@ export interface ModuleContext {
   services: Map<string, any>;
 }
 
+/** Return type from a module's init function */
+export interface ModuleInitResult {
+  /** Array of tool definitions (McpToolConfig[]) */
+  toolConfigs: McpToolConfig[];
+  /** Handler factory function */
+  handlerFactory: (...args: any[]) => Record<string, (...args: any) => Promise<any>>;
+  /** Arguments to pass to the handler factory */
+  handlerArgs: any[];
+}
+
 /** A tool module's self-descriptor */
 export interface McpToolModuleDescriptor {
   /** Unique module id (e.g., 'task-core', 'notification-rule') */
   id: string;
   /** Display name for logging */
   name: string;
-  /** Import path for tool definitions (McpToolConfig[]) */
-  toolsPath: string;
-  /** Named export of the tool definitions array */
-  toolsExport: string;
-  /** Import path for handler factory */
-  handlersPath: string;
-  /** Named export of the handler factory function */
-  handlersExport: string;
   /**
-   * Optional: custom initialization function.
-   * Called before handler factory. Use this for:
-   * - Creating service instances and registering them in ctx.services
-   * - Running side effects (e.g., ruleEngine.start())
-   * - Setting up cross-module dependencies
-   *
-   * Must return the args to pass to the handler factory.
-   * If omitted, the handler factory is called with (ctx) directly.
+   * Initialization function. Must return { toolConfigs, handlerFactory, handlerArgs }.
+   * All imports should use static paths so bundlers can resolve them.
    */
-  init?: (ctx: ModuleContext) => Promise<any[]> | any[];
+  init: (ctx: ModuleContext) => Promise<ModuleInitResult> | ModuleInitResult;
   /**
    * Optional: dependencies on other modules (by id).
    * The registry ensures these are initialized first.
@@ -69,7 +69,7 @@ export interface McpToolModuleDescriptor {
   optional?: boolean;
 }
 
-// ---- JSON Schema → Zod helpers (moved from route.ts) ----
+// ---- JSON Schema → Zod helpers ----
 
 function jsonSchemaPropToZod(prop: any): z.ZodTypeAny {
   if (!prop) return z.unknown();
@@ -235,34 +235,21 @@ export class McpAutoRegistry {
 
   /** Initialize a single module */
   private async initModule(mod: McpToolModuleDescriptor, ctx: ModuleContext): Promise<void> {
-    // Dynamic import tool definitions
-    const toolsModule = await import(mod.toolsPath);
-    const toolConfigs: McpToolConfig[] = toolsModule[mod.toolsExport];
+    // Call the module's init function — all imports happen here with static paths
+    const result = await mod.init(ctx);
+    const { toolConfigs, handlerFactory, handlerArgs } = result;
+
     if (!toolConfigs || toolConfigs.length === 0) {
       ctx.logger.debug(`[MCP Registry] Module '${mod.id}' has no tool definitions, skipping.`);
       return;
     }
 
-    // Dynamic import handler factory
-    const handlersModule = await import(mod.handlersPath);
-    const handlerFactory = handlersModule[mod.handlersExport];
     if (typeof handlerFactory !== 'function') {
-      throw new Error(`Handler factory '${mod.handlersExport}' is not a function in ${mod.handlersPath}`);
-    }
-
-    // Run custom init if provided, otherwise use ctx directly
-    let handlerArgs: any[];
-    if (mod.init) {
-      handlerArgs = await mod.init(ctx);
-      if (!Array.isArray(handlerArgs)) {
-        handlerArgs = [handlerArgs];
-      }
-    } else {
-      handlerArgs = [ctx];
+      throw new Error(`Handler factory for '${mod.id}' is not a function`);
     }
 
     // Create handler map
-    const handlerMap = handlerFactory(...handlerArgs);
+    const handlerMap = handlerFactory(...(handlerArgs ?? []));
     if (!handlerMap || typeof handlerMap !== 'object') {
       throw new Error(`Handler factory for '${mod.id}' did not return an object`);
     }

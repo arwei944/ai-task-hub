@@ -1,56 +1,36 @@
 // ============================================================
-// MCP Tool Module Descriptors
+// MCP Tool Module Descriptors (v3.1)
 // ============================================================
 //
 // Declarative registry of all MCP tool modules.
-// Each descriptor tells the McpAutoRegistry how to:
-// 1. Import tool definitions (McpToolConfig[])
-// 2. Import and call the handler factory
-// 3. Initialize services and inject dependencies
+// Each module's init() returns { toolConfigs, handlerFactory, handlerArgs }.
+// All imports use static paths that bundlers can resolve.
 //
 // To add a new tool module:
 // 1. Create *-tools.ts (tool definitions) and *-handlers.ts (handler factory)
-// 2. Add a descriptor below
+// 2. Add a descriptor below with static imports
 // 3. That's it! No changes to route.ts needed.
 //
 
-import type { McpToolModuleDescriptor, ModuleContext } from './mcp-registry';
+import type { McpToolModuleDescriptor, ModuleContext, ModuleInitResult } from './mcp-registry';
 
-// ---- Helper: create descriptor with common paths ----
-
-const toolsDir = '@/lib/modules/mcp-server/tools';
-
-function mod(
-  id: string,
-  toolsFile: string,
-  toolsExport: string,
-  handlersFile: string,
-  handlersExport: string,
-  opts?: Partial<Pick<McpToolModuleDescriptor, 'name' | 'init' | 'dependsOn' | 'optional'>>,
-): McpToolModuleDescriptor {
-  return {
-    id,
-    name: id,
-    toolsPath: `${toolsDir}/${toolsFile}`,
-    toolsExport,
-    handlersPath: `${toolsDir}/${handlersFile}`,
-    handlersExport,
-    ...opts,
-  };
-}
-
-// ---- All Module Descriptors ----
+// ============================================================
+// Module Descriptors
+// ============================================================
 
 export const mcpToolModules: McpToolModuleDescriptor[] = [
   // ---- Core Task Management ----
-  mod('task-core', 'task-core-tools.ts', 'taskCoreMcpTools', 'handlers.ts', 'createTaskCoreToolHandlers', {
+  {
+    id: 'task-core',
     name: 'Task Core',
-    init: async (ctx: ModuleContext) => {
+    init: async (ctx: ModuleContext): Promise<ModuleInitResult> => {
       const { TaskRepository } = await import('@/lib/modules/task-core/task.repository');
       const { TaskHistoryRepository } = await import('@/lib/modules/task-core/task-history.repository');
       const { TaskDependencyRepository } = await import('@/lib/modules/task-core/task-dependency.repository');
       const { TaskProgressService } = await import('@/lib/modules/task-core/task-progress.service');
       const { TaskService } = await import('@/lib/modules/task-core/task.service');
+      const { taskCoreMcpTools } = await import('@/lib/modules/mcp-server/tools/task-core-tools');
+      const { createTaskCoreToolHandlers } = await import('@/lib/modules/mcp-server/tools/handlers');
 
       const taskRepo = new TaskRepository(ctx.prisma);
       const historyRepo = new TaskHistoryRepository(ctx.prisma);
@@ -58,24 +38,30 @@ export const mcpToolModules: McpToolModuleDescriptor[] = [
       const progressService = new TaskProgressService(taskRepo, ctx.logger);
       const taskService = new TaskService(taskRepo, historyRepo, depRepo, progressService, ctx.eventBus, ctx.logger);
 
-      // Register for downstream modules
       ctx.services.set('taskService', taskService);
       ctx.services.set('taskRepo', taskRepo);
 
-      return [taskService, ctx.logger];
+      return {
+        toolConfigs: taskCoreMcpTools,
+        handlerFactory: createTaskCoreToolHandlers,
+        handlerArgs: [taskService, ctx.logger],
+      };
     },
-  }),
+  },
 
   // ---- AI Engine ----
-  mod('ai-engine', 'ai-engine-tools.ts', 'aiEngineMcpTools', 'handlers.ts', 'createAIEngineToolHandlers', {
+  {
+    id: 'ai-engine',
     name: 'AI Engine',
     optional: true,
-    init: async (ctx: ModuleContext) => {
+    init: async (ctx: ModuleContext): Promise<ModuleInitResult> => {
       const { OpenAICompatibleAdapter } = await import('@/lib/modules/ai-engine/ai-model-adapter');
       const { TaskExtractor } = await import('@/lib/modules/ai-engine/extractors/task-extractor');
       const { TaskDecomposer } = await import('@/lib/modules/ai-engine/decomposers/task-decomposer');
       const { StatusInferencer } = await import('@/lib/modules/ai-engine/inferencers/status-inferencer');
       const { TaskAnalyzer } = await import('@/lib/modules/ai-engine/analyzers/task-analyzer');
+      const { aiEngineMcpTools } = await import('@/lib/modules/mcp-server/tools/ai-engine-tools');
+      const { createAIEngineToolHandlers } = await import('@/lib/modules/mcp-server/tools/handlers');
 
       const aiModel = new OpenAICompatibleAdapter(
         {
@@ -86,126 +72,201 @@ export const mcpToolModules: McpToolModuleDescriptor[] = [
         ctx.logger,
       );
 
-      return [
-        new TaskExtractor(aiModel, ctx.logger),
-        new TaskDecomposer(aiModel, ctx.logger),
-        new StatusInferencer(aiModel, ctx.logger),
-        new TaskAnalyzer(aiModel, ctx.logger),
-        ctx.logger,
-      ];
+      return {
+        toolConfigs: aiEngineMcpTools,
+        handlerFactory: createAIEngineToolHandlers,
+        handlerArgs: [
+          new TaskExtractor(aiModel, ctx.logger),
+          new TaskDecomposer(aiModel, ctx.logger),
+          new StatusInferencer(aiModel, ctx.logger),
+          new TaskAnalyzer(aiModel, ctx.logger),
+          ctx.logger,
+        ],
+      };
     },
-  }),
+  },
 
   // ---- Project Management ----
-  mod('project', 'project-tools.ts', 'projectMcpTools', 'project-handlers.ts', 'createProjectToolHandlers', {
+  {
+    id: 'project',
     name: 'Project',
-    init: async (ctx: ModuleContext) => {
-      return [ctx.logger, ctx.eventBus];
+    init: async (ctx: ModuleContext): Promise<ModuleInitResult> => {
+      const { projectMcpTools } = await import('@/lib/modules/mcp-server/tools/project-tools');
+      const { createProjectToolHandlers } = await import('@/lib/modules/mcp-server/tools/project-handlers');
+      return {
+        toolConfigs: projectMcpTools,
+        handlerFactory: createProjectToolHandlers,
+        handlerArgs: [ctx.logger, ctx.eventBus],
+      };
     },
-  }),
+  },
 
   // ---- Version Management ----
-  mod('version', 'version-tools.ts', 'versionMcpTools', 'version-handlers.ts', 'createVersionToolHandlers', {
+  {
+    id: 'version',
     name: 'Version',
-    init: async (ctx: ModuleContext) => {
+    init: async (ctx: ModuleContext): Promise<ModuleInitResult> => {
       const { VersionMgmtService } = await import('@/lib/modules/version-mgmt/version-mgmt.service');
+      const { versionMcpTools } = await import('@/lib/modules/mcp-server/tools/version-tools');
+      const { createVersionToolHandlers } = await import('@/lib/modules/mcp-server/tools/version-handlers');
       const service = new VersionMgmtService(ctx.logger, ctx.eventBus);
       ctx.services.set('versionService', service);
-      return [service, ctx.logger];
+      return {
+        toolConfigs: versionMcpTools,
+        handlerFactory: createVersionToolHandlers,
+        handlerArgs: [service, ctx.logger],
+      };
     },
-  }),
+  },
 
   // ---- Test Management ----
-  mod('test-management', 'test-management-tools.ts', 'testManagementMcpTools', 'test-management-handlers.ts', 'createTestManagementToolHandlers', {
+  {
+    id: 'test-management',
     name: 'Test Management',
-    init: async (ctx: ModuleContext) => {
+    init: async (ctx: ModuleContext): Promise<ModuleInitResult> => {
       const { TestManagementService } = await import('@/lib/modules/test-management/test-management.service');
+      const { testManagementMcpTools } = await import('@/lib/modules/mcp-server/tools/test-management-tools');
+      const { createTestManagementToolHandlers } = await import('@/lib/modules/mcp-server/tools/test-management-handlers');
       const service = new TestManagementService(ctx.prisma, ctx.eventBus, ctx.logger);
-      return [service, ctx.logger];
+      return {
+        toolConfigs: testManagementMcpTools,
+        handlerFactory: createTestManagementToolHandlers,
+        handlerArgs: [service, ctx.logger],
+      };
     },
-  }),
+  },
 
   // ---- Requirements ----
-  mod('requirement', 'requirement-tools.ts', 'requirementMcpTools', 'requirement-handlers.ts', 'createRequirementToolHandlers', {
+  {
+    id: 'requirement',
     name: 'Requirements',
-    init: async (ctx: ModuleContext) => {
+    init: async (ctx: ModuleContext): Promise<ModuleInitResult> => {
       const { RequirementsService } = await import('@/lib/modules/requirements/requirements.service');
+      const { requirementMcpTools } = await import('@/lib/modules/mcp-server/tools/requirement-tools');
+      const { createRequirementToolHandlers } = await import('@/lib/modules/mcp-server/tools/requirement-handlers');
       const service = new RequirementsService(ctx.prisma, ctx.eventBus, ctx.logger);
-      return [service, ctx.logger];
+      return {
+        toolConfigs: requirementMcpTools,
+        handlerFactory: createRequirementToolHandlers,
+        handlerArgs: [service, ctx.logger],
+      };
     },
-  }),
+  },
 
   // ---- Knowledge ----
-  mod('knowledge', 'knowledge-tools.ts', 'knowledgeMcpTools', 'knowledge-handlers.ts', 'createKnowledgeToolHandlers', {
+  {
+    id: 'knowledge',
     name: 'Knowledge',
-    init: async (ctx: ModuleContext) => {
+    init: async (ctx: ModuleContext): Promise<ModuleInitResult> => {
       const { KnowledgeService } = await import('@/lib/modules/knowledge/knowledge.service');
+      const { knowledgeMcpTools } = await import('@/lib/modules/mcp-server/tools/knowledge-tools');
+      const { createKnowledgeToolHandlers } = await import('@/lib/modules/mcp-server/tools/knowledge-handlers');
       const service = new KnowledgeService(ctx.prisma, ctx.eventBus, ctx.logger);
-      return [service, ctx.logger];
+      return {
+        toolConfigs: knowledgeMcpTools,
+        handlerFactory: createKnowledgeToolHandlers,
+        handlerArgs: [service, ctx.logger],
+      };
     },
-  }),
+  },
 
   // ---- Lifecycle ----
-  mod('lifecycle', 'lifecycle-tools.ts', 'lifecycleMcpTools', 'lifecycle-handlers.ts', 'createLifecycleToolHandlers', {
+  {
+    id: 'lifecycle',
     name: 'Lifecycle',
-    init: async (ctx: ModuleContext) => {
+    init: async (ctx: ModuleContext): Promise<ModuleInitResult> => {
       const { LifecycleService } = await import('@/lib/modules/lifecycle/lifecycle.service');
+      const { lifecycleMcpTools } = await import('@/lib/modules/mcp-server/tools/lifecycle-tools');
+      const { createLifecycleToolHandlers } = await import('@/lib/modules/mcp-server/tools/lifecycle-handlers');
       const service = new LifecycleService(ctx.prisma, ctx.eventBus, ctx.logger);
-      return [service, ctx.logger];
+      return {
+        toolConfigs: lifecycleMcpTools,
+        handlerFactory: createLifecycleToolHandlers,
+        handlerArgs: [service, ctx.logger],
+      };
     },
-  }),
+  },
 
   // ---- Context Aggregation ----
-  mod('context', 'context-tools.ts', 'contextMcpTools', 'context-handlers.ts', 'createContextToolHandlers', {
+  {
+    id: 'context',
     name: 'Context',
-    init: async (ctx: ModuleContext) => {
-      return [ctx.logger, ctx.eventBus, () => ctx.prisma];
+    init: async (ctx: ModuleContext): Promise<ModuleInitResult> => {
+      const { contextMcpTools } = await import('@/lib/modules/mcp-server/tools/context-tools');
+      const { createContextToolHandlers } = await import('@/lib/modules/mcp-server/tools/context-handlers');
+      return {
+        toolConfigs: contextMcpTools,
+        handlerFactory: createContextToolHandlers,
+        handlerArgs: [ctx.logger, ctx.eventBus, () => ctx.prisma],
+      };
     },
-  }),
+  },
 
   // ---- Prompt Templates ----
-  mod('prompt', 'prompt-tools.ts', 'promptMcpTools', 'prompt-handlers.ts', 'createPromptToolHandlers', {
+  {
+    id: 'prompt',
     name: 'Prompt Templates',
-    init: async (ctx: ModuleContext) => {
-      return [ctx.logger];
+    init: async (ctx: ModuleContext): Promise<ModuleInitResult> => {
+      const { promptMcpTools } = await import('@/lib/modules/mcp-server/tools/prompt-tools');
+      const { createPromptToolHandlers } = await import('@/lib/modules/mcp-server/tools/prompt-handlers');
+      return {
+        toolConfigs: promptMcpTools,
+        handlerFactory: createPromptToolHandlers,
+        handlerArgs: [ctx.logger],
+      };
     },
-  }),
+  },
 
   // ---- Deployment Management ----
-  mod('deployment', 'deployment-tools.ts', 'deploymentMcpTools', 'deployment-handlers.ts', 'createDeploymentToolHandlers', {
+  {
+    id: 'deployment',
     name: 'Deployment',
-    init: async (ctx: ModuleContext) => {
+    init: async (ctx: ModuleContext): Promise<ModuleInitResult> => {
       const { DeploymentService } = await import('@/lib/modules/deployment-mgmt/deployment.service');
+      const { deploymentMcpTools } = await import('@/lib/modules/mcp-server/tools/deployment-tools');
+      const { createDeploymentToolHandlers } = await import('@/lib/modules/mcp-server/tools/deployment-handlers');
       const service = new DeploymentService(ctx.logger, ctx.eventBus, () => ctx.prisma);
-      return [service, ctx.logger];
+      return {
+        toolConfigs: deploymentMcpTools,
+        handlerFactory: createDeploymentToolHandlers,
+        handlerArgs: [service, ctx.logger],
+      };
     },
-  }),
+  },
 
   // ---- Dashboard Statistics ----
-  mod('dashboard', 'dashboard-tools.ts', 'dashboardMcpTools', 'dashboard-handlers.ts', 'createDashboardToolHandlers', {
+  {
+    id: 'dashboard',
     name: 'Dashboard',
-    init: async (ctx: ModuleContext) => {
+    init: async (ctx: ModuleContext): Promise<ModuleInitResult> => {
       const { StatisticsService } = await import('@/lib/modules/dashboard/statistics.service');
+      const { dashboardMcpTools } = await import('@/lib/modules/mcp-server/tools/dashboard-tools');
+      const { createDashboardToolHandlers } = await import('@/lib/modules/mcp-server/tools/dashboard-handlers');
       const service = new StatisticsService(ctx.prisma, ctx.logger, ctx.eventBus);
-      return [service, ctx.logger];
+      return {
+        toolConfigs: dashboardMcpTools,
+        handlerFactory: createDashboardToolHandlers,
+        handlerArgs: [service, ctx.logger],
+      };
     },
-  }),
+  },
 
   // ---- Notification Rules (with side effects) ----
-  mod('notification-rule', 'notification-rule-tools.ts', 'notificationRuleMcpTools', 'notification-rule-handlers.ts', 'createNotificationRuleToolHandlers', {
+  {
+    id: 'notification-rule',
     name: 'Notification Rules',
-    init: async (ctx: ModuleContext) => {
+    init: async (ctx: ModuleContext): Promise<ModuleInitResult> => {
       const { NotificationRepository } = await import('@/lib/modules/notifications/notification.repository');
       const { NotificationRuleEngine } = await import('@/lib/modules/notifications/rule-engine');
+      const { notificationRuleMcpTools } = await import('@/lib/modules/mcp-server/tools/notification-rule-tools');
+      const { createNotificationRuleToolHandlers } = await import('@/lib/modules/mcp-server/tools/notification-rule-handlers');
 
       const notificationRepo = new NotificationRepository(ctx.prisma);
       const ruleEngine = new NotificationRuleEngine(notificationRepo, ctx.eventBus, ctx.logger, () => ctx.prisma);
 
-      // Start notification rule engine
       ruleEngine.start();
       ctx.logger.info('NotificationRuleEngine started - event listeners registered');
 
-      // Add default notification rules
       try {
         await ruleEngine.createRule({ name: '任务创建通知', eventPattern: 'task.created', action: 'notify', level: 'info', priority: 10 });
         await ruleEngine.createRule({ name: '任务状态变更通知', eventPattern: 'task.status.changed', action: 'notify', level: 'info', priority: 10 });
@@ -220,7 +281,6 @@ export const mcpToolModules: McpToolModuleDescriptor[] = [
         ctx.logger.info(`Default notification rules added to memory (DB create failed: ${err.message})`);
       }
 
-      // Register BrowserPush channel
       try {
         const { BrowserPushChannel } = await import('@/lib/modules/notifications/channels/browser-push-channel');
         const browserPush = new BrowserPushChannel(ctx.logger);
@@ -231,54 +291,89 @@ export const mcpToolModules: McpToolModuleDescriptor[] = [
       }
 
       ctx.services.set('ruleEngine', ruleEngine);
-      return [ruleEngine, ctx.logger];
+      return {
+        toolConfigs: notificationRuleMcpTools,
+        handlerFactory: createNotificationRuleToolHandlers,
+        handlerArgs: [ruleEngine, ctx.logger],
+      };
     },
-  }),
+  },
 
   // ---- Event Bus ----
-  mod('event-bus', 'event-bus-tools.ts', 'eventBusMcpTools', 'event-bus-handlers.ts', 'createEventBusToolHandlers', {
+  {
+    id: 'event-bus',
     name: 'Event Bus',
-    init: async (ctx: ModuleContext) => {
-      return [ctx.eventBus, ctx.logger];
+    init: async (ctx: ModuleContext): Promise<ModuleInitResult> => {
+      const { eventBusMcpTools } = await import('@/lib/modules/mcp-server/tools/event-bus-tools');
+      const { createEventBusToolHandlers } = await import('@/lib/modules/mcp-server/tools/event-bus-handlers');
+      return {
+        toolConfigs: eventBusMcpTools,
+        handlerFactory: createEventBusToolHandlers,
+        handlerArgs: [ctx.eventBus, ctx.logger],
+      };
     },
-  }),
+  },
 
   // ---- Outbound Webhook ----
-  mod('outbound-webhook', 'outbound-webhook-tools.ts', 'outboundWebhookMcpTools', 'outbound-webhook-handlers.ts', 'createOutboundWebhookToolHandlers', {
+  {
+    id: 'outbound-webhook',
     name: 'Outbound Webhook',
-    init: async (ctx: ModuleContext) => {
+    init: async (ctx: ModuleContext): Promise<ModuleInitResult> => {
       const { OutboundWebhookService } = await import('@/lib/modules/integration-webhook/outbound-webhook.service');
+      const { outboundWebhookMcpTools } = await import('@/lib/modules/mcp-server/tools/outbound-webhook-tools');
+      const { createOutboundWebhookToolHandlers } = await import('@/lib/modules/mcp-server/tools/outbound-webhook-handlers');
       const service = new OutboundWebhookService(ctx.logger, ctx.eventBus, () => ctx.prisma);
       ctx.services.set('outboundWebhookService', service);
-      return [service, ctx.logger];
+      return {
+        toolConfigs: outboundWebhookMcpTools,
+        handlerFactory: createOutboundWebhookToolHandlers,
+        handlerArgs: [service, ctx.logger],
+      };
     },
-  }),
+  },
 
   // ---- Workflow V3 ----
-  mod('workflow-v3', 'workflow-v3-tools.ts', 'workflowV3McpTools', 'workflow-v3-handlers.ts', 'createWorkflowV3ToolHandlers', {
+  {
+    id: 'workflow-v3',
     name: 'Workflow V3',
-    init: async (ctx: ModuleContext) => {
+    init: async (ctx: ModuleContext): Promise<ModuleInitResult> => {
       const { ExecutionStateManager } = await import('@/lib/modules/workflow-engine/execution-state');
+      const { workflowV3McpTools } = await import('@/lib/modules/mcp-server/tools/workflow-v3-tools');
+      const { createWorkflowV3ToolHandlers } = await import('@/lib/modules/mcp-server/tools/workflow-v3-handlers');
       const stateManager = new ExecutionStateManager(ctx.logger, () => ctx.prisma);
-      return [stateManager, ctx.logger];
+      return {
+        toolConfigs: workflowV3McpTools,
+        handlerFactory: createWorkflowV3ToolHandlers,
+        handlerArgs: [stateManager, ctx.logger],
+      };
     },
-  }),
+  },
 
   // ---- Notification Preferences ----
-  mod('notification-preference', 'notification-preference-tools.ts', 'notificationPreferenceMcpTools', 'notification-preference-handlers.ts', 'createNotificationPreferenceToolHandlers', {
+  {
+    id: 'notification-preference',
     name: 'Notification Preferences',
-    init: async (ctx: ModuleContext) => {
+    init: async (ctx: ModuleContext): Promise<ModuleInitResult> => {
       const { NotificationPreferenceService } = await import('@/lib/modules/notifications/preference.service');
+      const { notificationPreferenceMcpTools } = await import('@/lib/modules/mcp-server/tools/notification-preference-tools');
+      const { createNotificationPreferenceToolHandlers } = await import('@/lib/modules/mcp-server/tools/notification-preference-handlers');
       const service = new NotificationPreferenceService(ctx.logger, () => ctx.prisma);
-      return [service, ctx.logger];
+      return {
+        toolConfigs: notificationPreferenceMcpTools,
+        handlerFactory: createNotificationPreferenceToolHandlers,
+        handlerArgs: [service, ctx.logger],
+      };
     },
-  }),
+  },
 
   // ---- SOLO Bridge ----
-  mod('solo-bridge', 'solo-bridge-tools.ts', 'soloBridgeMcpTools', 'solo-bridge-handlers.ts', 'createSOLOBridgeToolHandlers', {
+  {
+    id: 'solo-bridge',
     name: 'SOLO Bridge',
-    init: async (ctx: ModuleContext) => {
+    init: async (ctx: ModuleContext): Promise<ModuleInitResult> => {
       const { SOLOBridge } = await import('@/lib/modules/workflow-engine/solo/solo-bridge');
+      const { soloBridgeMcpTools } = await import('@/lib/modules/mcp-server/tools/solo-bridge-tools');
+      const { createSOLOBridgeToolHandlers } = await import('@/lib/modules/mcp-server/tools/solo-bridge-handlers');
       const soloBridge = new SOLOBridge(
         {
           defaultMode: (process.env.SOLO_DEFAULT_MODE as any) || 'mcp',
@@ -291,16 +386,23 @@ export const mcpToolModules: McpToolModuleDescriptor[] = [
         ctx.logger,
       );
       ctx.services.set('soloBridge', soloBridge);
-      return [() => soloBridge, ctx.logger];
+      return {
+        toolConfigs: soloBridgeMcpTools,
+        handlerFactory: createSOLOBridgeToolHandlers,
+        handlerArgs: [() => soloBridge, ctx.logger],
+      };
     },
-  }),
+  },
 
   // ---- AI Handler Management ----
-  mod('ai-handler', 'ai-handler-tools.ts', 'aiHandlerMcpTools', 'ai-handler-handlers.ts', 'createAIHandlerToolHandlers', {
+  {
+    id: 'ai-handler',
     name: 'AI Handler',
     dependsOn: ['solo-bridge'],
-    init: async (ctx: ModuleContext) => {
+    init: async (ctx: ModuleContext): Promise<ModuleInitResult> => {
       const { AIOrchestrator } = await import('@/lib/modules/ai-engine/ai-orchestrator');
+      const { aiHandlerMcpTools } = await import('@/lib/modules/mcp-server/tools/ai-handler-tools');
+      const { createAIHandlerToolHandlers } = await import('@/lib/modules/mcp-server/tools/ai-handler-handlers');
       const aiOrchestrator = new AIOrchestrator(ctx.eventBus, ctx.logger);
 
       try {
@@ -320,49 +422,77 @@ export const mcpToolModules: McpToolModuleDescriptor[] = [
         ctx.logger.warn(`Failed to register AI handlers: ${err.message}`);
       }
 
-      return [() => aiOrchestrator, ctx.eventBus, ctx.logger];
+      return {
+        toolConfigs: aiHandlerMcpTools,
+        handlerFactory: createAIHandlerToolHandlers,
+        handlerArgs: [() => aiOrchestrator, ctx.eventBus, ctx.logger],
+      };
     },
-  }),
+  },
 
   // ---- Email Notification ----
-  mod('email-notification', 'email-notification-tools.ts', 'emailNotificationMcpTools', 'email-notification-handlers.ts', 'createEmailNotificationToolHandlers', {
+  {
+    id: 'email-notification',
     name: 'Email Notification',
-    init: async (ctx: ModuleContext) => {
-      return [ctx.logger];
+    init: async (ctx: ModuleContext): Promise<ModuleInitResult> => {
+      const { emailNotificationMcpTools } = await import('@/lib/modules/mcp-server/tools/email-notification-tools');
+      const { createEmailNotificationToolHandlers } = await import('@/lib/modules/mcp-server/tools/email-notification-handlers');
+      return {
+        toolConfigs: emailNotificationMcpTools,
+        handlerFactory: createEmailNotificationToolHandlers,
+        handlerArgs: [ctx.logger],
+      };
     },
-  }),
+  },
 
   // ---- Web Push ----
-  mod('webpush', 'webpush-tools.ts', 'webpushMcpTools', 'webpush-handlers.ts', 'createWebPushToolHandlers', {
+  {
+    id: 'webpush',
     name: 'Web Push',
-    init: async (ctx: ModuleContext) => {
+    init: async (ctx: ModuleContext): Promise<ModuleInitResult> => {
       const { WebPushService } = await import('@/lib/modules/notifications/web-push.service');
+      const { webpushMcpTools } = await import('@/lib/modules/mcp-server/tools/webpush-tools');
+      const { createWebPushToolHandlers } = await import('@/lib/modules/mcp-server/tools/webpush-handlers');
       const service = new WebPushService(ctx.logger);
-      return [() => service, ctx.logger];
+      return {
+        toolConfigs: webpushMcpTools,
+        handlerFactory: createWebPushToolHandlers,
+        handlerArgs: [() => service, ctx.logger],
+      };
     },
-  }),
+  },
 
   // ---- Webhook Retry ----
-  mod('webhook-retry', 'webhook-retry-tools.ts', 'webhookRetryMcpTools', 'webhook-retry-handlers.ts', 'createWebhookRetryToolHandlers', {
+  {
+    id: 'webhook-retry',
     name: 'Webhook Retry',
     dependsOn: ['outbound-webhook'],
-    init: async (ctx: ModuleContext) => {
+    init: async (ctx: ModuleContext): Promise<ModuleInitResult> => {
+      const { webhookRetryMcpTools } = await import('@/lib/modules/mcp-server/tools/webhook-retry-tools');
+      const { createWebhookRetryToolHandlers } = await import('@/lib/modules/mcp-server/tools/webhook-retry-handlers');
       const service = ctx.services.get('outboundWebhookService');
-      return [service, ctx.logger];
+      return {
+        toolConfigs: webhookRetryMcpTools,
+        handlerFactory: createWebhookRetryToolHandlers,
+        handlerArgs: [service, ctx.logger],
+      };
     },
-  }),
+  },
 
-  // ---- GitHub Trigger (depends on solo-bridge + task-core) ----
-  mod('github-trigger', 'github-trigger-tools.ts', 'githubTriggerMcpTools', 'github-trigger-handlers.ts', 'createGitHubTriggerToolHandlers', {
+  // ---- GitHub Trigger ----
+  {
+    id: 'github-trigger',
     name: 'GitHub Trigger',
     dependsOn: ['task-core', 'solo-bridge'],
-    init: async (ctx: ModuleContext) => {
+    init: async (ctx: ModuleContext): Promise<ModuleInitResult> => {
       const { TriggerDispatcher } = await import('@/lib/modules/workflow-engine/triggers/trigger-dispatcher');
       const { WorkflowOrchestrator } = await import('@/lib/modules/workflow-engine/orchestrator');
       const { WorkflowExecutor } = await import('@/lib/modules/workflow-engine/executor');
       const { ConcurrencyController } = await import('@/lib/modules/workflow-engine/concurrency');
       const { Observability } = await import('@/lib/modules/workflow-engine/observability');
       const { FeedbackModule } = await import('@/lib/modules/workflow-engine/feedback/feedback-module');
+      const { githubTriggerMcpTools } = await import('@/lib/modules/mcp-server/tools/github-trigger-tools');
+      const { createGitHubTriggerToolHandlers } = await import('@/lib/modules/mcp-server/tools/github-trigger-handlers');
 
       const taskService = ctx.services.get('taskService');
       const soloBridge = ctx.services.get('soloBridge');
@@ -374,7 +504,11 @@ export const mcpToolModules: McpToolModuleDescriptor[] = [
       const workflowOrchestrator = new WorkflowOrchestrator(ctx.prisma, executor, concurrencyController, observability, ctx.logger);
       const triggerDispatcher = new TriggerDispatcher(ctx.prisma, workflowOrchestrator, ctx.eventBus, ctx.logger);
 
-      return [() => triggerDispatcher, ctx.logger];
+      return {
+        toolConfigs: githubTriggerMcpTools,
+        handlerFactory: createGitHubTriggerToolHandlers,
+        handlerArgs: [() => triggerDispatcher, ctx.logger],
+      };
     },
-  }),
+  },
 ];

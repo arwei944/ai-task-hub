@@ -47,7 +47,7 @@ export { AppKernel, getKernel, initKernel } from './kernel';
 
 // MCP Auto-Discovery Registry
 export { McpAutoRegistry, jsonSchemaToZodShape } from './mcp-registry';
-export type { ResolvedTool, ModuleContext, McpToolModuleDescriptor } from './mcp-registry';
+export type { ResolvedTool, ModuleContext, ModuleInitResult, McpToolModuleDescriptor } from './mcp-registry';
 export { mcpToolModules } from './mcp-modules';
 
 // Service Factory (centralized service instantiation for tRPC)
