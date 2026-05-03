@@ -16,6 +16,7 @@ import { notificationRulesRouter } from './notification-rules-router';
 import { notificationHistoryRouter } from './notification-history-router';
 import { selfHealingRouter } from './self-healing-router';
 import { linkageRouter } from './linkage-router';
+import { projectHubRouter } from './project-hub-router';
 
 export const appRouter = createTRPCRouter({
   auth: authRouter,
@@ -35,6 +36,7 @@ export const appRouter = createTRPCRouter({
   notificationHistory: notificationHistoryRouter,
   selfHealing: selfHealingRouter,
   linkage: linkageRouter,
+  projectHub: projectHubRouter,
 });
 
 export type AppRouter = typeof appRouter;

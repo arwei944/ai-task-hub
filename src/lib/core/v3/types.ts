@@ -70,6 +70,71 @@ export interface EventMap {
     to: string;
   };
 
+  // === 项目中心事件 (Project Hub) ===
+  'project.agent.assigned': {
+    projectId: string;
+    agentId: string;
+    agentName: string;
+    role: string;
+    assignedBy?: string;
+  };
+  'project.agent.removed': {
+    projectId: string;
+    agentId: string;
+    removedBy?: string;
+  };
+  'project.agent.roleChanged': {
+    projectId: string;
+    agentId: string;
+    oldRole: string;
+    newRole: string;
+  };
+  'project.milestone.created': {
+    projectId: string;
+    milestoneId: string;
+    title: string;
+    dueDate?: string;
+  };
+  'project.milestone.completed': {
+    projectId: string;
+    milestoneId: string;
+    title: string;
+  };
+  'project.milestone.overdue': {
+    projectId: string;
+    milestoneId: string;
+    title: string;
+    dueDate: string;
+  };
+  'project.dependency.created': {
+    sourceProjectId: string;
+    targetProjectId: string;
+    dependencyType: string;
+  };
+  'project.doc.created': {
+    projectId: string;
+    docId: string;
+    title: string;
+    docType: string;
+  };
+  'project.doc.updated': {
+    projectId: string;
+    docId: string;
+    title: string;
+    version: number;
+  };
+  'project.agent.workLogged': {
+    projectId: string;
+    agentId: string;
+    hours: number;
+    date: string;
+  };
+  'project.template.used': {
+    templateId: string;
+    projectId: string;
+    templateName: string;
+  };
+
   // === 工作流事件 ===
   'workflow.started': {
     executionId: string;

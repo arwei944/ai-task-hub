@@ -9,3 +9,4 @@ export { AICapability } from './ai-capability';
 export { IntegrationCapability } from './integration-capability';
 export { AgentCapability } from './agent-capability';
 export { ObservabilityCapability } from './observability-capability';
+export { ProjectHubCapability } from './project-hub-capability';

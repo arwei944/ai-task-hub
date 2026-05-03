@@ -62,6 +62,13 @@ type WorkflowService = import('@/lib/modules/workflow-engine/workflow.service').
 type PluginLoader = import('@/lib/modules/plugins/plugin-loader').PluginLoader;
 type ModuleUpdaterService = import('@/lib/modules/module-updater/module-updater.service').ModuleUpdaterService;
 type ImprovementLoop = import('@/lib/modules/workflow-engine/feedback/improvement-loop').ImprovementLoop;
+type ProjectHubService = import('@/lib/modules/project-hub/project-hub.service').ProjectHubService;
+type MilestoneService = import('@/lib/modules/project-hub/milestone.service').MilestoneService;
+type ProjectAgentService = import('@/lib/modules/project-hub/agent.service').ProjectAgentService;
+type ProjectDependencyService = import('@/lib/modules/project-hub/project-dependency.service').ProjectDependencyService;
+type WorkLogService = import('@/lib/modules/project-hub/work-log.service').WorkLogService;
+type DocService = import('@/lib/modules/project-hub/doc.service').DocService;
+type TemplateService = import('@/lib/modules/project-hub/template.service').TemplateService;
 
 // ---- Service Token Constants ----
 
@@ -121,6 +128,15 @@ export const ServiceTokens = {
 
   // Feedback
   improvementLoop: 'improvementLoop',
+
+  // Project Hub
+  projectHubService: 'projectHubService',
+  milestoneService: 'milestoneService',
+  projectAgentService: 'projectAgentService',
+  projectDependencyService: 'projectDependencyService',
+  workLogService: 'workLogService',
+  docService: 'docService',
+  templateService: 'templateService',
 } as const;
 
 export type ServiceToken = (typeof ServiceTokens)[keyof typeof ServiceTokens];
@@ -183,6 +199,15 @@ export interface ServiceRegistry {
 
   // Feedback
   [ServiceTokens.improvementLoop]: ImprovementLoop;
+
+  // Project Hub
+  [ServiceTokens.projectHubService]: ProjectHubService;
+  [ServiceTokens.milestoneService]: MilestoneService;
+  [ServiceTokens.projectAgentService]: ProjectAgentService;
+  [ServiceTokens.projectDependencyService]: ProjectDependencyService;
+  [ServiceTokens.workLogService]: WorkLogService;
+  [ServiceTokens.docService]: DocService;
+  [ServiceTokens.templateService]: TemplateService;
 }
 
 // ---- Registration Functions ----
@@ -478,6 +503,43 @@ export async function registerFeedbackServices(container: IDIContainer): Promise
 }
 
 /**
+ * Register Project Hub services.
+ */
+export async function registerProjectHubServices(container: IDIContainer): Promise<void> {
+  const { ProjectHubService } = await import('@/lib/modules/project-hub/project-hub.service');
+  const { MilestoneService } = await import('@/lib/modules/project-hub/milestone.service');
+  const { ProjectAgentService } = await import('@/lib/modules/project-hub/agent.service');
+  const { ProjectDependencyService } = await import('@/lib/modules/project-hub/project-dependency.service');
+  const { WorkLogService } = await import('@/lib/modules/project-hub/work-log.service');
+  const { DocService } = await import('@/lib/modules/project-hub/doc.service');
+  const { TemplateService } = await import('@/lib/modules/project-hub/template.service');
+
+  const prisma = container.resolve(ServiceTokens.prisma) as any;
+  const eventBus = container.resolve(ServiceTokens.eventBus) as any;
+  const logger = container.resolve(ServiceTokens.logger) as any;
+
+  const milestoneService = new MilestoneService(prisma, eventBus, logger);
+  const projectAgentService = new ProjectAgentService(prisma, eventBus, logger);
+  const projectDependencyService = new ProjectDependencyService(prisma, eventBus, logger);
+  const workLogService = new WorkLogService(prisma, eventBus, logger);
+  const docService = new DocService(prisma, eventBus, logger);
+  const templateService = new TemplateService(prisma, eventBus, logger);
+  const projectHubService = new ProjectHubService(
+    prisma, eventBus, logger,
+    milestoneService, projectAgentService, projectDependencyService,
+    workLogService, docService, templateService,
+  );
+
+  container.register(ServiceTokens.milestoneService, () => milestoneService, { singleton: true });
+  container.register(ServiceTokens.projectAgentService, () => projectAgentService, { singleton: true });
+  container.register(ServiceTokens.projectDependencyService, () => projectDependencyService, { singleton: true });
+  container.register(ServiceTokens.workLogService, () => workLogService, { singleton: true });
+  container.register(ServiceTokens.docService, () => docService, { singleton: true });
+  container.register(ServiceTokens.templateService, () => templateService, { singleton: true });
+  container.register(ServiceTokens.projectHubService, () => projectHubService, { singleton: true });
+}
+
+/**
  * Register ALL services into the DI container.
  * Call this once during application startup.
  */
@@ -517,6 +579,9 @@ export async function registerAllServices(container: IDIContainer): Promise<void
 
   // 12. Feedback (depends on core)
   await registerFeedbackServices(container);
+
+  // 13. Project Hub (depends on core)
+  await registerProjectHubServices(container);
 }
 
 /**

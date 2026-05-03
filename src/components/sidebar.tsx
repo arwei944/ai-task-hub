@@ -43,6 +43,7 @@ const mainNavItems: NavItem[] = [
   { href: '/workflows', label: '工作流管理', icon: GitBranch },
   { href: '/observability', label: '可观测性', icon: Activity },
   { href: '/tasks', label: '任务', icon: CheckSquare },
+  { href: '/project-hub', label: '项目中心', icon: FolderKanban },
   { href: '/agents', label: '智能体', icon: Bot },
   { href: '/workspaces', label: '工作区', icon: Building2 },
   { href: '/integrations', label: '集成', icon: Link2 },

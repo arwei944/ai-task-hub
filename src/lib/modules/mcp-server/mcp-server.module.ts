@@ -17,6 +17,8 @@ import { requirementMcpTools } from './tools/requirement-tools';
 import { knowledgeMcpTools } from './tools/knowledge-tools';
 import { promptMcpTools } from './tools/prompt-tools';
 import { createPromptToolHandlers } from './tools/prompt-handlers';
+import { projectHubMcpTools } from './tools/project-hub-tools';
+import { createProjectHubToolHandlers } from './tools/project-hub-handlers';
 import { APP_VERSION } from '@/lib/core/version';
 
 export default class McpServerModule implements Module {
@@ -29,7 +31,7 @@ export default class McpServerModule implements Module {
   // Declare MCP tools that this module provides
   // (In practice, tools come from task-core and ai-engine modules,
   //  but we declare them here for the module system to discover)
-  mcpTools = [...taskCoreMcpTools, ...aiEngineMcpTools, ...lifecycleMcpTools, ...requirementMcpTools, ...knowledgeMcpTools, ...promptMcpTools] as McpToolConfig[];
+  mcpTools = [...taskCoreMcpTools, ...aiEngineMcpTools, ...lifecycleMcpTools, ...requirementMcpTools, ...knowledgeMcpTools, ...promptMcpTools, ...projectHubMcpTools] as McpToolConfig[];
 
   private mcpServer: McpServer | null = null;
   private toolRegistry: McpToolRegistry | null = null;
@@ -144,6 +146,29 @@ export default class McpServerModule implements Module {
         { id: 'prompt-tools', mcpTools: promptMcpTools } as any,
         (_mod, toolName) => handlerMap[toolName],
       );
+
+      // Project Hub handlers
+      if (context.container.has('ProjectHubService')) {
+        const hubService = context.container.resolve<any>('ProjectHubService');
+        const milestoneSvc = context.container.resolve<any>('MilestoneService');
+        const agentSvc = context.container.resolve<any>('ProjectAgentService');
+        const depSvc = context.container.resolve<any>('ProjectDependencyService');
+        const workLogSvc = context.container.has('WorkLogService')
+          ? context.container.resolve<any>('WorkLogService')
+          : null;
+        const docSvc = context.container.has('DocService')
+          ? context.container.resolve<any>('DocService')
+          : null;
+        const templateSvc = context.container.has('TemplateService')
+          ? context.container.resolve<any>('TemplateService')
+          : null;
+        const hubHandlers = createProjectHubToolHandlers(hubService, milestoneSvc, agentSvc, depSvc, workLogSvc, docSvc, templateSvc, context.logger);
+        Object.assign(handlerMap, hubHandlers);
+        await this.toolRegistry.registerModuleTools(
+          { id: 'project-hub', mcpTools: projectHubMcpTools } as any,
+          (_mod, toolName) => handlerMap[toolName],
+        );
+      }
 
       // Register tools with MCP server
       await this.toolRegistry.registerWithServer();
