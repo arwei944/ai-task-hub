@@ -39,14 +39,8 @@ import {
   X,
   Bot,
   Loader2,
-  ChevronLeft,
-  ChevronRight,
-  UserPlus,
   Zap,
-  Code,
-  Brain,
-  Wrench,
-  MessageSquare,
+  Wifi,
 } from 'lucide-react';
 
 // ---- Types ----
@@ -86,6 +80,7 @@ interface HealthMatrixItem {
   riskLevel: string;
   healthStatus: string;
   lastUpdated: Date;
+  hasAgent?: boolean;
 }
 
 // ---- Status helpers ----
@@ -134,35 +129,6 @@ function formatRelativeTime(date: Date | string): string {
   return `${diffDays}天前`;
 }
 
-// ---- Create Dialog Constants ----
-
-const AGENT_TYPES = [
-  { value: 'claude', label: 'Claude' },
-  { value: 'trae', label: 'Trae' },
-  { value: 'cursor', label: 'Cursor' },
-  { value: 'chatgpt', label: 'ChatGPT' },
-  { value: 'api', label: 'API' },
-];
-
-const AGENT_ROLES = [
-  { value: '全栈开发', label: '全栈开发' },
-  { value: 'UI设计', label: 'UI设计' },
-  { value: '后端开发', label: '后端开发' },
-  { value: '数据分析', label: '数据分析' },
-  { value: '项目管理', label: '项目管理' },
-];
-
-const CAPABILITY_OPTIONS = [
-  { value: 'React', label: 'React', icon: Code },
-  { value: 'TypeScript', label: 'TypeScript', icon: Code },
-  { value: 'Python', label: 'Python', icon: Brain },
-  { value: 'Node.js', label: 'Node.js', icon: Code },
-  { value: 'UI设计', label: 'UI设计', icon: Wrench },
-  { value: 'API开发', label: 'API开发', icon: Code },
-  { value: '数据库', label: '数据库', icon: Wrench },
-  { value: 'DevOps', label: 'DevOps', icon: Wrench },
-];
-
 // ---- Component ----
 
 export default function ProjectHubDashboardPage() {
@@ -175,13 +141,6 @@ export default function ProjectHubDashboardPage() {
 
   // Create dialog state
   const [showCreateDialog, setShowCreateDialog] = useState(false);
-  const [createStep, setCreateStep] = useState<1 | 2>(1);
-  const [agentForm, setAgentForm] = useState({
-    name: '',
-    clientType: 'claude',
-    role: '全栈开发',
-    capabilities: [] as string[],
-  });
   const [projectForm, setProjectForm] = useState({
     name: '',
     description: '',
@@ -249,8 +208,6 @@ export default function ProjectHubDashboardPage() {
   };
 
   const resetCreateDialog = () => {
-    setCreateStep(1);
-    setAgentForm({ name: '', clientType: 'claude', role: '全栈开发', capabilities: [] });
     setProjectForm({ name: '', description: '', priority: 'high', techStack: '' });
     setCreating(false);
   };
@@ -258,16 +215,11 @@ export default function ProjectHubDashboardPage() {
   const handleCreate = async () => {
     setCreating(true);
     try {
-      // Create project with agent in one call
-      await trpc.projectHub.projects.createWithAgent.mutate({
+      await trpc.projectHub.projects.create.mutate({
         name: projectForm.name,
         description: projectForm.description || undefined,
         priority: projectForm.priority as 'high' | 'medium' | 'low',
         techStack: projectForm.techStack ? projectForm.techStack.split(',').map(s => s.trim()).filter(Boolean) : undefined,
-        agentName: agentForm.name,
-        agentClientType: agentForm.clientType,
-        agentRole: agentForm.role,
-        agentCapabilities: agentForm.capabilities.length > 0 ? agentForm.capabilities : undefined,
       });
       setShowCreateDialog(false);
       resetCreateDialog();
@@ -277,15 +229,6 @@ export default function ProjectHubDashboardPage() {
     } finally {
       setCreating(false);
     }
-  };
-
-  const toggleCapability = (cap: string) => {
-    setAgentForm(prev => ({
-      ...prev,
-      capabilities: prev.capabilities.includes(cap)
-        ? prev.capabilities.filter(c => c !== cap)
-        : [...prev.capabilities, cap],
-    }));
   };
 
   return (
@@ -441,6 +384,7 @@ export default function ProjectHubDashboardPage() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>项目名称</TableHead>
+                      <TableHead>智能体</TableHead>
                       <TableHead>进度</TableHead>
                       <TableHead>风险等级</TableHead>
                       <TableHead>健康状态</TableHead>
@@ -458,6 +402,19 @@ export default function ProjectHubDashboardPage() {
                           >
                             {item.projectName}
                           </Link>
+                        </TableCell>
+                        <TableCell>
+                          {item.hasAgent ? (
+                            <span className="inline-flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400">
+                              <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                              Agent 已接入
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1.5 text-xs text-amber-500 dark:text-amber-400">
+                              <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                              等待接入
+                            </span>
+                          )}
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
@@ -660,7 +617,7 @@ export default function ProjectHubDashboardPage() {
     </div>
   );
 
-  // ---- Create Project with Agent Dialog ----
+  // ---- Create Project Dialog ----
   function renderCreateDialog() {
     if (!showCreateDialog) return null;
 
@@ -684,272 +641,110 @@ export default function ProjectHubDashboardPage() {
             </button>
           </div>
 
-          {/* Step Indicator */}
-          <div className="px-6 pt-4">
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => setCreateStep(1)}
-                className="flex items-center gap-2 text-sm"
-              >
-                <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium transition-colors ${
-                  createStep >= 1
-                    ? 'bg-blue-500 text-white'
-                    : 'bg-gray-200 dark:bg-gray-700 text-gray-500'
-                }`}>
-                  {createStep > 1 ? <CheckCircle2 className="w-3.5 h-3.5" /> : '1'}
-                </span>
-                <span className={createStep >= 1 ? 'text-gray-900 dark:text-gray-100 font-medium' : 'text-gray-400'}>
-                  注册智能体身份
-                </span>
-              </button>
-              <div className={`flex-1 h-px ${createStep >= 2 ? 'bg-blue-500' : 'bg-gray-200 dark:bg-gray-700'}`} />
-              <button
-                onClick={() => { if (agentForm.name.trim()) setCreateStep(2); }}
-                className="flex items-center gap-2 text-sm"
-              >
-                <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium transition-colors ${
-                  createStep >= 2
-                    ? 'bg-blue-500 text-white'
-                    : 'bg-gray-200 dark:bg-gray-700 text-gray-500'
-                }`}>
-                  2
-                </span>
-                <span className={createStep >= 2 ? 'text-gray-900 dark:text-gray-100 font-medium' : 'text-gray-400'}>
-                  项目信息
-                </span>
-              </button>
-            </div>
-          </div>
-
-          {/* Step Content */}
+          {/* Form Content */}
           <div className="px-6 py-5 space-y-4 max-h-[60vh] overflow-y-auto">
-            {createStep === 1 ? (
-              /* Step 1: Register Agent Identity */
-              <>
-                <div className="flex items-center gap-2 mb-2">
-                  <Bot className="w-5 h-5 text-blue-500" />
-                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">注册智能体身份</span>
-                </div>
-                <p className="text-xs text-gray-400 mb-4">为项目创建一个专属智能体，它将负责项目的开发工作</p>
+            <div className="flex items-center gap-2 mb-2">
+              <FolderKanban className="w-5 h-5 text-blue-500" />
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">项目信息</span>
+            </div>
+            <p className="text-xs text-gray-400 mb-4">填写项目基本信息，智能体将通过 MCP 工具自主注册身份</p>
 
-                {/* Agent Name */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                    智能体名称 <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={agentForm.name}
-                    onChange={(e) => setAgentForm(prev => ({ ...prev, name: e.target.value }))}
-                    placeholder="例如: Claude-3.5-Sonnet"
-                    className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow"
-                  />
-                </div>
+            {/* Project Name */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                项目名称 <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                value={projectForm.name}
+                onChange={(e) => setProjectForm(prev => ({ ...prev, name: e.target.value }))}
+                placeholder="例如: AI Task Hub v6"
+                className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow"
+              />
+            </div>
 
-                {/* Agent Type */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                    智能体类型 <span className="text-red-500">*</span>
-                  </label>
-                  <div className="grid grid-cols-5 gap-2">
-                    {AGENT_TYPES.map((type) => (
-                      <button
-                        key={type.value}
-                        onClick={() => setAgentForm(prev => ({ ...prev, clientType: type.value }))}
-                        className={`px-3 py-2 text-xs font-medium rounded-lg border transition-all ${
-                          agentForm.clientType === type.value
-                            ? 'border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-500'
-                            : 'border-gray-200 dark:border-gray-700 text-gray-500 hover:border-gray-300 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800'
-                        }`}
-                      >
-                        {type.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+            {/* Description */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                项目描述
+              </label>
+              <textarea
+                value={projectForm.description}
+                onChange={(e) => setProjectForm(prev => ({ ...prev, description: e.target.value }))}
+                placeholder="简要描述项目目标和范围..."
+                rows={3}
+                className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow resize-none"
+              />
+            </div>
 
-                {/* Agent Role */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                    智能体角色 <span className="text-red-500">*</span>
-                  </label>
-                  <div className="grid grid-cols-3 gap-2">
-                    {AGENT_ROLES.map((role) => (
-                      <button
-                        key={role.value}
-                        onClick={() => setAgentForm(prev => ({ ...prev, role: role.value }))}
-                        className={`px-3 py-2 text-xs font-medium rounded-lg border transition-all ${
-                          agentForm.role === role.value
-                            ? 'border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-500'
-                            : 'border-gray-200 dark:border-gray-700 text-gray-500 hover:border-gray-300 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800'
-                        }`}
-                      >
-                        {role.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+            {/* Priority */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                优先级
+              </label>
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { value: 'high', label: '高', color: 'border-red-500 bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-300 dark:border-red-500' },
+                  { value: 'medium', label: '中', color: 'border-amber-500 bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-500' },
+                  { value: 'low', label: '低', color: 'border-emerald-500 bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-500' },
+                ].map((p) => (
+                  <button
+                    key={p.value}
+                    onClick={() => setProjectForm(prev => ({ ...prev, priority: p.value }))}
+                    className={`px-3 py-2 text-xs font-medium rounded-lg border transition-all ${
+                      projectForm.priority === p.value
+                        ? p.color
+                        : 'border-gray-200 dark:border-gray-700 text-gray-500 hover:border-gray-300 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800'
+                    }`}
+                  >
+                    {p.label}
+                  </button>
+                ))}
+              </div>
+            </div>
 
-                {/* Capabilities */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                    能力标签
-                  </label>
-                  <div className="flex flex-wrap gap-2">
-                    {CAPABILITY_OPTIONS.map((cap) => {
-                      const isSelected = agentForm.capabilities.includes(cap.value);
-                      const Icon = cap.icon;
-                      return (
-                        <button
-                          key={cap.value}
-                          onClick={() => toggleCapability(cap.value)}
-                          className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full border transition-all ${
-                            isSelected
-                              ? 'border-indigo-500 bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300 dark:border-indigo-500'
-                              : 'border-gray-200 dark:border-gray-700 text-gray-500 hover:border-gray-300 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800'
-                          }`}
-                        >
-                          <Icon className="w-3 h-3" />
-                          {cap.label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              </>
-            ) : (
-              /* Step 2: Project Info */
-              <>
-                <div className="flex items-center gap-2 mb-2">
-                  <FolderKanban className="w-5 h-5 text-blue-500" />
-                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">项目信息</span>
-                </div>
-                <p className="text-xs text-gray-400 mb-4">填写项目基本信息，智能体 {agentForm.name} 将自动分配到此项目</p>
-
-                {/* Project Name */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                    项目名称 <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={projectForm.name}
-                    onChange={(e) => setProjectForm(prev => ({ ...prev, name: e.target.value }))}
-                    placeholder="例如: AI Task Hub v6"
-                    className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow"
-                  />
-                </div>
-
-                {/* Description */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                    项目描述
-                  </label>
-                  <textarea
-                    value={projectForm.description}
-                    onChange={(e) => setProjectForm(prev => ({ ...prev, description: e.target.value }))}
-                    placeholder="简要描述项目目标和范围..."
-                    rows={3}
-                    className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow resize-none"
-                  />
-                </div>
-
-                {/* Priority */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                    优先级
-                  </label>
-                  <div className="grid grid-cols-3 gap-2">
-                    {[
-                      { value: 'high', label: '高', color: 'border-red-500 bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-300 dark:border-red-500' },
-                      { value: 'medium', label: '中', color: 'border-amber-500 bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-500' },
-                      { value: 'low', label: '低', color: 'border-emerald-500 bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-500' },
-                    ].map((p) => (
-                      <button
-                        key={p.value}
-                        onClick={() => setProjectForm(prev => ({ ...prev, priority: p.value }))}
-                        className={`px-3 py-2 text-xs font-medium rounded-lg border transition-all ${
-                          projectForm.priority === p.value
-                            ? p.color
-                            : 'border-gray-200 dark:border-gray-700 text-gray-500 hover:border-gray-300 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800'
-                        }`}
-                      >
-                        {p.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Tech Stack */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                    技术栈
-                  </label>
-                  <input
-                    type="text"
-                    value={projectForm.techStack}
-                    onChange={(e) => setProjectForm(prev => ({ ...prev, techStack: e.target.value }))}
-                    placeholder="逗号分隔，例如: React, TypeScript, Prisma"
-                    className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow"
-                  />
-                </div>
-              </>
-            )}
+            {/* Tech Stack */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                技术栈
+              </label>
+              <input
+                type="text"
+                value={projectForm.techStack}
+                onChange={(e) => setProjectForm(prev => ({ ...prev, techStack: e.target.value }))}
+                placeholder="逗号分隔，例如: React, TypeScript, Prisma"
+                className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow"
+              />
+            </div>
           </div>
 
           {/* Footer */}
-          <div className="flex items-center justify-between px-6 py-4 border-t border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50">
-            <div>
-              {createStep === 2 && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setCreateStep(1)}
-                  disabled={creating}
-                >
-                  <ChevronLeft className="w-3.5 h-3.5 mr-1" />
-                  上一步
-                </Button>
-              )}
-            </div>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => { setShowCreateDialog(false); resetCreateDialog(); }}
-                disabled={creating}
-              >
-                取消
-              </Button>
-              {createStep === 1 ? (
-                <Button
-                  size="sm"
-                  onClick={() => setCreateStep(2)}
-                  disabled={!agentForm.name.trim()}
-                >
-                  下一步
-                  <ChevronRight className="w-3.5 h-3.5 ml-1" />
-                </Button>
+          <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => { setShowCreateDialog(false); resetCreateDialog(); }}
+              disabled={creating}
+            >
+              取消
+            </Button>
+            <Button
+              size="sm"
+              onClick={handleCreate}
+              disabled={!projectForm.name.trim() || creating}
+            >
+              {creating ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                  创建中...
+                </>
               ) : (
-                <Button
-                  size="sm"
-                  onClick={handleCreate}
-                  disabled={!projectForm.name.trim() || creating}
-                >
-                  {creating ? (
-                    <>
-                      <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
-                      创建中...
-                    </>
-                  ) : (
-                    <>
-                      <UserPlus className="w-3.5 h-3.5 mr-1.5" />
-                      创建项目
-                    </>
-                  )}
-                </Button>
+                <>
+                  <Plus className="w-3.5 h-3.5 mr-1.5" />
+                  创建项目
+                </>
               )}
-            </div>
+            </Button>
           </div>
         </div>
       </div>

@@ -166,4 +166,37 @@ export const projectHubMcpTools: McpToolConfig[] = [
       },
     },
   },
+  {
+    name: 'ph_register_identity',
+    description: '智能体自主注册身份到指定项目。智能体在开始项目工作前必须先注册身份。注册后即可开始记录工作日志、管理任务等。',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        projectId: { type: 'string', description: '项目 ID' },
+        agentName: { type: 'string', description: '智能体名称（如 Claude-3.5-Sonnet）' },
+        clientType: { type: 'string', description: '客户端类型: claude, trae, cursor, chatgpt, api' },
+        role: { type: 'string', description: '角色: 全栈开发, UI设计, 后端开发, 数据分析, 项目管理' },
+        capabilities: { type: 'array', items: { type: 'string' }, description: '能力标签列表' },
+      },
+      required: ['projectId', 'agentName'],
+    },
+  },
+  {
+    name: 'ph_create_project',
+    description: '智能体自主创建项目并注册身份。一步完成项目创建和身份注册，创建后立即开始工作。',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        name: { type: 'string', description: '项目名称' },
+        description: { type: 'string', description: '项目描述' },
+        priority: { type: 'string', description: '优先级: high, medium, low' },
+        techStack: { type: 'array', items: { type: 'string' }, description: '技术栈列表' },
+        agentName: { type: 'string', description: '智能体名称' },
+        clientType: { type: 'string', description: '客户端类型' },
+        role: { type: 'string', description: '角色' },
+        capabilities: { type: 'array', items: { type: 'string' }, description: '能力标签' },
+      },
+      required: ['name', 'agentName'],
+    },
+  },
 ];

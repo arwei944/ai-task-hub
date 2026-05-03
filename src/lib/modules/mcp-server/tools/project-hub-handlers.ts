@@ -91,5 +91,26 @@ export function createProjectHubToolHandlers(
       }
       return reportService.generateDashboardReport();
     },
+    ph_register_identity: async (args: Record<string, unknown>) => {
+      return projectAgentService.createAndAssign({
+        projectId: args.projectId as string,
+        name: args.agentName as string,
+        clientType: (args.clientType as string) || 'api',
+        role: (args.role as string) || '全栈开发',
+        capabilities: args.capabilities as string[] | undefined,
+      });
+    },
+    ph_create_project: async (args: Record<string, unknown>) => {
+      return projectHubService.createProjectWithAgent({
+        name: args.name as string,
+        description: args.description as string | undefined,
+        priority: args.priority as string | undefined,
+        techStack: args.techStack as string[] | undefined,
+        agentName: args.agentName as string,
+        agentClientType: args.clientType as string | undefined,
+        agentRole: args.role as string | undefined,
+        agentCapabilities: args.capabilities as string[] | undefined,
+      });
+    },
   };
 }

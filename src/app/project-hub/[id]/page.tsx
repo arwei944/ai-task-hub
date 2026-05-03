@@ -39,6 +39,7 @@ import {
   UserPlus,
   ArrowRight,
   Zap,
+  Wifi,
   Code,
   Brain,
   Wrench,
@@ -105,6 +106,7 @@ interface ProjectAgentData {
   isActive: boolean;
   capabilities?: string | null;
   createdAt?: Date | string;
+  source?: string;
   agent?: {
     id: string;
     name: string;
@@ -398,6 +400,16 @@ export default function ProjectDetailPage() {
                       }`}>
                         {projectAgent.agent?.clientType || projectAgent.clientType}
                       </span>
+                      {/* Source badge */}
+                      {projectAgent.source === 'createWithAgent' ? (
+                        <span className="inline-flex items-center px-2 py-0.5 text-[11px] font-medium rounded-full bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
+                          Agent 创建
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center px-2 py-0.5 text-[11px] font-medium rounded-full bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                          自主接入
+                        </span>
+                      )}
                     </div>
                     <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
                       {projectAgent.role} &middot; {projectAgent.agent?.clientType || projectAgent.clientType}
@@ -441,24 +453,22 @@ export default function ProjectDetailPage() {
                   </Link>
                 </div>
               ) : (
-                /* No agent assigned */
-                <div className="flex items-center justify-between p-4 rounded-lg bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-950 flex items-center justify-center">
-                      <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+                /* Waiting for agent */
+                <Card className="border-dashed border-2 border-indigo-200 dark:border-indigo-800 bg-indigo-50/50 dark:bg-indigo-950/20">
+                  <CardContent className="py-8 text-center">
+                    <div className="w-16 h-16 rounded-full bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center mx-auto mb-4 animate-pulse">
+                      <Bot className="w-8 h-8 text-indigo-400" />
                     </div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100">尚未注册智能体身份</p>
-                      <p className="text-xs text-gray-400 mt-0.5">每个项目需要一个专属智能体来执行开发任务</p>
+                    <h3 className="text-lg font-medium text-indigo-700 dark:text-indigo-300">等待智能体接入</h3>
+                    <p className="text-sm text-indigo-500/70 dark:text-indigo-400/70 mt-1">
+                      智能体将通过 MCP 工具自主注册身份并开始工作
+                    </p>
+                    <div className="mt-3 flex items-center justify-center gap-2 text-xs text-indigo-400">
+                      <Wifi className="w-3 h-3" />
+                      <span>等待 ph_register_identity 调用...</span>
                     </div>
-                  </div>
-                  <Link href={`/project-hub/${id}/team`}>
-                    <Button size="sm" className="shrink-0">
-                      <UserPlus className="w-3.5 h-3.5 mr-1.5" />
-                      注册智能体
-                    </Button>
-                  </Link>
-                </div>
+                  </CardContent>
+                </Card>
               )}
             </CardContent>
           </Card>

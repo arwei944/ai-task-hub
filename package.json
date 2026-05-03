@@ -1,6 +1,6 @@
 {
   "name": "ai-task-hub",
-  "version": "5.2.0",
+  "version": "5.3.0",
   "private": true,
   "packageManager": "pnpm@10.33.2",
   "pnpm": {
