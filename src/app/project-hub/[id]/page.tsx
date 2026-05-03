@@ -36,6 +36,7 @@ import {
   Plus,
   FileBarChart,
   Activity,
+  UserPlus,
 } from 'lucide-react';
 
 // ---- Types ----
@@ -297,7 +298,7 @@ export default function ProjectDetailPage() {
         <TabsList variant="line">
           <TabsTrigger value="overview">概览</TabsTrigger>
           <TabsTrigger value="milestones">里程碑</TabsTrigger>
-          <TabsTrigger value="agents">智能体</TabsTrigger>
+          <TabsTrigger value="agents">工作台</TabsTrigger>
           <TabsTrigger value="dependencies">依赖</TabsTrigger>
           <TabsTrigger value="worklogs">工作日志</TabsTrigger>
           <TabsTrigger value="docs">文档</TabsTrigger>
@@ -582,10 +583,19 @@ export default function ProjectDetailPage() {
             </CardHeader>
             <CardContent>
               {(project.agents?.length ?? 0) === 0 ? (
-                <p className="text-sm text-gray-400 py-4 text-center">暂无关联智能体</p>
+                <div className="text-center py-8">
+                  <Bot className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
+                  <p className="text-sm text-gray-400 dark:text-gray-500">暂未分配智能体</p>
+                  <Link href={`/project-hub/${id}/team`}>
+                    <Button size="sm" className="mt-3">
+                      <UserPlus className="w-3.5 h-3.5 mr-1.5" />
+                      前往工作台分配
+                    </Button>
+                  </Link>
+                </div>
               ) : (
                 <div className="space-y-3">
-                  {(project.agents ?? []).map((agent) => (
+                  {(project.agents ?? []).slice(0, 1).map((agent) => (
                     <div
                       key={agent.id}
                       className="flex items-center justify-between py-3 px-4 rounded-lg border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
@@ -600,15 +610,15 @@ export default function ProjectDetailPage() {
                         </div>
                       </div>
                       <div className="flex items-center gap-3 shrink-0">
-                        <span className="text-xs text-gray-400">
-                          活跃于 {formatDate(agent.lastActive)}
-                        </span>
                         <Badge
                           variant={agent.status === 'active' ? 'default' : 'outline'}
                           className={agent.status === 'active' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300' : ''}
                         >
                           {agent.status === 'active' ? '活跃' : '离线'}
                         </Badge>
+                        <Link href={`/project-hub/${id}/team`}>
+                          <Button variant="outline" size="sm">查看工作台</Button>
+                        </Link>
                       </div>
                     </div>
                   ))}
@@ -663,7 +673,7 @@ export default function ProjectDetailPage() {
             </CardHeader>
             <CardContent>
               <p className="text-sm text-gray-400 py-4 text-center">
-                前往<Link href={`/project-hub/${id}/team`} className="text-blue-500 hover:underline mx-1">智能体管理</Link>查看完整的工作负载和工作日志
+                前往<Link href={`/project-hub/${id}/team`} className="text-blue-500 hover:underline mx-1">智能体工作台</Link>查看完整的工作负载和工作日志
               </p>
             </CardContent>
           </Card>

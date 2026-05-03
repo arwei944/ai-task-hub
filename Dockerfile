@@ -15,11 +15,8 @@ RUN test -f node_modules/better-sqlite3/build/Release/better_sqlite3.node || (ec
 # Copy source code
 COPY . .
 
-# Generate Prisma client and create database
-RUN npx prisma generate && \
-    mkdir -p /data && \
-    npx prisma db push --accept-data-loss 2>&1 && \
-    test -f /data/dev.db || (echo "FATAL: DB creation failed" && exit 1)
+# Generate Prisma client
+RUN npx prisma generate
 
 # Build Next.js
 RUN npx next build
@@ -32,6 +29,10 @@ ENV DATABASE_URL=file:/data/dev.db
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
+# Persistent storage for database
+VOLUME ["/data"]
+
 EXPOSE 3000
 
-CMD ["sh", "-c", "npx prisma generate && npx next start"]
+# Startup: ensure DB exists, then start
+CMD ["sh", "-c", "mkdir -p /data && npx prisma db push --accept-data-loss 2>&1 && npx next start"]

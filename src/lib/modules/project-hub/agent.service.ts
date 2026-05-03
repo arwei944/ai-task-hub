@@ -279,6 +279,16 @@ export class ProjectAgentService {
   }
 
   /**
+   * 获取项目的专属智能体（单个）
+   */
+  async getProjectAgent(projectId: string) {
+    return this.prisma.projectAgent.findFirst({
+      where: { projectId, isActive: true },
+      include: { agent: true },
+    });
+  }
+
+  /**
    * 获取尚未分配到指定项目的可用 Agent 列表
    * @param projectId - 项目 ID
    * @returns 可用 Agent 列表

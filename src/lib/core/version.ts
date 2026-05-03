@@ -9,13 +9,13 @@
 // ---- 应用版本 ----
 // 主版本号 (与 package.json 保持同步)
 // 注意: 不能使用 fs 读取 package.json，因为此文件会被客户端组件导入
-export const APP_VERSION: string = '5.0.0';
+export const APP_VERSION: string = '5.1.0';
 
 /** 应用名称 */
 export const APP_NAME: string = 'AI Task Hub';
 
 /** 应用代号 */
-export const APP_CODENAME: string = 'Report Hub';
+export const APP_CODENAME: string = 'Agent Workstation';
 
 // ---- 模块版本 ----
 // 所有模块统一使用应用版本号，不再单独维护
@@ -105,6 +105,7 @@ export const VERSION_HISTORY: ReadonlyArray<{
   date: string;
   highlights: string[];
 }> = [
+  { version: '5.1.0', date: '2026-05-03', highlights: ['智能体工作台（单智能体模式）', 'HF Space 数据持久化（VOLUME /data）', 'Agent Workstation 垂直时间线', 'getProjectAgent tRPC 端点', '侧边栏"工作台"入口', '项目详情页智能体 Tab 重构'] },
   { version: '5.0.0', date: '2026-05-03', highlights: ['项目报告自动生成（Markdown 格式）', '活动时间线页面', '报告 MCP 工具', 'tRPC 报告端点', '侧边栏活动入口', '项目详情页生成报告按钮'] },
   { version: '4.3.0', date: '2026-05-03', highlights: ['甘特图时间线视图（CSS 实现）', '依赖关系图可视化页面', '项目进度自动计算（里程碑+任务双维度）', 'Dashboard 项目归档/恢复功能', '侧边栏增加依赖关系入口', '时间线/甘特图双视图切换'] },
   { version: '4.2.0', date: '2026-05-03', highlights: ['Agent 快速创建并分配到项目', '里程碑完成自动记录工作日志', '项目阶段变更自动记录工作日志', 'Team 页面内联创建智能体表单', '工作流模板展示（5 个内置模板）', '部署环境管理页面', '通知设置页面', '项目详情页创建任务入口'] },

@@ -192,6 +192,11 @@ export const projectHubRouter = createTRPCRouter({
       .query(async ({ ctx, input }) => {
         return ctx.services.projectAgentService.getAvailableAgents(input.projectId);
       }),
+    getProjectAgent: protectedProcedure
+      .input(z.object({ projectId: z.string() }))
+      .query(async ({ ctx, input }) => {
+        return ctx.services.projectAgentService.getProjectAgent(input.projectId);
+      }),
   }),
 
   // ========== Work Logs ==========
