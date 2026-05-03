@@ -9,7 +9,7 @@
 // ---- 应用版本 ----
 // 主版本号 (与 package.json 保持同步)
 // 注意: 不能使用 fs 读取 package.json，因为此文件会被客户端组件导入
-export const APP_VERSION: string = '4.0.0';
+export const APP_VERSION: string = '4.0.1';
 
 /** 应用名称 */
 export const APP_NAME: string = 'AI Task Hub';
@@ -105,6 +105,7 @@ export const VERSION_HISTORY: ReadonlyArray<{
   date: string;
   highlights: string[];
 }> = [
+  { version: '4.0.1', date: '2026-05-03', highlights: ['修复 Project Hub 页面空值崩溃', '侧边栏上下文感知导航重构', '项目中心作为主入口', 'ProjectProvider 上下文管理', '移动端导航更新'] },
   { version: '4.0.0', date: '2026-05-03', highlights: ['Project Hub 项目管理中心', '7 个新 Prisma 数据模型', '8 个 tRPC 子路由', '11 个 MCP 工具', '项目健康度矩阵', '智能体团队管理', '文档版本管理', '项目模板系统 (4 个内置模板)', '项目时间线', '里程碑 + 依赖管理'] },
   { version: '3.2.0', date: '2026-05-03', highlights: ['Project Hub Phase 2-3', '智能体工作日志', '项目文档系统', '模板系统', '时间线视图'] },
   { version: '3.1.0', date: '2026-05-03', highlights: ['修复 5 个 P0 页面崩溃/错误', 'Ops 总览 null 安全保护', 'Settings 健康数据正确渲染', 'Integrations 服务正确注入', 'MCP 路由 GET/POST 导出', 'Dashboard 趋势图空数据提示', '登录密码可见性切换', '任务看板颜色区分', '项目空状态创建按钮'] },
