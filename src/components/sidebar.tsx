@@ -24,6 +24,7 @@ import {
   Rocket,
   FileText,
   GanttChart,
+  Network,
 } from 'lucide-react';
 import { ThemeToggle } from './theme-toggle';
 import { LanguageSwitcher } from './language-switcher';
@@ -69,6 +70,7 @@ export default function Sidebar() {
         { href: `/project-hub/${currentProjectId}/team`, label: '智能体', icon: Bot },
         { href: `/project-hub/${currentProjectId}/docs`, label: '文档', icon: FileText },
         { href: `/project-hub/${currentProjectId}/workflows`, label: '工作流', icon: GitBranch },
+        { href: `/project-hub/${currentProjectId}/dependencies`, label: '依赖关系', icon: Network },
         { href: `/project-hub/${currentProjectId}/deployments`, label: '部署', icon: Rocket },
         { href: `/project-hub/${currentProjectId}/notifications`, label: '通知', icon: Bell },
       ]

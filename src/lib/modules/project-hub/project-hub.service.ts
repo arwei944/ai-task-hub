@@ -70,6 +70,7 @@ export interface ProjectDetail {
     inProgress: number;
     todo: number;
   };
+  progress?: number;
 }
 
 /**
@@ -314,12 +315,23 @@ export class ProjectHubService {
       this.getProjectTaskStats(id),
     ]);
 
+    // Calculate progress from milestones
+    const milestoneProgress = milestones.length > 0
+      ? Math.round((milestones.filter((m: any) => m.status === 'completed').length / milestones.length) * 100)
+      : 0;
+
+    // Use the max of milestone-based and task-based progress
+    const progress = Math.max(milestoneProgress, taskStatsResult.total > 0
+      ? Math.round((taskStatsResult.done / taskStatsResult.total) * 100)
+      : 0);
+
     const detail: ProjectDetail = {
       ...project,
       milestones,
       agents,
       dependencies,
       taskStats: taskStatsResult,
+      progress,
     };
 
     return detail;

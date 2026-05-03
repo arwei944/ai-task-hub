@@ -32,6 +32,10 @@ import {
   Clock,
   ArrowRight,
   RefreshCw,
+  Archive,
+  RotateCcw,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 
 // ---- Types ----
@@ -125,6 +129,9 @@ export default function ProjectHubDashboardPage() {
   const [overview, setOverview] = useState<DashboardOverview | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [archivingId, setArchivingId] = useState<string | null>(null);
+  const [showArchived, setShowArchived] = useState(false);
+  const [archivedProjects, setArchivedProjects] = useState<any[]>([]);
 
   const fetchOverview = useCallback(async () => {
     try {
@@ -140,9 +147,49 @@ export default function ProjectHubDashboardPage() {
     }
   }, []);
 
+  const fetchArchivedProjects = useCallback(async () => {
+    try {
+      const data = await trpc.projectHub.projects.list.query({ status: 'archived' });
+      setArchivedProjects((data as any)?.items ?? []);
+    } catch (err) {
+      console.error('Failed to fetch archived projects:', err);
+    }
+  }, []);
+
   useEffect(() => {
     fetchOverview();
   }, [fetchOverview]);
+
+  useEffect(() => {
+    if (showArchived) {
+      fetchArchivedProjects();
+    }
+  }, [showArchived, fetchArchivedProjects]);
+
+  const handleArchive = async (projectId: string) => {
+    try {
+      setArchivingId(projectId);
+      await trpc.projectHub.projects.archive.mutate({ id: projectId });
+      await fetchOverview();
+    } catch (err) {
+      console.error('Failed to archive project:', err);
+    } finally {
+      setArchivingId(null);
+    }
+  };
+
+  const handleRestore = async (projectId: string) => {
+    try {
+      setArchivingId(projectId);
+      await trpc.projectHub.projects.update.mutate({ id: projectId, status: 'active' });
+      await fetchOverview();
+      await fetchArchivedProjects();
+    } catch (err) {
+      console.error('Failed to restore project:', err);
+    } finally {
+      setArchivingId(null);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -301,6 +348,7 @@ export default function ProjectHubDashboardPage() {
                       <TableHead>风险等级</TableHead>
                       <TableHead>健康状态</TableHead>
                       <TableHead>最后更新</TableHead>
+                      <TableHead className="w-[80px]">操作</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -333,6 +381,18 @@ export default function ProjectHubDashboardPage() {
                         </TableCell>
                         <TableCell className="text-xs text-gray-400">
                           {formatRelativeTime(item.lastUpdated)}
+                        </TableCell>
+                        <TableCell>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 px-2 text-gray-400 hover:text-amber-600 dark:hover:text-amber-400"
+                            onClick={() => handleArchive(item.projectId)}
+                            disabled={archivingId === item.projectId}
+                            title="归档项目"
+                          >
+                            <Archive className="w-3.5 h-3.5" />
+                          </Button>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -426,6 +486,76 @@ export default function ProjectHubDashboardPage() {
               </CardContent>
             </Card>
           </div>
+
+          {/* Archived Projects Section */}
+          <Card className="border-dashed">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <Archive className="w-4 h-4 text-gray-400" />
+                  已归档项目
+                </CardTitle>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 text-xs"
+                  onClick={() => setShowArchived(!showArchived)}
+                >
+                  {showArchived ? (
+                    <>
+                      <EyeOff className="w-3.5 h-3.5 mr-1" />
+                      隐藏
+                    </>
+                  ) : (
+                    <>
+                      <Eye className="w-3.5 h-3.5 mr-1" />
+                      显示
+                    </>
+                  )}
+                </Button>
+              </div>
+            </CardHeader>
+            {showArchived && (
+              <CardContent>
+                {archivedProjects.length === 0 ? (
+                  <p className="text-sm text-gray-400 py-4 text-center">暂无已归档项目</p>
+                ) : (
+                  <div className="space-y-2">
+                    {archivedProjects.map((project: any) => (
+                      <div
+                        key={project.id}
+                        className="flex items-center justify-between py-2.5 px-3 rounded-lg bg-gray-50 dark:bg-gray-800/50"
+                      >
+                        <div className="flex-1 min-w-0">
+                          <Link
+                            href={`/project-hub/${project.id}`}
+                            className="text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-blue-500 dark:hover:text-blue-400"
+                          >
+                            {project.name}
+                          </Link>
+                          {project.description && (
+                            <p className="text-xs text-gray-400 mt-0.5 truncate">
+                              {project.description}
+                            </p>
+                          )}
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 px-2 text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-400 shrink-0 ml-3"
+                          onClick={() => handleRestore(project.id)}
+                          disabled={archivingId === project.id}
+                          title="恢复项目"
+                        >
+                          <RotateCcw className="w-3.5 h-3.5" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            )}
+          </Card>
         </>
       )}
     </div>

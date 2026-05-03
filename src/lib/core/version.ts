@@ -9,7 +9,7 @@
 // ---- 应用版本 ----
 // 主版本号 (与 package.json 保持同步)
 // 注意: 不能使用 fs 读取 package.json，因为此文件会被客户端组件导入
-export const APP_VERSION: string = '4.2.0';
+export const APP_VERSION: string = '4.3.0';
 
 /** 应用名称 */
 export const APP_NAME: string = 'AI Task Hub';
@@ -105,6 +105,7 @@ export const VERSION_HISTORY: ReadonlyArray<{
   date: string;
   highlights: string[];
 }> = [
+  { version: '4.3.0', date: '2026-05-03', highlights: ['甘特图时间线视图（CSS 实现）', '依赖关系图可视化页面', '项目进度自动计算（里程碑+任务双维度）', 'Dashboard 项目归档/恢复功能', '侧边栏增加依赖关系入口', '时间线/甘特图双视图切换'] },
   { version: '4.2.0', date: '2026-05-03', highlights: ['Agent 快速创建并分配到项目', '里程碑完成自动记录工作日志', '项目阶段变更自动记录工作日志', 'Team 页面内联创建智能体表单', '工作流模板展示（5 个内置模板）', '部署环境管理页面', '通知设置页面', '项目详情页创建任务入口'] },
   { version: '4.1.0', date: '2026-05-03', highlights: ['修复内置模板自动初始化', '修复依赖关系图（显示所有项目节点）', '系统管理深度融合到项目上下文', '项目内工作流/部署/通知管理页面', '项目详情页增加系统管理入口', '侧边栏项目导航增加系统管理项'] },
   { version: '4.0.1', date: '2026-05-03', highlights: ['修复 Project Hub 页面空值崩溃', '侧边栏上下文感知导航重构', '项目中心作为主入口', 'ProjectProvider 上下文管理', '移动端导航更新'] },
