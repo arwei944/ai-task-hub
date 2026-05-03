@@ -34,6 +34,8 @@ import {
   Bell,
   ChevronRight,
   Plus,
+  FileBarChart,
+  Activity,
 } from 'lucide-react';
 
 // ---- Types ----
@@ -141,6 +143,8 @@ export default function ProjectDetailPage() {
   const [project, setProject] = useState<ProjectDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [reportContent, setReportContent] = useState<string | null>(null);
+  const [reportLoading, setReportLoading] = useState(false);
 
   const fetchProject = useCallback(async () => {
     try {
@@ -159,6 +163,18 @@ export default function ProjectDetailPage() {
   useEffect(() => {
     fetchProject();
   }, [fetchProject]);
+
+  const generateReport = async () => {
+    try {
+      setReportLoading(true);
+      const result = await trpc.projectHub.reports.projectReport.query({ projectId: id });
+      setReportContent(result.content);
+    } catch (err: any) {
+      console.error('Report generation error:', err);
+    } finally {
+      setReportLoading(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -259,6 +275,15 @@ export default function ProjectDetailPage() {
           <Button
             size="sm"
             variant="outline"
+            onClick={generateReport}
+            disabled={reportLoading}
+          >
+            <FileBarChart className="w-3.5 h-3.5 mr-1.5" />
+            {reportLoading ? '生成中...' : '生成报告'}
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
             onClick={fetchProject}
           >
             <RefreshCw className="w-3.5 h-3.5 mr-1.5" />
@@ -276,6 +301,7 @@ export default function ProjectDetailPage() {
           <TabsTrigger value="dependencies">依赖</TabsTrigger>
           <TabsTrigger value="worklogs">工作日志</TabsTrigger>
           <TabsTrigger value="docs">文档</TabsTrigger>
+          <TabsTrigger value="activity">活动</TabsTrigger>
         </TabsList>
 
         {/* Overview Tab */}
@@ -435,6 +461,28 @@ export default function ProjectDetailPage() {
               )}
             </CardContent>
           </Card>
+
+          {/* Report Preview */}
+          {reportContent && (
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2">
+                    <FileBarChart className="w-4 h-4 text-blue-500" />
+                    项目报告
+                  </CardTitle>
+                  <Button size="sm" variant="ghost" onClick={() => setReportContent(null)}>
+                    关闭
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="prose prose-sm dark:prose-invert max-w-none whitespace-pre-wrap text-sm text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4 overflow-auto max-h-[500px]">
+                  {reportContent}
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* System Management */}
           <Card>
@@ -638,6 +686,30 @@ export default function ProjectDetailPage() {
                   <Button size="sm">
                     <FileText className="w-3.5 h-3.5 mr-1.5" />
                     打开文档管理
+                  </Button>
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Activity Tab */}
+        <TabsContent value="activity" className="space-y-4 mt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Activity className="w-4 h-4 text-blue-500" />
+                项目活动
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-col items-center py-8 gap-3">
+                <Activity className="w-12 h-12 text-gray-300 dark:text-gray-600" />
+                <p className="text-sm text-gray-400">前往活动页面查看完整的项目活动时间线</p>
+                <Link href={`/project-hub/${id}/activity`}>
+                  <Button size="sm">
+                    <Activity className="w-3.5 h-3.5 mr-1.5" />
+                    查看活动
                   </Button>
                 </Link>
               </div>

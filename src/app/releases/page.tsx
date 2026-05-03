@@ -8,6 +8,7 @@ import { APP_VERSION, APP_CODENAME, VERSION_HISTORY } from '@/lib/core/version';
 
 // ---- 版本代号映射 ----
 const CODENAMES: Record<string, string> = {
+  '5.0.0': 'Report Hub',
   '4.3.0': 'Project Hub',
   '4.2.0': 'Project Hub',
   '4.1.0': 'Project Hub',
@@ -250,7 +251,7 @@ export default function ReleasesPage() {
             </div>
           </div>
           <p className="text-xl text-blue-100 max-w-2xl leading-relaxed">
-            AI Task Hub 的完整版本演进历程，从 v1.0.0 首次发布到 v4.0.0 Project Hub 项目管理中心，
+            AI Task Hub 的完整版本演进历程，从 v1.0.0 首次发布到 v5.0.0 Report Hub 报告中心，
             记录每一次重要更新与改进。
           </p>
           <div className="flex gap-3 mt-8">
@@ -283,7 +284,7 @@ export default function ReleasesPage() {
             <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">总版本数</div>
           </div>
           <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 text-center shadow-sm">
-            <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">3</div>
+            <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">4</div>
             <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">大版本迭代</div>
           </div>
           <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 text-center shadow-sm">

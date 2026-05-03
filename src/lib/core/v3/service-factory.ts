@@ -69,6 +69,7 @@ type ProjectDependencyService = import('@/lib/modules/project-hub/project-depend
 type WorkLogService = import('@/lib/modules/project-hub/work-log.service').WorkLogService;
 type DocService = import('@/lib/modules/project-hub/doc.service').DocService;
 type TemplateService = import('@/lib/modules/project-hub/template.service').TemplateService;
+type ReportService = import('@/lib/modules/project-hub/report.service').ReportService;
 
 // ---- Service Token Constants ----
 
@@ -137,6 +138,7 @@ export const ServiceTokens = {
   workLogService: 'workLogService',
   docService: 'docService',
   templateService: 'templateService',
+  reportService: 'reportService',
 } as const;
 
 export type ServiceToken = (typeof ServiceTokens)[keyof typeof ServiceTokens];
@@ -208,6 +210,7 @@ export interface ServiceRegistry {
   [ServiceTokens.workLogService]: WorkLogService;
   [ServiceTokens.docService]: DocService;
   [ServiceTokens.templateService]: TemplateService;
+  [ServiceTokens.reportService]: ReportService;
 }
 
 // ---- Registration Functions ----
@@ -513,6 +516,7 @@ export async function registerProjectHubServices(container: IDIContainer): Promi
   const { WorkLogService } = await import('@/lib/modules/project-hub/work-log.service');
   const { DocService } = await import('@/lib/modules/project-hub/doc.service');
   const { TemplateService } = await import('@/lib/modules/project-hub/template.service');
+  const { ReportService } = await import('@/lib/modules/project-hub/report.service');
 
   const prisma = container.resolve(ServiceTokens.prisma) as any;
   const eventBus = container.resolve(ServiceTokens.eventBus) as any;
@@ -524,6 +528,7 @@ export async function registerProjectHubServices(container: IDIContainer): Promi
   const workLogService = new WorkLogService(prisma, eventBus, logger);
   const docService = new DocService(prisma, eventBus, logger);
   const templateService = new TemplateService(prisma, eventBus, logger);
+  const reportService = new ReportService(prisma, logger);
   const projectHubService = new ProjectHubService(
     prisma, eventBus, logger,
     milestoneService, projectAgentService, projectDependencyService,
@@ -536,6 +541,7 @@ export async function registerProjectHubServices(container: IDIContainer): Promi
   container.register(ServiceTokens.workLogService, () => workLogService, { singleton: true });
   container.register(ServiceTokens.docService, () => docService, { singleton: true });
   container.register(ServiceTokens.templateService, () => templateService, { singleton: true });
+  container.register(ServiceTokens.reportService, () => reportService, { singleton: true });
   container.register(ServiceTokens.projectHubService, () => projectHubService, { singleton: true });
 }
 

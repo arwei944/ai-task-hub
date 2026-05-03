@@ -73,6 +73,7 @@ export default function Sidebar() {
         { href: `/project-hub/${currentProjectId}/dependencies`, label: '依赖关系', icon: Network },
         { href: `/project-hub/${currentProjectId}/deployments`, label: '部署', icon: Rocket },
         { href: `/project-hub/${currentProjectId}/notifications`, label: '通知', icon: Bell },
+        { href: `/project-hub/${currentProjectId}/activity`, label: '活动', icon: Activity },
       ]
     : [];
 

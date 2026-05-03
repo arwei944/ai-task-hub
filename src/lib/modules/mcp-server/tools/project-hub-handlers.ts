@@ -8,6 +8,7 @@ export function createProjectHubToolHandlers(
   workLogService: any,
   docService: any,
   templateService: any,
+  reportService: any,
   logger: ILogger,
 ) {
   return {
@@ -83,6 +84,12 @@ export function createProjectHubToolHandlers(
     },
     ph_get_agent_workload: async (args: Record<string, unknown>) => {
       return workLogService.workloadBoard(args as any);
+    },
+    ph_generate_report: async (args: Record<string, unknown>) => {
+      if (args.projectId) {
+        return reportService.generateProjectReport(args.projectId as string);
+      }
+      return reportService.generateDashboardReport();
     },
   };
 }

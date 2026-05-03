@@ -162,7 +162,10 @@ export default class McpServerModule implements Module {
         const templateSvc = context.container.has('TemplateService')
           ? context.container.resolve<any>('TemplateService')
           : null;
-        const hubHandlers = createProjectHubToolHandlers(hubService, milestoneSvc, agentSvc, depSvc, workLogSvc, docSvc, templateSvc, context.logger);
+        const reportSvc = context.container.has('ReportService')
+          ? context.container.resolve<any>('ReportService')
+          : null;
+        const hubHandlers = createProjectHubToolHandlers(hubService, milestoneSvc, agentSvc, depSvc, workLogSvc, docSvc, templateSvc, reportSvc, context.logger);
         Object.assign(handlerMap, hubHandlers);
         await this.toolRegistry.registerModuleTools(
           { id: 'project-hub', mcpTools: projectHubMcpTools } as any,

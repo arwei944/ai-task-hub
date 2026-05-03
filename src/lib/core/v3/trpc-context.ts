@@ -83,6 +83,7 @@ export class ServiceAccessor {
   get workLogService() { return this.get(ServiceTokens.workLogService); }
   get docService() { return this.get(ServiceTokens.docService); }
   get templateService() { return this.get(ServiceTokens.templateService); }
+  get reportService() { return this.get(ServiceTokens.reportService); }
 }
 
 export type { ServiceToken };

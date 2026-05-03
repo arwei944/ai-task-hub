@@ -156,4 +156,14 @@ export const projectHubMcpTools: McpToolConfig[] = [
       required: ['projectId'],
     },
   },
+  {
+    name: 'ph_generate_report',
+    description: '自动生成项目报告（Markdown 格式），包含进度概览、里程碑、团队成员、风险评估和待办建议。',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        projectId: { type: 'string', description: '项目 ID（留空生成全局报告）' },
+      },
+    },
+  },
 ];

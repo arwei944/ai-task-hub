@@ -335,4 +335,15 @@ export const projectHubRouter = createTRPCRouter({
       return ctx.services.templateService.getBuiltIn();
     }),
   }),
+  // ========== Reports ==========
+  reports: createTRPCRouter({
+    projectReport: protectedProcedure
+      .input(z.object({ projectId: z.string() }))
+      .query(async ({ ctx, input }) => {
+        return ctx.services.reportService.generateProjectReport(input.projectId);
+      }),
+    dashboardReport: protectedProcedure.query(async ({ ctx }) => {
+      return ctx.services.reportService.generateDashboardReport();
+    }),
+  }),
 });
