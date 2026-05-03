@@ -80,6 +80,9 @@ export class ServiceAccessor {
   get milestoneService() { return this.get(ServiceTokens.milestoneService); }
   get projectAgentService() { return this.get(ServiceTokens.projectAgentService); }
   get projectDependencyService() { return this.get(ServiceTokens.projectDependencyService); }
+  get workLogService() { return this.get(ServiceTokens.workLogService); }
+  get docService() { return this.get(ServiceTokens.docService); }
+  get templateService() { return this.get(ServiceTokens.templateService); }
 }
 
 export type { ServiceToken };

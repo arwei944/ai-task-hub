@@ -28,6 +28,8 @@ import {
   Clock,
   Circle,
   AlertTriangle,
+  FileText,
+  ClipboardList,
 } from 'lucide-react';
 
 // ---- Types ----
@@ -268,6 +270,8 @@ export default function ProjectDetailPage() {
           <TabsTrigger value="milestones">里程碑</TabsTrigger>
           <TabsTrigger value="agents">智能体</TabsTrigger>
           <TabsTrigger value="dependencies">依赖</TabsTrigger>
+          <TabsTrigger value="worklogs">工作日志</TabsTrigger>
+          <TabsTrigger value="docs">文档</TabsTrigger>
         </TabsList>
 
         {/* Overview Tab */}
@@ -535,6 +539,47 @@ export default function ProjectDetailPage() {
                   ))}
                 </div>
               )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Work Logs Tab */}
+        <TabsContent value="worklogs" className="space-y-4 mt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <ClipboardList className="w-4 h-4 text-amber-500" />
+                工作日志
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-gray-400 py-4 text-center">
+                前往<Link href={`/project-hub/${id}/team`} className="text-blue-500 hover:underline mx-1">智能体管理</Link>查看完整的工作负载和工作日志
+              </p>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Docs Tab */}
+        <TabsContent value="docs" className="space-y-4 mt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="w-4 h-4 text-blue-500" />
+                项目文档
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-col items-center py-8 gap-3">
+                <FileText className="w-12 h-12 text-gray-300 dark:text-gray-600" />
+                <p className="text-sm text-gray-400">前往文档管理页面查看和管理项目文档</p>
+                <Link href={`/project-hub/${id}/docs`}>
+                  <Button size="sm">
+                    <FileText className="w-3.5 h-3.5 mr-1.5" />
+                    打开文档管理
+                  </Button>
+                </Link>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>

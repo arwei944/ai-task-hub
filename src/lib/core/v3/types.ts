@@ -111,6 +111,29 @@ export interface EventMap {
     targetProjectId: string;
     dependencyType: string;
   };
+  'project.doc.created': {
+    projectId: string;
+    docId: string;
+    title: string;
+    docType: string;
+  };
+  'project.doc.updated': {
+    projectId: string;
+    docId: string;
+    title: string;
+    version: number;
+  };
+  'project.agent.workLogged': {
+    projectId: string;
+    agentId: string;
+    hours: number;
+    date: string;
+  };
+  'project.template.used': {
+    templateId: string;
+    projectId: string;
+    templateName: string;
+  };
 
   // === 工作流事件 ===
   'workflow.started': {

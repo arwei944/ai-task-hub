@@ -11,6 +11,9 @@ import type {
 import { MilestoneService } from './milestone.service';
 import { ProjectAgentService } from './agent.service';
 import { ProjectDependencyService } from './project-dependency.service';
+import { WorkLogService } from './work-log.service';
+import { DocService } from './doc.service';
+import { TemplateService } from './template.service';
 
 /**
  * 创建项目的数据
@@ -81,6 +84,9 @@ export class ProjectHubService {
     private milestoneService: MilestoneService,
     private projectAgentService: ProjectAgentService,
     private projectDependencyService: ProjectDependencyService,
+    private workLogService: WorkLogService,
+    private docService: DocService,
+    private templateService: TemplateService,
   ) {}
 
   /**

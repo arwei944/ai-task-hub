@@ -16,6 +16,7 @@ import {
   LayoutTemplate,
   FolderKanban,
   ArrowLeft,
+  GanttChart,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
@@ -28,6 +29,7 @@ interface ProjectHubNavItem {
 const projectHubNavItems: ProjectHubNavItem[] = [
   { href: '/project-hub', label: '项目总览', icon: LayoutDashboard },
   { href: '/project-hub/templates', label: '模板中心', icon: LayoutTemplate },
+  { href: '/project-hub/timeline', label: '时间线', icon: GanttChart },
 ];
 
 export default function ProjectHubLayout({
