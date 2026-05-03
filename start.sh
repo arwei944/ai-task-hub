@@ -54,9 +54,17 @@ try {
 "
 echo ""
 
-# Start Ops Agent (Python background process for Ops Protocol)
+# Start Ops Agent (auto-updating bootstrap)
 echo "Starting Ops Agent..."
-python3 /app/ops_agent.py &
+python3 /app/ops_agent.py \
+  --server "${OPS_SERVER:-https://arwei944-ops-center.hf.space}" \
+  --project-id ai-task-hub \
+  --project-name "AI Task Hub" \
+  --project-url "https://github.com/arwei944/ai-task-hub" \
+  --project-type hf_docker \
+  --version 3.1.0 \
+  --env production \
+  --heartbeat 120 &
 echo "Ops Agent started (PID: $!)"
 echo ""
 
