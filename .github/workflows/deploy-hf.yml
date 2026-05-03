@@ -147,6 +147,28 @@ jobs:
               else:
                   print(f"✓ pnpm-lock.yaml is valid ({os.path.getsize(lock_path)} bytes)")
 
+          # Delete removed files from HF Space (files that no longer exist locally)
+          try:
+              from huggingface_hub import HfFileSystem
+              fs = HfFileSystem(token=token)
+              repo_fs = f"hf://datasets/{repo_id}"
+              # List of paths to clean up (removed from codebase)
+              cleanup_paths = [
+                  "src/app/fruit-ninja/page.tsx",
+                  "src/app/games/fruit-ninja/page.tsx",
+                  "docs/v3.2.0-dev-plan.docx",
+              ]
+              for p in cleanup_paths:
+                  try:
+                      fs.rm(f"hf://{repo_id}/{p}", recursive=False)
+                      print(f"  ✓ Deleted remote: {p}")
+                  except FileNotFoundError:
+                      print(f"  - Not on remote (skip): {p}")
+                  except Exception as e:
+                      print(f"  ! Delete {p}: {e}")
+          except Exception as e:
+              print(f"  ! Cleanup warning: {e}")
+
           # Upload in batches
           batches = [
               ("1_config", ["package.json", "pnpm-lock.yaml", ".gitignore",
