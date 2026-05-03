@@ -455,18 +455,18 @@ export default function OpsOverviewPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                {overview && (
+                {overview && overview.dlq && (
                   <div className="grid grid-cols-2 gap-3">
                     <div className="p-3 rounded-lg bg-gray-50 dark:bg-gray-800/50 text-center">
-                      <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{overview.dlq.total}</p>
+                      <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{overview.dlq.total ?? 0}</p>
                       <p className="text-xs text-gray-500">总条目</p>
                     </div>
                     <div className="p-3 rounded-lg bg-gray-50 dark:bg-gray-800/50 text-center">
-                      <p className="text-2xl font-bold text-amber-600 dark:text-amber-400">{overview.dlq.pending}</p>
+                      <p className="text-2xl font-bold text-amber-600 dark:text-amber-400">{overview.dlq.pending ?? 0}</p>
                       <p className="text-xs text-gray-500">待重试</p>
                     </div>
                     <div className="p-3 rounded-lg bg-gray-50 dark:bg-gray-800/50 text-center">
-                      <p className="text-2xl font-bold text-red-600 dark:text-red-400">{overview.dlq.exhausted}</p>
+                      <p className="text-2xl font-bold text-red-600 dark:text-red-400">{overview.dlq.exhausted ?? 0}</p>
                       <p className="text-xs text-gray-500">已耗尽</p>
                     </div>
                     <div className="p-3 rounded-lg bg-gray-50 dark:bg-gray-800/50 text-center">
