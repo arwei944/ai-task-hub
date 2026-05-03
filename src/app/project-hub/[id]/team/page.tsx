@@ -3,6 +3,7 @@
 // ============================================================
 //
 // Project agent management with workload board and work logs.
+// v4.2.0: Added inline agent creation form.
 // ============================================================
 
 'use client';
@@ -29,6 +30,7 @@ import {
   FileText,
   RefreshCw,
   UserPlus,
+  X,
 } from 'lucide-react';
 
 // ---- Types ----
@@ -74,6 +76,13 @@ export default function TeamManagementPage() {
   const [workloadLoading, setWorkloadLoading] = useState(true);
   const [logsLoading, setLogsLoading] = useState(true);
 
+  // Inline form state
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [newAgentName, setNewAgentName] = useState('');
+  const [newAgentRole, setNewAgentRole] = useState<'lead' | 'developer' | 'reviewer' | 'observer'>('developer');
+  const [newAgentClientType, setNewAgentClientType] = useState('mcp');
+  const [creating, setCreating] = useState(false);
+
   const fetchAgents = useCallback(async () => {
     try {
       setAgentsLoading(true);
@@ -118,6 +127,30 @@ export default function TeamManagementPage() {
     fetchAll();
   }, [fetchAll]);
 
+  const handleCreateAgent = async () => {
+    if (!newAgentName.trim()) return;
+    try {
+      setCreating(true);
+      await trpc.projectHub.agents.createAndAssign.mutate({
+        projectId,
+        name: newAgentName.trim(),
+        role: newAgentRole,
+        clientType: newAgentClientType,
+      });
+      // Reset form
+      setNewAgentName('');
+      setNewAgentRole('developer');
+      setNewAgentClientType('mcp');
+      setShowCreateForm(false);
+      // Refetch
+      await fetchAll();
+    } catch (err) {
+      console.error('Failed to create agent:', err);
+    } finally {
+      setCreating(false);
+    }
+  };
+
   const agentsList = agents;
   const workloadList = workload;
   const workLogsList = workLogs;
@@ -137,12 +170,85 @@ export default function TeamManagementPage() {
             <RefreshCw className="w-3.5 h-3.5 mr-1.5" />
             刷新
           </Button>
-          <Button size="sm">
-            <UserPlus className="w-3.5 h-3.5 mr-1.5" />
-            分配智能体
+          <Button size="sm" onClick={() => setShowCreateForm(!showCreateForm)}>
+            {showCreateForm ? (
+              <X className="w-3.5 h-3.5 mr-1.5" />
+            ) : (
+              <Plus className="w-3.5 h-3.5 mr-1.5" />
+            )}
+            {showCreateForm ? '取消' : '添加智能体'}
           </Button>
         </div>
       </div>
+
+      {/* Inline Create Form */}
+      {showCreateForm && (
+        <Card className="border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-950/20">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <UserPlus className="w-4 h-4 text-blue-500" />
+              <span className="text-sm font-medium text-gray-900 dark:text-gray-100">快速创建并分配智能体</span>
+            </div>
+            <div className="flex flex-wrap items-end gap-3">
+              <div className="flex-1 min-w-[180px]">
+                <label className="block text-xs text-gray-500 mb-1">名称</label>
+                <input
+                  type="text"
+                  value={newAgentName}
+                  onChange={(e) => setNewAgentName(e.target.value)}
+                  placeholder="输入智能体名称"
+                  className="w-full px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  onKeyDown={(e) => e.key === 'Enter' && handleCreateAgent()}
+                />
+              </div>
+              <div className="min-w-[140px]">
+                <label className="block text-xs text-gray-500 mb-1">角色</label>
+                <select
+                  value={newAgentRole}
+                  onChange={(e) => setNewAgentRole(e.target.value as typeof newAgentRole)}
+                  className="w-full px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="lead">Lead (负责人)</option>
+                  <option value="developer">Developer (开发者)</option>
+                  <option value="reviewer">Reviewer (审查者)</option>
+                  <option value="observer">Observer (观察者)</option>
+                </select>
+              </div>
+              <div className="min-w-[140px]">
+                <label className="block text-xs text-gray-500 mb-1">类型</label>
+                <select
+                  value={newAgentClientType}
+                  onChange={(e) => setNewAgentClientType(e.target.value)}
+                  className="w-full px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="mcp">MCP</option>
+                  <option value="trae">Trae</option>
+                  <option value="cursor">Cursor</option>
+                  <option value="claude">Claude</option>
+                  <option value="chatgpt">ChatGPT</option>
+                  <option value="api">API</option>
+                </select>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowCreateForm(false)}
+                >
+                  取消
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={handleCreateAgent}
+                  disabled={!newAgentName.trim() || creating}
+                >
+                  {creating ? '创建中...' : '确认添加'}
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Agent Table */}
       <Card>
@@ -160,7 +266,7 @@ export default function TeamManagementPage() {
               ))}
             </div>
           ) : (agentsList?.length ?? 0) === 0 ? (
-            <p className="text-sm text-gray-400 py-8 text-center">暂无关联智能体，点击"分配智能体"开始</p>
+            <p className="text-sm text-gray-400 py-8 text-center">暂无关联智能体，点击"添加智能体"开始</p>
           ) : (
             <Table>
               <TableHeader>

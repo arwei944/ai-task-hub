@@ -218,6 +218,67 @@ export class ProjectAgentService {
   }
 
   /**
+   * 在项目中快速创建并分配 Agent
+   * @param data - 创建和分配数据
+   * @returns 项目 Agent 关联记录（含新创建的 Agent）
+   */
+  async createAndAssign(data: {
+    projectId: string;
+    name: string;
+    description?: string;
+    clientType?: string;
+    role?: string;
+    capabilities?: string[];
+    assignedBy?: string;
+  }) {
+    this.logger.info('[ProjectAgentService] Creating and assigning agent', {
+      projectId: data.projectId,
+      name: data.name,
+    });
+
+    // Create the Agent
+    const agent = await this.prisma.agent.create({
+      data: {
+        name: data.name,
+        description: data.description || `${data.name} - 自动创建`,
+        apiKey: `auto_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`,
+        clientType: data.clientType || 'mcp',
+        capabilities: data.capabilities ? JSON.stringify(data.capabilities) : null,
+        isActive: true,
+      },
+    });
+
+    // Assign to project
+    const projectAgent = await this.prisma.projectAgent.create({
+      data: {
+        projectId: data.projectId,
+        agentId: agent.id,
+        role: data.role || 'developer',
+        capabilities: data.capabilities ? JSON.stringify(data.capabilities) : null,
+        assignedBy: data.assignedBy,
+        isActive: true,
+      },
+      include: { agent: true },
+    });
+
+    this.eventBus.emit({
+      type: 'project.agent.assigned',
+      payload: {
+        projectAgentId: projectAgent.id,
+        projectId: data.projectId,
+        agentId: agent.id,
+        agentName: agent.name,
+        role: projectAgent.role,
+        assignedBy: data.assignedBy,
+      },
+      timestamp: new Date(),
+      source: 'project-hub',
+    });
+
+    return projectAgent;
+  }
+
+  /**
    * 获取尚未分配到指定项目的可用 Agent 列表
    * @param projectId - 项目 ID
    * @returns 可用 Agent 列表

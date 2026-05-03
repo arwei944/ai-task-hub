@@ -162,6 +162,18 @@ export const projectHubRouter = createTRPCRouter({
       .mutation(async ({ ctx, input }) => {
         return ctx.services.projectAgentService.assign(input);
       }),
+    createAndAssign: protectedProcedure
+      .input(z.object({
+        projectId: z.string(),
+        name: z.string(),
+        description: z.string().optional(),
+        clientType: z.string().optional(),
+        role: z.enum(['lead', 'developer', 'reviewer', 'observer']).optional(),
+        capabilities: z.array(z.string()).optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        return ctx.services.projectAgentService.createAndAssign(input);
+      }),
     updateRole: protectedProcedure
       .input(z.object({ id: z.string(), role: z.string() }))
       .mutation(async ({ ctx, input }) => {

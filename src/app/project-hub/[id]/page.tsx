@@ -33,6 +33,7 @@ import {
   Rocket,
   Bell,
   ChevronRight,
+  Plus,
 } from 'lucide-react';
 
 // ---- Types ----
@@ -302,6 +303,14 @@ export default function ProjectDetailPage() {
                   <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{project.completedTasks}/{project.totalTasks}</p>
                   <p className="text-xs text-gray-500">任务</p>
                 </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="ml-auto"
+                  onClick={() => { window.location.href = `/tasks?projectId=${id}`; }}
+                >
+                  <Plus className="w-3 h-3 mr-1" /> 创建任务
+                </Button>
               </CardContent>
             </Card>
 
