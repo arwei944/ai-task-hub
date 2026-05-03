@@ -204,8 +204,10 @@ export default function OpsOverviewPage() {
       const res = await fetch('/api/trpc/selfHealing.healthOverview');
       if (res.ok) {
         const json = await res.json();
-        if (json?.result?.data) {
-          setOverview(json.result.data);
+        // tRPC returns superjson-wrapped data: { result: { data: { json: actualData } } }
+        const actualData = json?.result?.data?.json ?? json?.result?.data;
+        if (actualData) {
+          setOverview(actualData);
           setLoading(false);
         }
       }
