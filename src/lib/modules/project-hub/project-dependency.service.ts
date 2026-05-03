@@ -167,22 +167,14 @@ export class ProjectDependencyService {
       },
     });
 
-    // 收集所有涉及的项目 ID
-    const projectIds = new Set<string>();
-    for (const dep of dependencies) {
-      projectIds.add(dep.sourceProjectId);
-      projectIds.add(dep.targetProjectId);
-    }
-
-    // 获取项目节点数据（含健康评分）
-    const projects = await this.prisma.project.findMany({
-      where: { id: { in: Array.from(projectIds) } },
+    // Get ALL projects as nodes (not just ones with dependencies)
+    const allProjects = await this.prisma.project.findMany({
       select: { id: true, name: true, status: true },
     });
 
-    // 计算每个项目的健康评分
+    // Calculate health score for each project
     const nodes = await Promise.all(
-      projects.map(async (project: any) => {
+      allProjects.map(async (project: any) => {
         const tasks = await this.prisma.task.groupBy({
           by: ['status'],
           where: { projectId: project.id },

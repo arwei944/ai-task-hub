@@ -8,6 +8,7 @@ import { APP_VERSION, APP_CODENAME, VERSION_HISTORY } from '@/lib/core/version';
 
 // ---- 版本代号映射 ----
 const CODENAMES: Record<string, string> = {
+  '4.1.0': 'Project Hub',
   '4.0.1': 'Project Hub',
   '4.0.0': 'Project Hub',
   '3.2.0': 'Project Hub',

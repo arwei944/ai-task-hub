@@ -30,6 +30,9 @@ import {
   AlertTriangle,
   FileText,
   ClipboardList,
+  Rocket,
+  Bell,
+  ChevronRight,
 } from 'lucide-react';
 
 // ---- Types ----
@@ -421,6 +424,55 @@ export default function ProjectDetailPage() {
                   ))}
                 </div>
               )}
+            </CardContent>
+          </Card>
+
+          {/* System Management */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">系统管理</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <Link href={`/project-hub/${id}/workflows`}>
+                  <div className="flex items-center gap-3 p-4 rounded-lg border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors cursor-pointer">
+                    <div className="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-950 flex items-center justify-center shrink-0">
+                      <GitBranch className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100">工作流</p>
+                      <p className="text-xs text-gray-400">自动化工作流管理</p>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-gray-300 dark:text-gray-600 shrink-0" />
+                  </div>
+                </Link>
+
+                <Link href={`/project-hub/${id}/deployments`}>
+                  <div className="flex items-center gap-3 p-4 rounded-lg border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors cursor-pointer">
+                    <div className="w-10 h-10 rounded-lg bg-violet-100 dark:bg-violet-950 flex items-center justify-center shrink-0">
+                      <Rocket className="w-5 h-5 text-violet-600 dark:text-violet-400" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100">部署</p>
+                      <p className="text-xs text-gray-400">部署和发布管理</p>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-gray-300 dark:text-gray-600 shrink-0" />
+                  </div>
+                </Link>
+
+                <Link href={`/project-hub/${id}/notifications`}>
+                  <div className="flex items-center gap-3 p-4 rounded-lg border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors cursor-pointer">
+                    <div className="w-10 h-10 rounded-lg bg-amber-100 dark:bg-amber-950 flex items-center justify-center shrink-0">
+                      <Bell className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100">通知</p>
+                      <p className="text-xs text-gray-400">通知和提醒管理</p>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-gray-300 dark:text-gray-600 shrink-0" />
+                  </div>
+                </Link>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>

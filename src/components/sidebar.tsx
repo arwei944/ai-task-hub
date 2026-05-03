@@ -68,6 +68,9 @@ export default function Sidebar() {
         { href: `/project-hub/${currentProjectId}`, label: '概览', icon: LayoutDashboard },
         { href: `/project-hub/${currentProjectId}/team`, label: '智能体', icon: Bot },
         { href: `/project-hub/${currentProjectId}/docs`, label: '文档', icon: FileText },
+        { href: `/project-hub/${currentProjectId}/workflows`, label: '工作流', icon: GitBranch },
+        { href: `/project-hub/${currentProjectId}/deployments`, label: '部署', icon: Rocket },
+        { href: `/project-hub/${currentProjectId}/notifications`, label: '通知', icon: Bell },
       ]
     : [];
 
