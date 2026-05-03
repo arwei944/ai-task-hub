@@ -67,6 +67,20 @@ export const projectHubRouter = createTRPCRouter({
       .mutation(async ({ ctx, input }) => {
         return ctx.services.projectHubService.archiveProject(input.id);
       }),
+    createWithAgent: protectedProcedure
+      .input(z.object({
+        name: z.string(),
+        description: z.string().optional(),
+        priority: z.enum(['high', 'medium', 'low']).optional(),
+        techStack: z.array(z.string()).optional(),
+        agentName: z.string(),
+        agentRole: z.string().optional(),
+        agentClientType: z.string().optional(),
+        agentCapabilities: z.array(z.string()).optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        return ctx.services.projectHubService.createProjectWithAgent(input);
+      }),
   }),
 
   // ========== Milestones ==========

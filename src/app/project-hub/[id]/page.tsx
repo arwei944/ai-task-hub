@@ -37,6 +37,11 @@ import {
   FileBarChart,
   Activity,
   UserPlus,
+  ArrowRight,
+  Zap,
+  Code,
+  Brain,
+  Wrench,
 } from 'lucide-react';
 
 // ---- Types ----
@@ -89,6 +94,35 @@ interface TaskProgressItem {
   assignee: string;
   progress: number;
 }
+
+interface ProjectAgentData {
+  id: string;
+  agentId: string;
+  name: string;
+  clientType: string;
+  role: string;
+  status: string;
+  isActive: boolean;
+  capabilities?: string | null;
+  createdAt?: Date | string;
+  agent?: {
+    id: string;
+    name: string;
+    clientType: string;
+    capabilities?: string | null;
+  };
+}
+
+// ---- Agent type color mapping ----
+
+const CLIENT_TYPE_COLORS: Record<string, { bg: string; text: string; border: string }> = {
+  claude: { bg: 'bg-purple-100 dark:bg-purple-950', text: 'text-purple-700 dark:text-purple-300', border: 'border-purple-500' },
+  trae: { bg: 'bg-blue-100 dark:bg-blue-950', text: 'text-blue-700 dark:text-blue-300', border: 'border-blue-500' },
+  cursor: { bg: 'bg-emerald-100 dark:bg-emerald-950', text: 'text-emerald-700 dark:text-emerald-300', border: 'border-emerald-500' },
+  chatgpt: { bg: 'bg-orange-100 dark:bg-orange-950', text: 'text-orange-700 dark:text-orange-300', border: 'border-orange-500' },
+  api: { bg: 'bg-gray-100 dark:bg-gray-800', text: 'text-gray-700 dark:text-gray-300', border: 'border-gray-500' },
+  mcp: { bg: 'bg-indigo-100 dark:bg-indigo-950', text: 'text-indigo-700 dark:text-indigo-300', border: 'border-indigo-500' },
+};
 
 // ---- Status helpers ----
 
@@ -146,6 +180,8 @@ export default function ProjectDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [reportContent, setReportContent] = useState<string | null>(null);
   const [reportLoading, setReportLoading] = useState(false);
+  const [projectAgent, setProjectAgent] = useState<ProjectAgentData | null>(null);
+  const [agentLoading, setAgentLoading] = useState(true);
 
   const fetchProject = useCallback(async () => {
     try {
@@ -164,6 +200,23 @@ export default function ProjectDetailPage() {
   useEffect(() => {
     fetchProject();
   }, [fetchProject]);
+
+  const fetchProjectAgent = useCallback(async () => {
+    try {
+      setAgentLoading(true);
+      const data = await trpc.projectHub.agents.getProjectAgent.query({ projectId: id });
+      setProjectAgent(data as unknown as ProjectAgentData || null);
+    } catch (err) {
+      console.error('Failed to fetch project agent:', err);
+      setProjectAgent(null);
+    } finally {
+      setAgentLoading(false);
+    }
+  }, [id]);
+
+  useEffect(() => {
+    fetchProjectAgent();
+  }, [fetchProjectAgent]);
 
   const generateReport = async () => {
     try {
@@ -307,6 +360,109 @@ export default function ProjectDetailPage() {
 
         {/* Overview Tab */}
         <TabsContent value="overview" className="space-y-6 mt-4">
+          {/* Agent Identity Card */}
+          <Card className="border-indigo-200 dark:border-indigo-900 bg-gradient-to-r from-indigo-50/50 to-purple-50/50 dark:from-indigo-950/20 dark:to-purple-950/20">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Bot className="w-4 h-4 text-indigo-500" />
+                项目智能体
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {agentLoading ? (
+                <div className="animate-pulse space-y-3">
+                  <div className="h-16 bg-gray-200 dark:bg-gray-800 rounded-lg" />
+                </div>
+              ) : projectAgent ? (
+                <div className="flex items-start gap-4 p-4 rounded-lg bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800">
+                  {/* Agent Avatar */}
+                  <div className={`w-14 h-14 rounded-xl flex items-center justify-center shrink-0 ${
+                    CLIENT_TYPE_COLORS[projectAgent.agent?.clientType || projectAgent.clientType]?.bg || 'bg-indigo-100 dark:bg-indigo-900'
+                  }`}>
+                    <Bot className={`w-7 h-7 ${
+                      CLIENT_TYPE_COLORS[projectAgent.agent?.clientType || projectAgent.clientType]?.text || 'text-indigo-600 dark:text-indigo-400'
+                    }`} />
+                  </div>
+                  {/* Agent Info */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">
+                        {projectAgent.agent?.name || projectAgent.name}
+                      </h3>
+                      <span className={`inline-flex items-center px-2 py-0.5 text-[11px] font-medium rounded-full border ${
+                        CLIENT_TYPE_COLORS[projectAgent.agent?.clientType || projectAgent.clientType]?.bg || 'bg-gray-100 dark:bg-gray-800'
+                      } ${
+                        CLIENT_TYPE_COLORS[projectAgent.agent?.clientType || projectAgent.clientType]?.text || 'text-gray-600 dark:text-gray-400'
+                      } ${
+                        CLIENT_TYPE_COLORS[projectAgent.agent?.clientType || projectAgent.clientType]?.border || 'border-gray-300 dark:border-gray-600'
+                      }`}>
+                        {projectAgent.agent?.clientType || projectAgent.clientType}
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+                      {projectAgent.role} &middot; {projectAgent.agent?.clientType || projectAgent.clientType}
+                    </p>
+                    {/* Status */}
+                    <div className="flex items-center gap-1.5 mt-2">
+                      <div className={`w-2 h-2 rounded-full ${
+                        projectAgent.isActive ? 'bg-emerald-500 animate-pulse' : 'bg-gray-400 dark:bg-gray-600'
+                      }`} />
+                      <span className={`text-xs font-medium ${
+                        projectAgent.isActive ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-500 dark:text-gray-400'
+                      }`}>
+                        {projectAgent.isActive ? '工作中' : '空闲'}
+                      </span>
+                    </div>
+                    {/* Capabilities */}
+                    {(() => {
+                      const capsRaw = projectAgent.capabilities || projectAgent.agent?.capabilities;
+                      let caps: string[] = [];
+                      if (capsRaw) {
+                        try { caps = typeof capsRaw === 'string' ? JSON.parse(capsRaw) : capsRaw; } catch { caps = []; }
+                      }
+                      if (caps.length === 0) return null;
+                      return (
+                        <div className="flex flex-wrap gap-1.5 mt-3">
+                          {caps.map((cap: string) => (
+                            <span key={cap} className="inline-flex items-center px-2 py-0.5 text-[11px] font-medium rounded-full bg-indigo-50 text-indigo-600 dark:bg-indigo-950 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
+                              {cap}
+                            </span>
+                          ))}
+                        </div>
+                      );
+                    })()}
+                  </div>
+                  {/* Action */}
+                  <Link href={`/project-hub/${id}/team`}>
+                    <Button variant="outline" size="sm" className="shrink-0">
+                      进入工作台
+                      <ArrowRight className="w-3.5 h-3.5 ml-1" />
+                    </Button>
+                  </Link>
+                </div>
+              ) : (
+                /* No agent assigned */
+                <div className="flex items-center justify-between p-4 rounded-lg bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-950 flex items-center justify-center">
+                      <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100">尚未注册智能体身份</p>
+                      <p className="text-xs text-gray-400 mt-0.5">每个项目需要一个专属智能体来执行开发任务</p>
+                    </div>
+                  </div>
+                  <Link href={`/project-hub/${id}/team`}>
+                    <Button size="sm" className="shrink-0">
+                      <UserPlus className="w-3.5 h-3.5 mr-1.5" />
+                      注册智能体
+                    </Button>
+                  </Link>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
           {/* Stat cards */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <Card>

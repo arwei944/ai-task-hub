@@ -39,6 +39,8 @@ interface AgentData {
   role: string;
   status: string;
   isActive: boolean;
+  capabilities?: string | null;
+  createdAt?: Date | string;
   agent?: {
     id: string;
     name: string;
@@ -58,6 +60,15 @@ interface WorkLogItem {
 }
 
 // ---- Capability tags ----
+
+const CLIENT_TYPE_COLORS: Record<string, { bg: string; text: string; badge: string }> = {
+  claude: { bg: 'bg-purple-100 dark:bg-purple-950', text: 'text-purple-600 dark:text-purple-400', badge: 'bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300' },
+  trae: { bg: 'bg-blue-100 dark:bg-blue-950', text: 'text-blue-600 dark:text-blue-400', badge: 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300' },
+  cursor: { bg: 'bg-emerald-100 dark:bg-emerald-950', text: 'text-emerald-600 dark:text-emerald-400', badge: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300' },
+  chatgpt: { bg: 'bg-orange-100 dark:bg-orange-950', text: 'text-orange-600 dark:text-orange-400', badge: 'bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300' },
+  api: { bg: 'bg-gray-100 dark:bg-gray-800', text: 'text-gray-600 dark:text-gray-400', badge: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300' },
+  mcp: { bg: 'bg-indigo-100 dark:bg-indigo-950', text: 'text-indigo-600 dark:text-indigo-400', badge: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300' },
+};
 
 const CAPABILITY_ICONS: Record<string, any> = {
   coding: Code,
@@ -246,18 +257,36 @@ export default function AgentWorkstationPage() {
           {/* Left: Agent Profile Card */}
           <Card>
             <CardContent className="pt-6">
+              {/* Section Header */}
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-4 font-medium uppercase tracking-wider">身份信息</p>
+
               {/* Agent Avatar & Name */}
               <div className="flex items-center gap-4 mb-4">
-                <div className="w-12 h-12 rounded-full bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center">
-                  <Bot className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+                <div className={`w-14 h-14 rounded-xl flex items-center justify-center ${
+                  CLIENT_TYPE_COLORS[agent.agent?.clientType || agent.clientType]?.bg || 'bg-indigo-100 dark:bg-indigo-900'
+                }`}>
+                  <Bot className={`w-7 h-7 ${
+                    CLIENT_TYPE_COLORS[agent.agent?.clientType || agent.clientType]?.text || 'text-indigo-600 dark:text-indigo-400'
+                  }`} />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900 dark:text-gray-100">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
                     {agent.agent?.name || agent.name}
                   </h3>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    {agent.role} &middot; {agent.agent?.clientType || agent.clientType}
-                  </p>
+                  <div className="flex items-center gap-2 mt-1 flex-wrap">
+                    {/* Client Type Badge */}
+                    <span className={`inline-flex items-center px-2 py-0.5 text-[11px] font-medium rounded-full ${
+                      CLIENT_TYPE_COLORS[agent.agent?.clientType || agent.clientType]?.badge || 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
+                    }`}>
+                      {agent.agent?.clientType || agent.clientType}
+                    </span>
+                    {/* Role Badge */}
+                    <span className="inline-flex items-center px-2 py-0.5 text-[11px] font-medium rounded-full bg-indigo-50 text-indigo-600 dark:bg-indigo-950 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
+                      {agent.role === 'lead' ? '负责人' :
+                       agent.role === 'developer' ? '开发者' :
+                       agent.role === 'reviewer' ? '审查者' : '观察者'}
+                    </span>
+                  </div>
                 </div>
               </div>
 
@@ -287,34 +316,41 @@ export default function AgentWorkstationPage() {
                   <span className="text-gray-500 dark:text-gray-400">工作记录</span>
                   <span className="font-medium text-gray-900 dark:text-gray-100">{workLogs.length} 条</span>
                 </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-500 dark:text-gray-400">角色</span>
-                  <span className="font-medium text-gray-900 dark:text-gray-100">
-                    {agent.role === 'lead' ? '负责人' :
-                     agent.role === 'developer' ? '开发者' :
-                     agent.role === 'reviewer' ? '审查者' : '观察者'}
-                  </span>
-                </div>
+                {agent.createdAt && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500 dark:text-gray-400">注册日期</span>
+                    <span className="font-medium text-gray-900 dark:text-gray-100">
+                      {new Date(agent.createdAt).toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' })}
+                    </span>
+                  </div>
+                )}
               </div>
 
               {/* Capabilities */}
               <div className="mb-6">
                 <p className="text-xs text-gray-500 dark:text-gray-400 mb-2 font-medium uppercase tracking-wider">能力标签</p>
-                <div className="flex flex-wrap gap-1.5">
-                  {DEFAULT_CAPABILITIES.map((cap) => {
-                    const Icon = CAPABILITY_ICONS[cap.key] || Zap;
-                    return (
-                      <Badge
-                        key={cap.key}
-                        variant="secondary"
-                        className="text-[11px] px-2 py-0.5 gap-1 bg-indigo-50 text-indigo-600 dark:bg-indigo-950 dark:text-indigo-300"
-                      >
-                        <Icon className="w-3 h-3" />
-                        {cap.label}
-                      </Badge>
-                    );
-                  })}
-                </div>
+                {(() => {
+                  const capsRaw = agent.capabilities || agent.agent?.capabilities;
+                  let caps: string[] = [];
+                  if (capsRaw) {
+                    try { caps = typeof capsRaw === 'string' ? JSON.parse(capsRaw) : capsRaw; } catch { caps = []; }
+                  }
+                  // If no custom capabilities, show defaults
+                  const displayCaps = caps.length > 0 ? caps : DEFAULT_CAPABILITIES.map(c => c.label);
+                  return (
+                    <div className="flex flex-wrap gap-1.5">
+                      {displayCaps.map((cap: string) => (
+                        <Badge
+                          key={cap}
+                          variant="secondary"
+                          className="text-[11px] px-2 py-0.5 bg-indigo-50 text-indigo-600 dark:bg-indigo-950 dark:text-indigo-300"
+                        >
+                          {cap}
+                        </Badge>
+                      ))}
+                    </div>
+                  );
+                })()}
               </div>
 
               {/* Quick Actions */}
