@@ -157,23 +157,14 @@ class OpsClient:
 
     def _heartbeat_loop(self):
         check_count = 0
+        _update_interval = 5  # 每 5 次心跳检查一次更新
         while self._running:
             try:
                 system=self._collect_system()
                 runtime=self._collect_runtime()
                 business=self._collect_business()
                 body, ok = self._post("/api/ops/heartbeat",{"project_id":self.project_id,"system":system,"runtime":runtime,"business":business})
-                # 检查版本更新
-                if ok and body:
-                    try:
-                        resp_data = json.loads(body) if isinstance(body, str) else body
-                        latest = resp_data.get("latest_sdk_version", "")
-                        if latest and latest != self._sdk_version:
-                            check_count += 1
-                            if check_count >= UPDATE_CHECK_INTERVAL:
-                                check_count = 0
-                                _try_hot_update(self.server, latest)
-                    except: pass
+                # 保底版本不检查更新（无 _try_hot_update 函数）
             except Exception as e:
                 logger.debug(f"心跳失败: {e}")
             for _ in range(self.heartbeat_interval):
@@ -346,7 +337,10 @@ def _bootstrap(server: str = None):
 
 # ── 执行引导，暴露与原 ops_agent.py 相同的接口 ───────────
 
-_sdk_module, _sdk_version = _bootstrap()
+# 尝试从环境变量获取 Ops Center 地址（用于 import 模式下的远程 SDK 拉取）
+_BOOTSTRAP_SERVER = os.environ.get("OPS_SERVER", "") or None
+
+_sdk_module, _sdk_version = _bootstrap(server=_BOOTSTRAP_SERVER)
 
 # 将 SDK 模块的所有公开属性暴露到当前模块命名空间
 # 这样 `from ops_agent import OpsClient` 仍然有效
