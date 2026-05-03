@@ -327,6 +327,25 @@ export async function registerIntegrationServices(container: IDIContainer): Prom
 
   const logger = container.resolve(ServiceTokens.logger) as any;
 
+  const { IntegrationService } = await import('@/lib/modules/integration-core/integration.service');
+  const { IntegrationRepository, WebhookRepository } = await import('@/lib/modules/integration-core/integration.repository');
+
+  const prisma = container.resolve(ServiceTokens.prisma) as any;
+  const eventBus = container.resolve(ServiceTokens.eventBus) as any;
+  const taskService = container.resolve(ServiceTokens.taskService) as any;
+
+  const integrationRepo = new IntegrationRepository(prisma);
+  const webhookRepo = new WebhookRepository(prisma);
+
+  const integrationService = new IntegrationService(
+    integrationRepo,
+    webhookRepo,
+    taskService,
+    eventBus,
+    logger,
+  );
+
+  // Register adapters into the service
   const adapters = [
     new GitHubAdapter(logger),
     new NotionAdapter(logger),
@@ -335,8 +354,11 @@ export async function registerIntegrationServices(container: IDIContainer): Prom
     new TelegramAdapter(logger),
     new WebhookAdapter(logger),
   ];
+  for (const adapter of adapters) {
+    integrationService.registerAdapter(adapter);
+  }
 
-  container.register(ServiceTokens.integrationService, () => adapters, { singleton: true });
+  container.register(ServiceTokens.integrationService, () => integrationService, { singleton: true });
 }
 
 /**

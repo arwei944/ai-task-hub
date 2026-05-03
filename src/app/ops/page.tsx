@@ -239,11 +239,11 @@ export default function OpsOverviewPage() {
   }
 
   // Computed stats
-  const healthEntries = overview ? Object.entries(overview.health) : [];
+  const healthEntries = overview ? Object.entries(overview.health ?? {}) : [];
   const healthyCount = healthEntries.filter(([, r]) => r.status === 'healthy').length;
   const degradedCount = healthEntries.filter(([, r]) => r.status === 'degraded').length;
   const failedCount = healthEntries.filter(([, r]) => r.status === 'failed').length;
-  const circuitEntries = overview ? Object.entries(overview.circuits) : [];
+  const circuitEntries = overview ? Object.entries(overview.circuits ?? {}) : [];
   const openCircuits = circuitEntries.filter(([, c]) => c.state === 'open').length;
 
   return (

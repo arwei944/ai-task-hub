@@ -89,7 +89,7 @@ export default function SettingsPage() {
                       <div className={`w-2 h-2 rounded-full ${value === 'ok' || value === 'configured' || value === 'available' ? 'bg-green-500' : 'bg-yellow-500'}`} />
                       <div>
                         <div className="text-sm font-medium text-gray-900 capitalize">{key}</div>
-                        <div className="text-xs text-gray-500">{String(value)}</div>
+                        <div className="text-xs text-gray-500">{typeof value === 'object' && value !== null ? (value.status ?? JSON.stringify(value)) : String(value)}</div>
                       </div>
                     </div>
                   ))}

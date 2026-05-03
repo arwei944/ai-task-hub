@@ -108,6 +108,13 @@ export default function ProjectsPage() {
                 <Bot className="w-8 h-8 text-gray-300 mx-auto mb-2" />
                 <p className="text-sm text-gray-500">暂无项目</p>
                 <p className="text-xs text-gray-400 mt-1">通过 MCP 连接的 AI 智能体创建项目</p>
+                <button
+                  onClick={() => window.location.href = '/projects/create'}
+                  className="mt-3 inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition"
+                >
+                  <FolderKanban className="w-4 h-4" />
+                  创建项目
+                </button>
               </div>
             ) : projects.map((p) => (
               <button

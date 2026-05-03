@@ -7,10 +7,10 @@ import { trpc } from '@/lib/trpc/client';
 import { TaskDetailDrawer } from './task-detail-drawer';
 
 const COLUMNS = [
-  { id: 'todo', title: '待办', color: 'bg-slate-500' },
-  { id: 'in_progress', title: '进行中', color: 'bg-blue-500' },
-  { id: 'done', title: '已完成', color: 'bg-green-500' },
-  { id: 'closed', title: '已关闭', color: 'bg-gray-400' },
+  { id: 'todo', title: '待办', color: 'bg-blue-500', headerStyle: 'bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300' },
+  { id: 'in_progress', title: '进行中', color: 'bg-amber-500', headerStyle: 'bg-amber-50 dark:bg-amber-950 text-amber-700 dark:text-amber-300' },
+  { id: 'done', title: '已完成', color: 'bg-green-500', headerStyle: 'bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-300' },
+  { id: 'closed', title: '已关闭', color: 'bg-gray-400', headerStyle: 'bg-gray-50 dark:bg-gray-800 text-gray-500' },
 ] as const;
 
 const PRIORITY_STYLES: Record<string, string> = {
@@ -105,7 +105,7 @@ export function KanbanView() {
     <div className="flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory md:grid md:grid-cols-2 lg:grid-cols-4 md:overflow-visible md:pb-0 md:snap-none">
       {COLUMNS.map((col) => (
         <div key={col.id} className="min-w-[280px] md:min-w-0 snap-start space-y-3">
-          <div className="flex items-center gap-2 px-1">
+          <div className={`flex items-center gap-2 px-1 py-1 rounded-md ${col.headerStyle}`}>
             <div className={`h-3 w-3 rounded-full ${col.color}`} />
             <h3 className="font-semibold text-sm">{col.title}</h3>
             <Badge variant="secondary" className="text-xs">

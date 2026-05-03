@@ -154,23 +154,27 @@ function DashboardContent() {
         <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 p-5 mb-6">
           <h2 className="font-semibold text-gray-900 dark:text-gray-100 mb-4">📈 近 14 天趋势</h2>
           <div className="flex items-end gap-1 h-24">
-            {dailyTrends.map((d) => (
-              <div key={d.date} className="flex-1 flex flex-col items-center gap-1">
-                <div className="w-full flex gap-0.5 items-end" style={{ height: '80px' }}>
-                  <div
-                    className="flex-1 bg-blue-400 dark:bg-blue-600 rounded-t-sm transition-all"
-                    style={{ height: `${(d.created / maxCreated) * 100}%`, minHeight: d.created > 0 ? '4px' : '0' }}
-                    title={`创建: ${d.created}`}
-                  />
-                  <div
-                    className="flex-1 bg-green-400 dark:bg-green-600 rounded-t-sm transition-all"
-                    style={{ height: `${(d.completed / maxCreated) * 100}%`, minHeight: d.completed > 0 ? '4px' : '0' }}
-                    title={`完成: ${d.completed}`}
-                  />
+            {dailyTrends.length === 0 ? (
+              <div className="flex-1 flex items-center justify-center h-full text-gray-400 text-sm">暂无数据</div>
+            ) : (
+              dailyTrends.map((d) => (
+                <div key={d.date} className="flex-1 flex flex-col items-center gap-1">
+                  <div className="w-full flex gap-0.5 items-end" style={{ height: '80px' }}>
+                    <div
+                      className="flex-1 bg-blue-400 dark:bg-blue-600 rounded-t-sm transition-all"
+                      style={{ height: `${(d.created / maxCreated) * 100}%`, minHeight: d.created > 0 ? '4px' : '0' }}
+                      title={`创建: ${d.created}`}
+                    />
+                    <div
+                      className="flex-1 bg-green-400 dark:bg-green-600 rounded-t-sm transition-all"
+                      style={{ height: `${(d.completed / maxCreated) * 100}%`, minHeight: d.completed > 0 ? '4px' : '0' }}
+                      title={`完成: ${d.completed}`}
+                    />
+                  </div>
+                  <span className="text-[10px] text-gray-400">{d.date.slice(5)}</span>
                 </div>
-                <span className="text-[10px] text-gray-400">{d.date.slice(5)}</span>
-              </div>
-            ))}
+              ))
+            )}
           </div>
           <div className="flex gap-4 mt-3 text-xs text-gray-500 dark:text-gray-400">
             <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm bg-blue-400 dark:bg-blue-600" /> 创建</span>

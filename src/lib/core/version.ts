@@ -9,7 +9,7 @@
 // ---- 应用版本 ----
 // 主版本号 (与 package.json 保持同步)
 // 注意: 不能使用 fs 读取 package.json，因为此文件会被客户端组件导入
-export const APP_VERSION: string = '3.0.1';
+export const APP_VERSION: string = '3.1.0';
 
 /** 应用名称 */
 export const APP_NAME: string = 'AI Task Hub';
@@ -105,6 +105,7 @@ export const VERSION_HISTORY: ReadonlyArray<{
   date: string;
   highlights: string[];
 }> = [
+  { version: '3.1.0', date: '2026-05-03', highlights: ['修复 5 个 P0 页面崩溃/错误', 'Ops 总览 null 安全保护', 'Settings 健康数据正确渲染', 'Integrations 服务正确注入', 'MCP 路由 GET/POST 导出', 'Dashboard 趋势图空数据提示', '登录密码可见性切换', '任务看板颜色区分', '项目空状态创建按钮'] },
   { version: '3.0.1', date: '2026-05-02', highlights: ['核心服务注册修复', 'JWT 全链路认证 (SSE + tRPC)', '骨架屏 + 自动刷新', '0 TS 错误 + 0 测试失败', '健康日志去重', 'HF 部署优化'] },
   { version: '3.0.0', date: '2026-05-02', highlights: ['v3 内核架构重构', 'AppKernel + 7 Capability', 'DI Container + 32 typed services', '运维面板 8 视图', '自愈系统 + 熔断器 + 死信队列', 'SSE 实时推送', 'JWT 全链路认证', '0 TS 错误 + 1936 测试通过'] },
   { version: '2.7.0', date: '2026-05-02', highlights: ['智能闭环', '可观测性真实数据', '反馈审批事件链', 'workflow.completed 载荷补全', 'ImprovementLoop 激活', 'SOLO 自省 Handler', 'Dashboard 全局视野', '5 个 AI Handler'] },
