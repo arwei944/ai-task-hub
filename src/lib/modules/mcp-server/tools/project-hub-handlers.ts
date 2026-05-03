@@ -157,5 +157,18 @@ export function createProjectHubToolHandlers(
           throw new Error(`Unknown action: ${action}`);
       }
     },
+    ph_log_work: async (args: Record<string, unknown>) => {
+      const projectId = args.projectId as string;
+      // Find the project's agent
+      const agent = await projectAgentService.getProjectAgent(projectId);
+      if (!agent) throw new Error('No agent assigned to this project. Register identity first.');
+      return workLogService.createWorkLog({
+        projectId,
+        projectAgentId: agent.id,
+        description: args.description as string,
+        hours: (args.hours as number) || 0,
+        date: (args.date as string) || new Date().toISOString().split('T')[0],
+      });
+    },
   };
 }

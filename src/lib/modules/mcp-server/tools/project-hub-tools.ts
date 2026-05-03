@@ -216,4 +216,18 @@ export const projectHubMcpTools: McpToolConfig[] = [
       required: ['projectId', 'action'],
     },
   },
+  {
+    name: 'ph_log_work',
+    description: '记录工作日志。智能体在完成工作后调用此工具记录工作内容、工时等。',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        projectId: { type: 'string', description: '项目 ID' },
+        description: { type: 'string', description: '工作内容描述' },
+        hours: { type: 'number', description: '工时（小时）' },
+        date: { type: 'string', description: '日期 (YYYY-MM-DD)，默认今天' },
+      },
+      required: ['projectId', 'description'],
+    },
+  },
 ];

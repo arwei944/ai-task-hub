@@ -9,13 +9,13 @@
 // ---- 应用版本 ----
 // 主版本号 (与 package.json 保持同步)
 // 注意: 不能使用 fs 读取 package.json，因为此文件会被客户端组件导入
-export const APP_VERSION: string = '5.4.0';
+export const APP_VERSION: string = '5.5.0';
 
 /** 应用名称 */
 export const APP_NAME: string = 'AI Task Hub';
 
 /** 应用代号 */
-export const APP_CODENAME: string = 'Task Integration';
+export const APP_CODENAME: string = 'Project Overview';
 
 // ---- 模块版本 ----
 // 所有模块统一使用应用版本号，不再单独维护
@@ -105,6 +105,7 @@ export const VERSION_HISTORY: ReadonlyArray<{
   date: string;
   highlights: string[];
 }> = [
+  { version: '5.5.0', date: '2026-05-03', highlights: ['项目概览页增强（进度条渐变 + 里程碑/任务双维度统计）', '快速操作按钮行（新建任务/文档/生成报告/工作台）', '近期动态模块（工作日志实时展示）', 'ph_log_work MCP 工具（智能体自动记录工作日志）', 'useRouter 路由导航集成'] },
   { version: '5.4.0', date: '2026-05-03', highlights: ['项目任务深度集成（Kanban 看板页面）', '任务 tRPC 路由支持 projectId 过滤', 'Project Tasks 子路由（list/create/updateStatus/delete/stats）', 'ph_manage_tasks MCP 工具（创建/状态更新/删除/列表）', '侧边栏项目内"任务"导航入口', '项目详情页"创建任务"链接到项目看板'] },
   { version: '5.3.0', date: '2026-05-03', highlights: ['Agent 身份自主注册（ph_register_identity MCP 工具）', 'Agent 自主创建项目（ph_create_project MCP 工具）', '新建项目对话框简化为单步（仅项目信息）', '项目详情页等待智能体接入状态', '健康矩阵 Agent 接入状态指示器', '创建来源 badge（Agent 创建 / 自主接入）'] },
   { version: '5.2.0', date: '2026-05-03', highlights: ['新建项目必须注册智能体身份（两步对话框）', '项目详情页智能体身份卡片', '工作站 Agent Profile 增强（类型/角色/能力标签）', 'createProjectWithAgent 原子化操作', 'Agent 类型颜色映射（claude/trae/cursor/chatgpt）'] },
