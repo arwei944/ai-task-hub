@@ -1,6 +1,7 @@
 #!/bin/sh
 set -e
 
+# AI Task Hub v3.1.0 - Production startup script
 echo "=== AI Task Hub Starting ==="
 echo "Node: $(node -v)"
 echo "ENV: NODE_ENV=$NODE_ENV"
