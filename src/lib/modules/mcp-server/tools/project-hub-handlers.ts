@@ -10,6 +10,7 @@ export function createProjectHubToolHandlers(
   templateService: any,
   reportService: any,
   logger: ILogger,
+  prisma?: any,
 ) {
   return {
     ph_get_dashboard: async () => {
@@ -111,6 +112,50 @@ export function createProjectHubToolHandlers(
         agentRole: args.role as string | undefined,
         agentCapabilities: args.capabilities as string[] | undefined,
       });
+    },
+    ph_manage_tasks: async (args: Record<string, unknown>) => {
+      if (!prisma) throw new Error('Prisma client not available');
+      const { projectId, action } = args;
+      switch (action) {
+        case 'list': {
+          const tasks = await prisma.task.findMany({
+            where: { projectId, status: { not: 'deleted' } },
+            orderBy: { createdAt: 'desc' },
+          });
+          return { items: tasks, total: tasks.length };
+        }
+        case 'create': {
+          return prisma.task.create({
+            data: {
+              projectId,
+              title: args.title as string,
+              description: (args.description as string) || null,
+              priority: (args.priority as string) || 'medium',
+              status: 'todo',
+              source: 'mcp',
+            },
+          });
+        }
+        case 'updateStatus': {
+          const { taskId, status } = args;
+          return prisma.task.update({
+            where: { id: taskId as string },
+            data: {
+              status: status as string,
+              completedAt: status === 'done' ? new Date() : null,
+            },
+          });
+        }
+        case 'delete': {
+          await prisma.task.update({
+            where: { id: args.taskId as string },
+            data: { status: 'deleted' },
+          });
+          return { success: true };
+        }
+        default:
+          throw new Error(`Unknown action: ${action}`);
+      }
     },
   };
 }

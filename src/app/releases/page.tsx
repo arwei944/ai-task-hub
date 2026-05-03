@@ -8,6 +8,7 @@ import { APP_VERSION, APP_CODENAME, VERSION_HISTORY } from '@/lib/core/version';
 
 // ---- 版本代号映射 ----
 const CODENAMES: Record<string, string> = {
+  '5.4.0': 'Task Integration',
   '5.3.0': 'Agent Self-Registration',
   '5.2.0': 'Agent Identity',
   '5.1.0': 'Agent Workstation',

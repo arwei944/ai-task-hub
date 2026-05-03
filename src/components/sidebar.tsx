@@ -67,6 +67,7 @@ export default function Sidebar() {
   const projectNavItems: NavItem[] = isProjectContext && currentProjectId
     ? [
         { href: `/project-hub/${currentProjectId}`, label: '概览', icon: LayoutDashboard },
+        { href: `/project-hub/${currentProjectId}/tasks`, label: '任务', icon: CheckSquare },
         { href: `/project-hub/${currentProjectId}/team`, label: '工作台', icon: Bot },
         { href: `/project-hub/${currentProjectId}/docs`, label: '文档', icon: FileText },
         { href: `/project-hub/${currentProjectId}/workflows`, label: '工作流', icon: GitBranch },

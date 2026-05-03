@@ -749,7 +749,7 @@ export class ProjectHubService {
   /**
    * 获取项目任务统计
    */
-  private async getProjectTaskStats(projectId: string) {
+  async getProjectTaskStats(projectId: string) {
     const tasks = await this.prisma.task.groupBy({
       by: ['status'],
       where: { projectId },

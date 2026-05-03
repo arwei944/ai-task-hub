@@ -354,6 +354,60 @@ export const projectHubRouter = createTRPCRouter({
       return ctx.services.templateService.getBuiltIn();
     }),
   }),
+  // ========== Project Tasks ==========
+  tasks: createTRPCRouter({
+    list: protectedProcedure
+      .input(z.object({
+        projectId: z.string(),
+        status: z.array(z.string()).optional(),
+        sortBy: z.enum(['createdAt', 'updatedAt', 'priority', 'dueDate', 'progress']).optional(),
+      }))
+      .query(async ({ ctx, input }) => {
+        const { projectId, ...query } = input;
+        return ctx.services.taskService.listTasks({ ...query, projectId } as any);
+      }),
+
+    create: protectedProcedure
+      .input(z.object({
+        projectId: z.string(),
+        title: z.string().min(1),
+        description: z.string().optional(),
+        priority: z.enum(['urgent', 'high', 'medium', 'low']).optional(),
+        type: z.string().optional(),
+        dueDate: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const { projectId, ...data } = input;
+        return ctx.services.taskService.createTask({
+          ...data,
+          projectId,
+          dueDate: input.dueDate ? new Date(input.dueDate) : undefined,
+        }, 'project-agent');
+      }),
+
+    updateStatus: protectedProcedure
+      .input(z.object({
+        id: z.string(),
+        status: z.enum(['todo', 'in_progress', 'done', 'closed']),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        return ctx.services.taskService.updateStatus(input.id, input.status);
+      }),
+
+    delete: protectedProcedure
+      .input(z.object({ id: z.string() }))
+      .mutation(async ({ ctx, input }) => {
+        await ctx.services.taskService.deleteTask(input.id);
+        return { success: true };
+      }),
+
+    stats: protectedProcedure
+      .input(z.object({ projectId: z.string() }))
+      .query(async ({ ctx, input }) => {
+        return ctx.services.projectHubService.getProjectTaskStats(input.projectId);
+      }),
+  }),
+
   // ========== Reports ==========
   reports: createTRPCRouter({
     projectReport: protectedProcedure

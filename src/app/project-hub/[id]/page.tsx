@@ -500,7 +500,7 @@ export default function ProjectDetailPage() {
                   size="sm"
                   variant="outline"
                   className="ml-auto"
-                  onClick={() => { window.location.href = `/tasks?projectId=${id}`; }}
+                  onClick={() => { window.location.href = `/project-hub/${id}/tasks`; }}
                 >
                   <Plus className="w-3 h-3 mr-1" /> 创建任务
                 </Button>

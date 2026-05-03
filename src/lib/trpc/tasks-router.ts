@@ -20,6 +20,7 @@ export const tasksRouter = createTRPCRouter({
         sortOrder: z.enum(['asc', 'desc']).optional(),
         page: z.number().min(1).optional(),
         pageSize: z.number().min(1).max(100).optional(),
+        projectId: z.string().optional(),
       }),
     )
     .query(async ({ ctx, input }) => {
@@ -56,6 +57,7 @@ export const tasksRouter = createTRPCRouter({
         dueDate: z.string().optional(),
         tags: z.array(z.string()).optional(),
         metadata: z.record(z.string(), z.unknown()).optional(),
+        projectId: z.string().optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {

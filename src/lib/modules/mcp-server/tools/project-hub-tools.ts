@@ -199,4 +199,21 @@ export const projectHubMcpTools: McpToolConfig[] = [
       required: ['name', 'agentName'],
     },
   },
+  {
+    name: 'ph_manage_tasks',
+    description: '管理项目任务。支持创建、更新状态、删除任务。智能体在开发过程中使用此工具跟踪工作进度。',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        projectId: { type: 'string', description: '项目 ID' },
+        action: { type: 'string', enum: ['create', 'updateStatus', 'delete', 'list'], description: '操作类型' },
+        taskId: { type: 'string', description: '任务 ID（updateStatus/delete 时必填）' },
+        title: { type: 'string', description: '任务标题（create 时必填）' },
+        description: { type: 'string', description: '任务描述' },
+        status: { type: 'string', enum: ['todo', 'in_progress', 'done', 'closed'], description: '任务状态' },
+        priority: { type: 'string', enum: ['urgent', 'high', 'medium', 'low'], description: '优先级' },
+      },
+      required: ['projectId', 'action'],
+    },
+  },
 ];

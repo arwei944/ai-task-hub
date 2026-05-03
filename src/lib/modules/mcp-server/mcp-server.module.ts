@@ -20,6 +20,7 @@ import { createPromptToolHandlers } from './tools/prompt-handlers';
 import { projectHubMcpTools } from './tools/project-hub-tools';
 import { createProjectHubToolHandlers } from './tools/project-hub-handlers';
 import { APP_VERSION } from '@/lib/core/version';
+import { ServiceTokens } from '@/lib/core/v3/service-factory';
 
 export default class McpServerModule implements Module {
   id = 'mcp-server';
@@ -165,7 +166,7 @@ export default class McpServerModule implements Module {
         const reportSvc = context.container.has('ReportService')
           ? context.container.resolve<any>('ReportService')
           : null;
-        const hubHandlers = createProjectHubToolHandlers(hubService, milestoneSvc, agentSvc, depSvc, workLogSvc, docSvc, templateSvc, reportSvc, context.logger);
+        const hubHandlers = createProjectHubToolHandlers(hubService, milestoneSvc, agentSvc, depSvc, workLogSvc, docSvc, templateSvc, reportSvc, context.logger, context.container.resolve(ServiceTokens.prisma));
         Object.assign(handlerMap, hubHandlers);
         await this.toolRegistry.registerModuleTools(
           { id: 'project-hub', mcpTools: projectHubMcpTools } as any,
