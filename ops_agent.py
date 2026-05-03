@@ -172,7 +172,7 @@ class OpsClient:
 
 
 if __name__ == "__main__":
-    server = os.environ.get("OPS_SERVER", "https://ops-center-arwei944.hf.space")
+    server = os.environ.get("OPS_SERVER", "https://arwei944-ops-center.hf.space")
     client = OpsClient(
         server=server,
         project_id="ai-task-hub",
