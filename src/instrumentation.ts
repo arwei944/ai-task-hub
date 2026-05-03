@@ -20,6 +20,7 @@ export async function register() {
       IntegrationCapability,
       AgentCapability,
       ObservabilityCapability,
+      ProjectHubCapability,
     } = await import('@/lib/core/v3');
 
     const capabilities = [
@@ -30,6 +31,7 @@ export async function register() {
       new IntegrationCapability(),
       new AgentCapability(),
       new ObservabilityCapability(),
+      new ProjectHubCapability(),
     ];
 
     await initKernel(capabilities);

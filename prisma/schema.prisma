@@ -191,6 +191,7 @@ model Agent {
   operations  AgentOperation[]
   projects    Project[]
   activities   ActivityLog[]
+  projectAgents ProjectAgent[]
 
   @@index([apiKey])
   @@index([isActive])
@@ -396,8 +397,14 @@ model Project {
   requirements Requirement[]
   knowledgeEntries KnowledgeEntry[]
   testCases    TestCase[]
-  testSuites   TestSuite[]
+  testSuites    TestSuite[]
   creator     Agent?  @relation(fields: [creatorId], references: [id], onDelete: SetNull)
+
+  // Project Hub 关联
+  agents        ProjectAgent[]
+  milestones    ProjectMilestone[]
+  dependencies  ProjectDependency[] @relation("ProjectDependsOn")
+  dependedBy    ProjectDependency[] @relation("ProjectDependedBy")
 
   @@index([status])
   @@index([phase])
@@ -1001,4 +1008,72 @@ model NotificationPreference {
   includeOwnActions  Boolean  @default(true)
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
+}
+
+// ==================== Project Hub Module ====================
+
+// ---- Project Agent (项目智能体) ----
+// 所有项目团队成员均为 AI 智能体，无人类成员
+
+model ProjectAgent {
+  id            String   @id @default(uuid())
+  projectId     String
+  agentId       String   // 关联 Agent.id (必填)
+  role          String   @default("developer") // lead, developer, reviewer, observer
+  joinedAt      DateTime @default(now())
+  assignedBy    String?  // 分配人 ID
+  isActive      Boolean  @default(true)
+  capabilities  String?  // JSON: 该 Agent 在此项目中的能力配置
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  project       Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  agent         Agent    @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, agentId])
+  @@index([projectId])
+  @@index([agentId])
+  @@index([role])
+}
+
+// ---- Project Milestone (项目里程碑) ----
+
+model ProjectMilestone {
+  id          String   @id @default(uuid())
+  projectId   String
+  title       String
+  description String?
+  status      String   @default("pending") // pending, in_progress, completed, overdue
+  dueDate     DateTime?
+  completedAt DateTime?
+  sortOrder   Int      @default(0)
+  metadata    String?  // JSON: 额外信息（关联任务ID列表等）
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@index([status])
+  @@index([dueDate])
+  @@index([projectId, sortOrder])
+}
+
+// ---- Project Dependency (项目间依赖) ----
+
+model ProjectDependency {
+  id              String   @id @default(uuid())
+  sourceProjectId String   // 依赖方（需要对方完成）
+  targetProjectId String   // 被依赖方（需要先完成）
+  dependencyType  String   @default("finish_to_start") // finish_to_start, start_to_start, finish_to_finish, start_to_finish
+  description     String?
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+
+  sourceProject   Project  @relation("ProjectDependsOn", fields: [sourceProjectId], references: [id], onDelete: Cascade)
+  targetProject   Project  @relation("ProjectDependedBy", fields: [targetProjectId], references: [id], onDelete: Cascade)
+
+  @@unique([sourceProjectId, targetProjectId])
+  @@index([sourceProjectId])
+  @@index([targetProjectId])
 }

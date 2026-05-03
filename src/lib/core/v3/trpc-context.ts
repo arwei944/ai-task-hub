@@ -75,6 +75,11 @@ export class ServiceAccessor {
   get moduleUpdaterService() { return this.get(ServiceTokens.moduleUpdaterService); }
 
   get improvementLoop() { return this.get(ServiceTokens.improvementLoop); }
+
+  get projectHubService() { return this.get(ServiceTokens.projectHubService); }
+  get milestoneService() { return this.get(ServiceTokens.milestoneService); }
+  get projectAgentService() { return this.get(ServiceTokens.projectAgentService); }
+  get projectDependencyService() { return this.get(ServiceTokens.projectDependencyService); }
 }
 
 export type { ServiceToken };

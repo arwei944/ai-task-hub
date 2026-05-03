@@ -69,6 +69,7 @@ export {
   IntegrationCapability,
   AgentCapability,
   ObservabilityCapability,
+  ProjectHubCapability,
 } from './capabilities';
 
 // Self-Healing Manager
