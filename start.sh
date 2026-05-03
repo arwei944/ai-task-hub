@@ -54,6 +54,12 @@ try {
 "
 echo ""
 
+# Start Ops Agent (Python background process for Ops Protocol)
+echo "Starting Ops Agent..."
+python3 /app/ops_agent.py &
+echo "Ops Agent started (PID: $!)"
+echo ""
+
 # Start server
 echo "Starting server on port ${PORT:-7860}..."
 exec npx next start -p ${PORT:-7860} -H 0.0.0.0
