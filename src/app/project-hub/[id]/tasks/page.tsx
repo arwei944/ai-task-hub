@@ -46,6 +46,7 @@ export default function ProjectTasksPage() {
   const [newPriority, setNewPriority] = useState('medium');
   const [newDesc, setNewDesc] = useState('');
   const [creating, setCreating] = useState(false);
+  const [mobileColumn, setMobileColumn] = useState<string>('todo');
 
   const fetchTasks = useCallback(async () => {
     try {
@@ -159,77 +160,108 @@ export default function ProjectTasksPage() {
 
       {/* Kanban Board */}
       {loading ? (
-        <div className="animate-pulse grid grid-cols-3 gap-4">
+        <div className="animate-pulse grid grid-cols-1 md:grid-cols-3 gap-4">
           {[1,2,3].map(i => <div key={i} className="h-64 bg-gray-100 dark:bg-gray-800 rounded-lg" />)}
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {COLUMNS.map(col => {
-            const colTasks = getColumnTasks(col.key);
-            const Icon = col.icon;
-            return (
-              <div key={col.key} className={`rounded-xl p-3 ${col.bg}`}>
-                <div className="flex items-center gap-2 mb-3 px-1">
-                  <Icon className={`w-4 h-4 ${col.color}`} />
-                  <span className="text-sm font-medium">{col.label}</span>
-                  <Badge variant="secondary" className="ml-auto text-xs">{colTasks.length}</Badge>
-                </div>
-                <div className="space-y-2 min-h-[200px]">
-                  {colTasks.length === 0 ? (
-                    <p className="text-center text-gray-400 text-xs py-8">暂无任务</p>
-                  ) : (
-                    colTasks.map(task => (
-                      <Card key={task.id} className="shadow-sm hover:shadow-md transition-shadow">
-                        <CardContent className="p-3">
-                          <div className="flex items-start justify-between gap-2">
-                            <p className="text-sm font-medium leading-tight flex-1">{task.title}</p>
-                            <Badge className={`text-[10px] px-1.5 py-0 ${PRIORITY_COLORS[task.priority] || PRIORITY_COLORS.medium}`}>
-                              {task.priority === 'urgent' ? '紧急' : task.priority === 'high' ? '高' : task.priority === 'medium' ? '中' : '低'}
-                            </Badge>
-                          </div>
-                          {task.description && (
-                            <p className="text-xs text-gray-500 mt-1 line-clamp-2">{task.description}</p>
-                          )}
-                          <div className="flex items-center gap-1 mt-2">
-                            {/* Move left */}
-                            {col.key !== 'todo' && (
-                              <button
-                                onClick={() => handleStatusChange(task.id, col.key === 'done' ? 'in_progress' : 'todo')}
-                                className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
-                                title="向左移动"
-                              >
-                                <ChevronUp className="w-3 h-3 text-gray-400" />
-                              </button>
+        <>
+          {/* Mobile column selector */}
+          <div className="flex md:hidden gap-2">
+            {COLUMNS.map(col => {
+              const Icon = col.icon;
+              const count = getColumnTasks(col.key).length;
+              return (
+                <button
+                  key={col.key}
+                  onClick={() => setMobileColumn(col.key)}
+                  className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    mobileColumn === col.key
+                      ? 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300'
+                      : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400'
+                  }`}
+                >
+                  <Icon className="w-3.5 h-3.5" />
+                  {col.label}
+                  <span className="text-xs opacity-70">{count}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Desktop: 3 columns, Mobile: single column */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {COLUMNS.map(col => {
+              const colTasks = getColumnTasks(col.key);
+              const Icon = col.icon;
+              // On mobile, only show the selected column
+              const isHiddenOnMobile = col.key !== mobileColumn;
+              return (
+                <div
+                  key={col.key}
+                  className={`rounded-xl p-3 ${col.bg} ${isHiddenOnMobile ? 'hidden md:block' : ''}`}
+                >
+                  <div className="flex items-center gap-2 mb-3 px-1">
+                    <Icon className={`w-4 h-4 ${col.color}`} />
+                    <span className="text-sm font-medium">{col.label}</span>
+                    <Badge variant="secondary" className="ml-auto text-xs">{colTasks.length}</Badge>
+                  </div>
+                  <div className="space-y-2 min-h-[200px]">
+                    {colTasks.length === 0 ? (
+                      <p className="text-center text-gray-400 text-xs py-8">暂无任务</p>
+                    ) : (
+                      colTasks.map(task => (
+                        <Card key={task.id} className="shadow-sm hover:shadow-md transition-shadow">
+                          <CardContent className="p-3">
+                            <div className="flex items-start justify-between gap-2">
+                              <p className="text-sm font-medium leading-tight flex-1">{task.title}</p>
+                              <Badge className={`text-[10px] px-1.5 py-0 ${PRIORITY_COLORS[task.priority] || PRIORITY_COLORS.medium}`}>
+                                {task.priority === 'urgent' ? '紧急' : task.priority === 'high' ? '高' : task.priority === 'medium' ? '中' : '低'}
+                              </Badge>
+                            </div>
+                            {task.description && (
+                              <p className="text-xs text-gray-500 mt-1 line-clamp-2">{task.description}</p>
                             )}
-                            {/* Move right */}
-                            {col.key !== 'done' && (
+                            <div className="flex items-center gap-1 mt-2">
+                              {/* Move left */}
+                              {col.key !== 'todo' && (
+                                <button
+                                  onClick={() => handleStatusChange(task.id, col.key === 'done' ? 'in_progress' : 'todo')}
+                                  className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+                                  title="向左移动"
+                                >
+                                  <ChevronUp className="w-3 h-3 text-gray-400" />
+                                </button>
+                              )}
+                              {/* Move right */}
+                              {col.key !== 'done' && (
+                                <button
+                                  onClick={() => handleStatusChange(task.id, col.key === 'todo' ? 'in_progress' : 'done')}
+                                  className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+                                  title="向右移动"
+                                >
+                                  <ChevronDown className="w-3 h-3 text-gray-400" />
+                                </button>
+                              )}
+                              <div className="flex-1" />
+                              {/* Delete */}
                               <button
-                                onClick={() => handleStatusChange(task.id, col.key === 'todo' ? 'in_progress' : 'done')}
-                                className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
-                                title="向右移动"
+                                onClick={() => handleDelete(task.id)}
+                                className="p-1 hover:bg-red-50 dark:hover:bg-red-900/30 rounded"
+                                title="删除"
                               >
-                                <ChevronDown className="w-3 h-3 text-gray-400" />
+                                <Trash2 className="w-3 h-3 text-gray-400 hover:text-red-500" />
                               </button>
-                            )}
-                            <div className="flex-1" />
-                            {/* Delete */}
-                            <button
-                              onClick={() => handleDelete(task.id)}
-                              className="p-1 hover:bg-red-50 dark:hover:bg-red-900/30 rounded"
-                              title="删除"
-                            >
-                              <Trash2 className="w-3 h-3 text-gray-400 hover:text-red-500" />
-                            </button>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))
-                  )}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))
+                    )}
+                  </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        </>
       )}
     </div>
   );

@@ -10,6 +10,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { trpc } from '@/lib/trpc/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -41,6 +42,7 @@ import {
   Loader2,
   Zap,
   Wifi,
+  LayoutTemplate,
 } from 'lucide-react';
 
 // ---- Types ----
@@ -132,6 +134,7 @@ function formatRelativeTime(date: Date | string): string {
 // ---- Component ----
 
 export default function ProjectHubDashboardPage() {
+  const router = useRouter();
   const [overview, setOverview] = useState<DashboardOverview | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -296,13 +299,24 @@ export default function ProjectHubDashboardPage() {
         </Card>
       ) : !overview || (overview.totalProjects === 0 && (overview.recentActivity?.length ?? 0) === 0) ? (
         /* Empty state */
-        <Card>
-          <CardContent className="py-16 text-center">
-            <FolderKanban className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
-            <p className="text-gray-500 dark:text-gray-400 text-lg font-medium">暂无项目数据</p>
-            <p className="text-gray-400 dark:text-gray-500 text-sm mt-1">点击"新建项目"开始创建你的第一个项目</p>
-          </CardContent>
-        </Card>
+        <div className="text-center py-16">
+          <div className="w-20 h-20 rounded-2xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center mx-auto mb-6">
+            <FolderKanban className="w-10 h-10 text-indigo-500" />
+          </div>
+          <h3 className="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-2">开始你的第一个项目</h3>
+          <p className="text-gray-500 dark:text-gray-400 max-w-md mx-auto mb-6">
+            创建项目后，智能体将通过 MCP 工具自主注册身份并开始工作。
+            你也可以从内置模板快速创建项目。
+          </p>
+          <div className="flex items-center justify-center gap-3">
+            <Button onClick={() => setShowCreateDialog(true)}>
+              <Plus className="w-4 h-4 mr-2" /> 新建项目
+            </Button>
+            <Button variant="outline" onClick={() => router.push('/project-hub/templates')}>
+              <LayoutTemplate className="w-4 h-4 mr-2" /> 从模板创建
+            </Button>
+          </div>
+        </div>
       ) : (
         <>
           {/* Stat cards */}

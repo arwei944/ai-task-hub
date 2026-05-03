@@ -20,7 +20,11 @@ export function createProjectHubToolHandlers(
       return projectHubService.getHealthMatrix();
     },
     ph_list_projects: async (args: Record<string, unknown>) => {
-      return projectHubService.listProjects(args);
+      return projectHubService.listProjects({
+        status: args.status as string | undefined,
+        priority: args.priority as string | undefined,
+        search: args.search as string | undefined,
+      });
     },
     ph_manage_milestones: async (args: Record<string, unknown>) => {
       const { projectId, action, ...data } = args as any;
@@ -52,17 +56,31 @@ export function createProjectHubToolHandlers(
       return projectDependencyService.create(args);
     },
     ph_manage_docs: async (args: Record<string, unknown>) => {
-      const { projectId, action, ...data } = args as any;
+      const { projectId, action } = args;
       switch (action) {
-        case 'list': return docService.list({ projectId, docType: data.docType, status: data.status });
-        case 'get': return docService.get(data.docId);
-        case 'create': return docService.create({ projectId, ...data });
-        case 'update': return docService.update(data.docId, data);
-        case 'delete': return docService.delete(data.docId);
-        case 'search': return docService.search({ projectId, queryText: data.queryText, docType: data.docType, tags: data.tags });
-        case 'versions': return docService.versions(data.docId);
-        case 'restore_version': return docService.restoreVersion(data.versionId);
-        default: throw new Error(`Unknown doc action: ${action}`);
+        case 'list': {
+          return docService.listDocs(projectId as string);
+        }
+        case 'create': {
+          return docService.createDoc({
+            projectId: projectId as string,
+            title: args.title as string,
+            content: (args.content as string) || '',
+            docType: (args.docType as string) || 'general',
+          });
+        }
+        case 'update': {
+          return docService.updateDoc(args.docId as string, {
+            title: args.title as string | undefined,
+            content: args.content as string | undefined,
+            changeLog: 'Updated via MCP',
+          });
+        }
+        case 'search': {
+          return docService.searchDocs(projectId as string, args.queryText as string);
+        }
+        default:
+          throw new Error(`Unknown action: ${action}`);
       }
     },
     ph_manage_templates: async (args: Record<string, unknown>) => {
