@@ -7,15 +7,6 @@ on:
       - '*.md'
       - '.github/workflows/sync-to-huggingface.yml'
   workflow_dispatch:
-    inputs:
-      recreate_space:
-        description: 'Delete and recreate the HF Space (clears all history)'
-        required: false
-        default: 'false'
-        type: choice
-        options:
-          - 'false'
-          - 'true'
 
 jobs:
   deploy-hf:
@@ -50,39 +41,31 @@ jobs:
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           HF_REPO: ${{ vars.HF_REPO || 'arwei944/ai-task-hub' }}
-          RECREATE: ${{ inputs.recreate_space || 'false' }}
         run: |
           python3 << 'PYEOF'
-          import os, shutil, glob
+          import os, shutil, glob, time
           from huggingface_hub import HfApi
 
           token = os.environ["HF_TOKEN"]
           repo_id = os.environ.get("HF_REPO", "arwei944/ai-task-hub")
-          recreate = os.environ.get("RECREATE", "false").lower() == "true"
           api = HfApi(token=token)
 
-          # Optionally delete and recreate the Space (clears LFS history)
-          if recreate:
-              try:
-                  api.delete_repo(repo_id=repo_id, repo_type="space")
-                  print(f"✓ Deleted Space {repo_id}")
-              except Exception as e:
-                  print(f"Delete: {e}")
-
-          # Ensure Space exists (Docker SDK)
+          # Always delete and recreate the Space to ensure clean state
+          # This prevents stale files from accumulating on HF
           try:
-              api.repo_info(repo_id=repo_id, repo_type="space")
-              print(f"✓ Space {repo_id} exists")
-          except Exception:
-              api.create_repo(
-                  repo_id=repo_id, repo_type="space",
-                  space_sdk="docker", private=False, exist_ok=True,
-              )
-              print(f"✓ Space {repo_id} created")
-              # Wait for Space to be ready after creation
-              import time
-              print("  Waiting 10s for Space initialization...")
-              time.sleep(10)
+              api.delete_repo(repo_id=repo_id, repo_type="space")
+              print(f"✓ Deleted Space {repo_id}")
+          except Exception as e:
+              print(f"Delete (may not exist): {e}")
+
+          # Recreate the Space fresh
+          api.create_repo(
+              repo_id=repo_id, repo_type="space",
+              space_sdk="docker", private=False, exist_ok=True,
+          )
+          print(f"✓ Space {repo_id} created")
+          print("  Waiting 15s for Space initialization...")
+          time.sleep(15)
 
           # Prepare deploy directory
           deploy_dir = "/tmp/hf-deploy"
@@ -146,28 +129,6 @@ jobs:
                   raise SystemExit(1)
               else:
                   print(f"✓ pnpm-lock.yaml is valid ({os.path.getsize(lock_path)} bytes)")
-
-          # Delete removed files from HF Space (files that no longer exist locally)
-          try:
-              from huggingface_hub import HfFileSystem
-              fs = HfFileSystem(token=token)
-              repo_fs = f"hf://datasets/{repo_id}"
-              # List of paths to clean up (removed from codebase)
-              cleanup_paths = [
-                  "src/app/fruit-ninja/page.tsx",
-                  "src/app/games/fruit-ninja/page.tsx",
-                  "docs/v3.2.0-dev-plan.docx",
-              ]
-              for p in cleanup_paths:
-                  try:
-                      fs.rm(f"hf://{repo_id}/{p}", recursive=False)
-                      print(f"  ✓ Deleted remote: {p}")
-                  except FileNotFoundError:
-                      print(f"  - Not on remote (skip): {p}")
-                  except Exception as e:
-                      print(f"  ! Delete {p}: {e}")
-          except Exception as e:
-              print(f"  ! Cleanup warning: {e}")
 
           # Upload in batches
           batches = [
