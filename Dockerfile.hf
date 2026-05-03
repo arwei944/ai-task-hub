@@ -38,6 +38,9 @@ RUN rm -rf .next/cache node_modules/.cache
 
 RUN chmod +x start.sh
 
+# Persistent storage for database
+VOLUME ["/data"]
+
 EXPOSE 7860
 
 CMD ["sh", "/app/start.sh"]
