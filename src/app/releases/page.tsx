@@ -8,6 +8,9 @@ import { APP_VERSION, APP_CODENAME, VERSION_HISTORY } from '@/lib/core/version';
 
 // ---- 版本代号映射 ----
 const CODENAMES: Record<string, string> = {
+  '4.0.0': 'Project Hub',
+  '3.2.0': 'Project Hub',
+  '3.1.0': 'Kernel Reborn',
   '3.0.1': 'Kernel Reborn',
   '3.0.0': 'Kernel Reborn',
   '2.7.0': 'Project Nova',
@@ -243,7 +246,7 @@ export default function ReleasesPage() {
             </div>
           </div>
           <p className="text-xl text-blue-100 max-w-2xl leading-relaxed">
-            AI Task Hub 的完整版本演进历程，从 v1.0.0 首次发布到 v3.0.0 内核架构重构，
+            AI Task Hub 的完整版本演进历程，从 v1.0.0 首次发布到 v4.0.0 Project Hub 项目管理中心，
             记录每一次重要更新与改进。
           </p>
           <div className="flex gap-3 mt-8">

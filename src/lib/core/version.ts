@@ -9,13 +9,13 @@
 // ---- 应用版本 ----
 // 主版本号 (与 package.json 保持同步)
 // 注意: 不能使用 fs 读取 package.json，因为此文件会被客户端组件导入
-export const APP_VERSION: string = '3.1.0';
+export const APP_VERSION: string = '4.0.0';
 
 /** 应用名称 */
 export const APP_NAME: string = 'AI Task Hub';
 
 /** 应用代号 */
-export const APP_CODENAME: string = 'Kernel Reborn';
+export const APP_CODENAME: string = 'Project Hub';
 
 // ---- 模块版本 ----
 // 所有模块统一使用应用版本号，不再单独维护
@@ -105,6 +105,8 @@ export const VERSION_HISTORY: ReadonlyArray<{
   date: string;
   highlights: string[];
 }> = [
+  { version: '4.0.0', date: '2026-05-03', highlights: ['Project Hub 项目管理中心', '7 个新 Prisma 数据模型', '8 个 tRPC 子路由', '11 个 MCP 工具', '项目健康度矩阵', '智能体团队管理', '文档版本管理', '项目模板系统 (4 个内置模板)', '项目时间线', '里程碑 + 依赖管理'] },
+  { version: '3.2.0', date: '2026-05-03', highlights: ['Project Hub Phase 2-3', '智能体工作日志', '项目文档系统', '模板系统', '时间线视图'] },
   { version: '3.1.0', date: '2026-05-03', highlights: ['修复 5 个 P0 页面崩溃/错误', 'Ops 总览 null 安全保护', 'Settings 健康数据正确渲染', 'Integrations 服务正确注入', 'MCP 路由 GET/POST 导出', 'Dashboard 趋势图空数据提示', '登录密码可见性切换', '任务看板颜色区分', '项目空状态创建按钮'] },
   { version: '3.0.1', date: '2026-05-02', highlights: ['核心服务注册修复', 'JWT 全链路认证 (SSE + tRPC)', '骨架屏 + 自动刷新', '0 TS 错误 + 0 测试失败', '健康日志去重', 'HF 部署优化'] },
   { version: '3.0.0', date: '2026-05-02', highlights: ['v3 内核架构重构', 'AppKernel + 7 Capability', 'DI Container + 32 typed services', '运维面板 8 视图', '自愈系统 + 熔断器 + 死信队列', 'SSE 实时推送', 'JWT 全链路认证', '0 TS 错误 + 1936 测试通过'] },
