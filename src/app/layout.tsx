@@ -6,6 +6,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { ToastProvider } from "@/components/ui/toast";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { I18nProvider } from "@/lib/i18n";
+import { ProjectProvider } from "@/lib/project-context";
 import { SkipNav } from "@/components/ui/a11y";
 import { ServiceWorkerRegistration } from "@/components/service-worker-registration";
 import { MobileBottomNav } from "@/components/mobile-bottom-nav";
@@ -47,21 +48,23 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body className="min-h-full flex bg-background text-foreground">
-        <ThemeProvider>
-          <I18nProvider>
-            <ToastProvider>
-              <ErrorBoundary>
-                <SkipNav />
-                <Sidebar />
-                <div className="flex-1 flex flex-col min-w-0">
-                  <main id="main-content" className="flex-1 pb-16 md:pb-0">{children}</main>
-                  <MobileBottomNav />
-                </div>
-                <ServiceWorkerRegistration />
-              </ErrorBoundary>
-            </ToastProvider>
-          </I18nProvider>
-        </ThemeProvider>
+        <ProjectProvider>
+          <ThemeProvider>
+            <I18nProvider>
+              <ToastProvider>
+                <ErrorBoundary>
+                  <SkipNav />
+                  <Sidebar />
+                  <div className="flex-1 flex flex-col min-w-0">
+                    <main id="main-content" className="flex-1 pb-16 md:pb-0">{children}</main>
+                    <MobileBottomNav />
+                  </div>
+                  <ServiceWorkerRegistration />
+                </ErrorBoundary>
+              </ToastProvider>
+            </I18nProvider>
+          </ThemeProvider>
+        </ProjectProvider>
       </body>
     </html>
   );

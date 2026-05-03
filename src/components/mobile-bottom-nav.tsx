@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, CheckSquare, Bot, Puzzle, Settings } from 'lucide-react';
+import { FolderKanban, CheckSquare, Bot, Puzzle, Settings } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
 interface BottomNavItem {
@@ -12,7 +12,7 @@ interface BottomNavItem {
 }
 
 const bottomNavItems: BottomNavItem[] = [
-  { href: '/dashboard', label: '仪表盘', icon: LayoutDashboard },
+  { href: '/project-hub', label: '项目', icon: FolderKanban },
   { href: '/tasks', label: '任务', icon: CheckSquare },
   { href: '/agents', label: '智能体', icon: Bot },
   { href: '/plugins', label: '插件', icon: Puzzle },

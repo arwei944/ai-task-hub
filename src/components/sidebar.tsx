@@ -7,28 +7,27 @@ import {
   LayoutDashboard,
   CheckSquare,
   Bot,
-  Building2,
   Link2,
   Puzzle,
   BookOpen,
-  Settings,
   Store,
-  SlidersHorizontal,
-  Workflow,
-  Rocket,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   Brain,
   FolderKanban,
   Info,
-  MessageSquare,
   GitBranch,
   Activity,
   Bell,
   Wrench,
+  Rocket,
+  FileText,
+  GanttChart,
 } from 'lucide-react';
 import { ThemeToggle } from './theme-toggle';
 import { LanguageSwitcher } from './language-switcher';
+import { useProjectContext } from '@/lib/project-context';
 import type { LucideIcon } from 'lucide-react';
 
 interface NavItem {
@@ -37,16 +36,10 @@ interface NavItem {
   icon: LucideIcon;
 }
 
-const mainNavItems: NavItem[] = [
-  { href: '/dashboard', label: '仪表盘', icon: LayoutDashboard },
-  { href: '/feedback', label: '反馈中心', icon: MessageSquare },
+const systemNavItems: NavItem[] = [
   { href: '/workflows', label: '工作流管理', icon: GitBranch },
   { href: '/observability', label: '可观测性', icon: Activity },
-  { href: '/tasks', label: '任务', icon: CheckSquare },
-  { href: '/project-hub', label: '项目中心', icon: FolderKanban },
-  { href: '/agents', label: '智能体', icon: Bot },
-  { href: '/workspaces', label: '工作区', icon: Building2 },
-  { href: '/integrations', label: '集成', icon: Link2 },
+  { href: '/integrations', label: '集成管理', icon: Link2 },
   { href: '/deployments', label: '部署管理', icon: Rocket },
   { href: '/notifications', label: '通知管理', icon: Bell },
   { href: '/ops', label: '运维面板', icon: Wrench },
@@ -55,19 +48,28 @@ const mainNavItems: NavItem[] = [
 
 const secondaryNavItems: NavItem[] = [
   { href: '/plugin-market', label: '插件市场', icon: Store },
-  { href: '/dashboard-settings', label: '仪表盘设置', icon: SlidersHorizontal },
   { href: '/api-docs', label: 'API 文档', icon: BookOpen },
   { href: '/releases', label: '版本记录', icon: BookOpen },
   { href: '/about', label: '关于', icon: Info },
-  { href: '/settings', label: '设置', icon: Settings },
 ];
 
 export default function Sidebar() {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
+  const [systemExpanded, setSystemExpanded] = useState(false);
+  const { currentProjectId, isProjectContext } = useProjectContext();
 
   const isActive = (href: string) =>
     pathname === href || (href !== '/' && pathname.startsWith(href));
+
+  // Project-internal nav items (only shown when inside a project)
+  const projectNavItems: NavItem[] = isProjectContext && currentProjectId
+    ? [
+        { href: `/project-hub/${currentProjectId}`, label: '概览', icon: LayoutDashboard },
+        { href: `/project-hub/${currentProjectId}/team`, label: '智能体', icon: Bot },
+        { href: `/project-hub/${currentProjectId}/docs`, label: '文档', icon: FileText },
+      ]
+    : [];
 
   return (
     <aside
@@ -87,28 +89,91 @@ export default function Sidebar() {
         )}
       </div>
 
-      {/* Main nav */}
+      {/* Nav */}
       <div className="flex-1 overflow-y-auto py-3 px-2 space-y-1">
-        {mainNavItems.map((item) => {
-          const Icon = item.icon;
-          const active = isActive(item.href);
+        {/* Global: 我的项目 - always visible */}
+        <Link
+          href="/project-hub"
+          title={collapsed ? '我的项目' : undefined}
+          className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+            pathname === '/project-hub' || isProjectContext
+              ? 'bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300'
+              : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200'
+          }`}
+        >
+          <FolderKanban className={`w-[18px] h-[18px] shrink-0 ${pathname === '/project-hub' || isProjectContext ? 'text-blue-600 dark:text-blue-400' : ''}`} strokeWidth={1.8} />
+          {!collapsed && <span className="whitespace-nowrap">我的项目</span>}
+        </Link>
 
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              title={collapsed ? item.label : undefined}
-              className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                active
-                  ? 'bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300'
-                  : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200'
-              }`}
-            >
-              <Icon className={`w-[18px] h-[18px] shrink-0 ${active ? 'text-blue-600 dark:text-blue-400' : ''}`} strokeWidth={1.8} />
-              {!collapsed && <span className="whitespace-nowrap">{item.label}</span>}
-            </Link>
-          );
-        })}
+        {/* Project-internal navigation (when inside a project) */}
+        {projectNavItems.length > 0 && (
+          <>
+            <div className="!my-2 border-t border-gray-100 dark:border-gray-800" />
+            {projectNavItems.map((item) => {
+              const Icon = item.icon;
+              const active = isActive(item.href);
+
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  title={collapsed ? item.label : undefined}
+                  className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    active
+                      ? 'bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300'
+                      : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200'
+                  }`}
+                >
+                  <Icon className={`w-[18px] h-[18px] shrink-0 ${active ? 'text-blue-600 dark:text-blue-400' : ''}`} strokeWidth={1.8} />
+                  {!collapsed && <span className="whitespace-nowrap">{item.label}</span>}
+                </Link>
+              );
+            })}
+          </>
+        )}
+
+        {/* Divider */}
+        <div className="!my-3 border-t border-gray-100 dark:border-gray-800" />
+
+        {/* System Management (collapsible) */}
+        {!collapsed ? (
+          <button
+            onClick={() => setSystemExpanded(!systemExpanded)}
+            className="flex items-center justify-between w-full px-3 py-2 rounded-lg text-sm font-medium text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200 transition-colors"
+          >
+            <span className="whitespace-nowrap">系统管理</span>
+            <ChevronDown className={`w-4 h-4 shrink-0 transition-transform duration-200 ${systemExpanded ? 'rotate-180' : ''}`} />
+          </button>
+        ) : (
+          <div className="px-3 py-1">
+            <span className="text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-wider">系统</span>
+          </div>
+        )}
+
+        {systemExpanded && (
+          <>
+            {systemNavItems.map((item) => {
+              const Icon = item.icon;
+              const active = isActive(item.href);
+
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  title={collapsed ? item.label : undefined}
+                  className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    active
+                      ? 'bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300'
+                      : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200'
+                  }`}
+                >
+                  <Icon className={`w-[18px] h-[18px] shrink-0 ${active ? 'text-blue-600 dark:text-blue-400' : ''}`} strokeWidth={1.8} />
+                  {!collapsed && <span className="whitespace-nowrap">{item.label}</span>}
+                </Link>
+              );
+            })}
+          </>
+        )}
 
         {/* Divider */}
         <div className="!my-3 border-t border-gray-100 dark:border-gray-800" />
