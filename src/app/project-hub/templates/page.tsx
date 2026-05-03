@@ -193,7 +193,7 @@ export default function TemplatesPage() {
             </Card>
           ))}
         </div>
-      ) : displayTemplates.length === 0 ? (
+      ) : (displayTemplates?.length ?? 0) === 0 ? (
         <Card>
           <CardContent className="py-12 text-center">
             <LayoutTemplate className="w-12 h-12 mx-auto mb-3 text-gray-300 dark:text-gray-600" />
@@ -202,7 +202,7 @@ export default function TemplatesPage() {
         </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {displayTemplates.map((template) => {
+          {(displayTemplates ?? []).map((template) => {
             const colors = getCategoryColors(template.category);
 
             return (

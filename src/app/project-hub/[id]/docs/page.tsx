@@ -186,7 +186,7 @@ export default function DocsManagementPage() {
         }`}
         style={{ paddingLeft: `${depth * 16 + 12}px` }}
       >
-        {node.children.length > 0 ? (
+        {(node.children?.length ?? 0) > 0 ? (
           <FolderOpen className="w-4 h-4 text-amber-500 shrink-0" />
         ) : (
           <FileText className="w-4 h-4 text-gray-400 shrink-0" />
@@ -198,7 +198,7 @@ export default function DocsManagementPage() {
           </Badge>
         )}
       </button>
-      {node.children.map((child: any) => renderTreeNode(child as DocItem & { children: DocItem[] }, depth + 1))}
+      {(node.children ?? []).map((child: any) => renderTreeNode(child as DocItem & { children: DocItem[] }, depth + 1))}
     </div>
   );
 
@@ -249,11 +249,11 @@ export default function DocsManagementPage() {
                   <div key={i} className="animate-pulse h-8 bg-gray-100 dark:bg-gray-800 rounded" />
                 ))}
               </div>
-            ) : docTree.length === 0 ? (
+            ) : (docTree?.length ?? 0) === 0 ? (
               <p className="text-sm text-gray-400 py-8 text-center">暂无文档</p>
             ) : (
               <div className="space-y-0.5">
-                {docTree.map(node => renderTreeNode(node))}
+                {(docTree ?? []).map(node => renderTreeNode(node))}
               </div>
             )}
           </CardContent>
@@ -314,11 +314,11 @@ export default function DocsManagementPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                {versionList.length === 0 ? (
+                {(versionList?.length ?? 0) === 0 ? (
                   <p className="text-sm text-gray-400 py-2 text-center">暂无版本记录</p>
                 ) : (
                   <div className="space-y-2">
-                    {versionList.map((ver) => (
+                    {(versionList ?? []).map((ver) => (
                       <div
                         key={ver.id}
                         className="flex items-center justify-between py-2 px-3 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"

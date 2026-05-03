@@ -106,7 +106,7 @@ export default function Sidebar() {
         </Link>
 
         {/* Project-internal navigation (when inside a project) */}
-        {projectNavItems.length > 0 && (
+        {(projectNavItems?.length ?? 0) > 0 && (
           <>
             <div className="!my-2 border-t border-gray-100 dark:border-gray-800" />
             {projectNavItems.map((item) => {

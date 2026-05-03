@@ -134,13 +134,13 @@ function ProjectTimeline({ project }: { project: ProjectItem }) {
         </div>
       </CardHeader>
       <CardContent>
-        {milestones.length === 0 ? (
+        {(milestones?.length ?? 0) === 0 ? (
           <p className="text-sm text-gray-400 py-2 text-center">暂无里程碑</p>
         ) : (
           <div className="relative space-y-3">
             {/* Timeline line */}
             <div className="absolute left-[7px] top-2 bottom-2 w-0.5 bg-gray-200 dark:bg-gray-700" />
-            {milestones.map((milestone) => (
+            {(milestones ?? []).map((milestone) => (
               <div key={milestone.id} className="relative flex items-start gap-3 pl-1">
                 <div className="shrink-0 z-10 mt-0.5">
                   <MilestoneStatusIcon status={milestone.status} />
@@ -235,7 +235,7 @@ export default function TimelinePage() {
             </Card>
           ))}
         </div>
-      ) : projects.length === 0 ? (
+      ) : (projects?.length ?? 0) === 0 ? (
         <Card>
           <CardContent className="py-12 text-center">
             <GanttChart className="w-12 h-12 mx-auto mb-3 text-gray-300 dark:text-gray-600" />
@@ -244,7 +244,7 @@ export default function TimelinePage() {
         </Card>
       ) : (
         <div className="space-y-6">
-          {projects.map((project) => (
+          {(projects ?? []).map((project) => (
             <ProjectTimeline key={project.id} project={project} />
           ))}
         </div>

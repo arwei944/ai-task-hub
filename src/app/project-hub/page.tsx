@@ -207,7 +207,7 @@ export default function ProjectHubDashboardPage() {
             </Button>
           </CardContent>
         </Card>
-      ) : !overview || (overview.totalProjects === 0 && overview.recentActivity.length === 0) ? (
+      ) : !overview || (overview.totalProjects === 0 && (overview.recentActivity?.length ?? 0) === 0) ? (
         /* Empty state */
         <Card>
           <CardContent className="py-16 text-center">
@@ -290,7 +290,7 @@ export default function ProjectHubDashboardPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {overview.healthMatrix.length === 0 ? (
+              {(overview.healthMatrix?.length ?? 0) === 0 ? (
                 <p className="text-sm text-gray-400 py-4 text-center">暂无项目数据</p>
               ) : (
                 <Table>
@@ -353,7 +353,7 @@ export default function ProjectHubDashboardPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                {overview.upcomingDeadlines.length === 0 ? (
+                {(overview.upcomingDeadlines?.length ?? 0) === 0 ? (
                   <p className="text-sm text-gray-400 py-4 text-center">暂无即将到期的里程碑</p>
                 ) : (
                   <div className="space-y-3">
@@ -395,7 +395,7 @@ export default function ProjectHubDashboardPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                {overview.recentActivity.length === 0 ? (
+                {(overview.recentActivity?.length ?? 0) === 0 ? (
                   <p className="text-sm text-gray-400 py-4 text-center">暂无动态</p>
                 ) : (
                   <div className="space-y-1.5 max-h-[300px] overflow-y-auto">

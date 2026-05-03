@@ -159,7 +159,7 @@ export default function TeamManagementPage() {
                 <div key={i} className="animate-pulse h-12 bg-gray-100 dark:bg-gray-800 rounded" />
               ))}
             </div>
-          ) : agentsList.length === 0 ? (
+          ) : (agentsList?.length ?? 0) === 0 ? (
             <p className="text-sm text-gray-400 py-8 text-center">暂无关联智能体，点击"分配智能体"开始</p>
           ) : (
             <Table>
@@ -174,7 +174,7 @@ export default function TeamManagementPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {agentsList.map((agent) => (
+                {(agentsList ?? []).map((agent) => (
                   <TableRow key={agent.id}>
                     <TableCell>
                       <div className="flex items-center gap-2">
@@ -221,11 +221,11 @@ export default function TeamManagementPage() {
         <CardContent>
           {workloadLoading ? (
             <div className="animate-pulse h-32 bg-gray-100 dark:bg-gray-800 rounded" />
-          ) : workloadList.length === 0 ? (
+          ) : (workloadList?.length ?? 0) === 0 ? (
             <p className="text-sm text-gray-400 py-4 text-center">暂无工作负载数据</p>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {workloadList.map((item) => (
+              {(workloadList ?? []).map((item) => (
                 <div
                   key={item.agentId}
                   className="p-4 rounded-lg border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
@@ -268,11 +268,11 @@ export default function TeamManagementPage() {
                 <div key={i} className="animate-pulse h-16 bg-gray-100 dark:bg-gray-800 rounded" />
               ))}
             </div>
-          ) : workLogsList.length === 0 ? (
+          ) : (workLogsList?.length ?? 0) === 0 ? (
             <p className="text-sm text-gray-400 py-4 text-center">暂无工作日志</p>
           ) : (
             <div className="space-y-3">
-              {workLogsList.map((log) => (
+              {(workLogsList ?? []).map((log) => (
                 <div
                   key={log.id}
                   className="flex items-center justify-between py-3 px-4 rounded-lg border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"

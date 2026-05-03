@@ -352,13 +352,13 @@ export default function ProjectDetailPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {project.milestones.length === 0 ? (
+              {(project.milestones?.length ?? 0) === 0 ? (
                 <p className="text-sm text-gray-400 py-4 text-center">暂无里程碑</p>
               ) : (
                 <div className="relative space-y-4">
                   {/* Timeline line */}
                   <div className="absolute left-[15px] top-2 bottom-2 w-0.5 bg-gray-200 dark:bg-gray-700" />
-                  {project.milestones.map((milestone) => (
+                  {(project.milestones ?? []).map((milestone) => (
                     <div key={milestone.id} className="relative flex items-start gap-4 pl-1">
                       <div className={`w-[7px] h-[7px] rounded-full mt-1.5 shrink-0 z-10 ${
                         milestone.status === 'completed'
@@ -397,11 +397,11 @@ export default function ProjectDetailPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {project.taskProgress.length === 0 ? (
+              {(project.taskProgress?.length ?? 0) === 0 ? (
                 <p className="text-sm text-gray-400 py-4 text-center">暂无任务</p>
               ) : (
                 <div className="space-y-2">
-                  {project.taskProgress.map((task) => (
+                  {(project.taskProgress ?? []).map((task) => (
                     <div key={task.id} className="flex items-center gap-3 py-2 px-3 rounded-lg bg-gray-50 dark:bg-gray-800/50">
                       <TaskStatusIcon status={task.status} />
                       <div className="flex-1 min-w-0">
@@ -435,11 +435,11 @@ export default function ProjectDetailPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {project.milestones.length === 0 ? (
+              {(project.milestones?.length ?? 0) === 0 ? (
                 <p className="text-sm text-gray-400 py-4 text-center">暂无里程碑</p>
               ) : (
                 <div className="space-y-3">
-                  {project.milestones.map((milestone) => (
+                  {(project.milestones ?? []).map((milestone) => (
                     <div
                       key={milestone.id}
                       className="flex items-center justify-between py-3 px-4 rounded-lg border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
@@ -472,11 +472,11 @@ export default function ProjectDetailPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {project.agents.length === 0 ? (
+              {(project.agents?.length ?? 0) === 0 ? (
                 <p className="text-sm text-gray-400 py-4 text-center">暂无关联智能体</p>
               ) : (
                 <div className="space-y-3">
-                  {project.agents.map((agent) => (
+                  {(project.agents ?? []).map((agent) => (
                     <div
                       key={agent.id}
                       className="flex items-center justify-between py-3 px-4 rounded-lg border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
@@ -519,11 +519,11 @@ export default function ProjectDetailPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {project.dependencies.length === 0 ? (
+              {(project.dependencies?.length ?? 0) === 0 ? (
                 <p className="text-sm text-gray-400 py-4 text-center">暂无依赖关系</p>
               ) : (
                 <div className="space-y-3">
-                  {project.dependencies.map((dep) => (
+                  {(project.dependencies ?? []).map((dep) => (
                     <div
                       key={dep.id}
                       className="flex items-center justify-between py-3 px-4 rounded-lg border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
