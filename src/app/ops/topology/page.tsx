@@ -118,7 +118,7 @@ export default function OpsTopologyPage() {
   // SSE health updates
   const handleEvent = useCallback((event: HealthSSEEvent) => {
     if (event.type === 'health.initial' && event.data.health) {
-      setHealthData(event.data.health as Record<string, {
+      setHealthData(event.data.health as unknown as Record<string, {
         status: string;
         details?: string;
         latencyMs?: number;
@@ -128,7 +128,7 @@ export default function OpsTopologyPage() {
     if (event.type === 'health.check' && event.data.report && event.data.capabilityId) {
       setHealthData(prev => ({
         ...prev,
-        [event.data.capabilityId!]: event.data.report as {
+        [event.data.capabilityId!]: event.data.report as unknown as {
           status: string;
           details?: string;
           latencyMs?: number;
@@ -147,9 +147,7 @@ export default function OpsTopologyPage() {
       type: 'capability',
       position: { x: cap.x, y: cap.y },
       data: {
-        label: cap.label,
-        icon: cap.icon,
-        status: (healthData[cap.id]?.status as CapabilityNodeData['status']) ?? 'unknown',
+        label: cap.label, icon: cap.icon, status: (healthData[cap.id]?.status as CapabilityNodeData['status']) ?? 'unknown',
         details: healthData[cap.id]?.details,
         latencyMs: healthData[cap.id]?.latencyMs,
         metrics: healthData[cap.id]?.metrics,
