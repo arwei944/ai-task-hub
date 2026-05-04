@@ -9,6 +9,7 @@
 
 import { getSSEService } from '@/lib/modules/realtime/sse.service';
 import { Logger } from '@/lib/core/logger';
+import { getServices, ensureServicesInitialized } from '@/lib/trpc/server';
 
 const logger = new Logger('sse');
 
@@ -21,6 +22,8 @@ export async function GET(request: Request) {
 
   // Auth check: private channels require Bearer token
   const privateChannels = channels.filter(ch => ch !== 'global');
+  let userId: string = 'anonymous';
+
   if (privateChannels.length > 0) {
     const authHeader = request.headers.get('authorization');
     if (!authHeader?.startsWith('Bearer ')) {
@@ -29,9 +32,27 @@ export async function GET(request: Request) {
         { status: 401, headers: { 'Content-Type': 'application/json' } },
       );
     }
-  }
 
-  const userId: string = 'admin'; // Single admin mode
+    // Verify token and extract userId
+    const token = authHeader.slice(7);
+    try {
+      await ensureServicesInitialized();
+      const services = getServices();
+      const user = await services.authService.verifyToken(token);
+      if (!user) {
+        return new Response(
+          JSON.stringify({ error: 'Invalid or expired token' }),
+          { status: 401, headers: { 'Content-Type': 'application/json' } },
+        );
+      }
+      userId = user.id;
+    } catch {
+      return new Response(
+        JSON.stringify({ error: 'Token verification failed' }),
+        { status: 401, headers: { 'Content-Type': 'application/json' } },
+      );
+    }
+  }
 
   const stream = new ReadableStream({
     start(controller) {

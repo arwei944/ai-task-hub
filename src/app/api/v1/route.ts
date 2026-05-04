@@ -8,6 +8,7 @@
 import { NextResponse } from 'next/server';
 import { Prisma } from '@/generated/prisma/client';
 import { getPrisma } from '@/lib/db';
+import { crypto } from 'node:crypto';
 
 export const dynamic = 'force-dynamic';
 
@@ -60,7 +61,7 @@ export async function POST(request: Request) {
       let agent = await prisma.agent.findFirst({ where: { name, clientType } });
 
       if (!agent) {
-        const apiKey = `ath_${clientType}_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+        const apiKey = `ath_${clientType}_${crypto.randomUUID().replace(/-/g, '')}`;
         agent = await prisma.agent.create({
           data: {
             name,
