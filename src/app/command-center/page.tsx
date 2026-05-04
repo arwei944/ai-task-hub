@@ -8,9 +8,10 @@ import { ProjectCard } from '@/components/command-center/project-card';
 import { EventStream } from '@/components/command-center/event-stream';
 import { QuickCreateDialog } from '@/components/command-center/quick-create-dialog';
 import { ProjectFocusView } from '@/components/command-center/project-focus-view';
+import { DetailDrawer } from '@/components/command-center/detail-drawer';
 
 export default function CommandCenterPage() {
-  const { state, focusProject, goBack, reset, setLayoutMode, setStatusFilter, setSearchQuery } = useCommandCenter();
+  const { state, focusProject, openDetail, goBack, reset, setLayoutMode, setStatusFilter, setSearchQuery } = useCommandCenter();
   const [overview, setOverview] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -192,16 +193,38 @@ export default function CommandCenterPage() {
       {/* 主内容区 */}
       <div className="flex-1 overflow-auto p-6">
         {state.viewLevel === 'battlefield' && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {searchedProjects.map((project: any) => (
-              <ProjectCard
-                key={project.id}
-                project={project}
-                onClick={focusProject}
-                isNewEvent={newEventProjectIds.has(project.id)}
-              />
-            ))}
-          </div>
+          state.layoutMode === 'free' ? (
+            <div className="relative w-full h-full min-h-[500px]">
+              {searchedProjects.map((project: any, index: number) => {
+                const col = index % 4;
+                const row = Math.floor(index / 4);
+                return (
+                  <div
+                    key={project.id}
+                    onClick={() => focusProject(project.id)}
+                    className="absolute w-72 cursor-move"
+                    style={{
+                      left: `${col * 300 + 16}px`,
+                      top: `${row * 220 + 16}px`,
+                    }}
+                  >
+                    <ProjectCard project={project} onClick={focusProject} />
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {searchedProjects.map((project: any) => (
+                <ProjectCard
+                  key={project.id}
+                  project={project}
+                  onClick={focusProject}
+                  isNewEvent={newEventProjectIds.has(project.id)}
+                />
+              ))}
+            </div>
+          )
         )}
 
         {state.viewLevel === 'focus' && state.focusedProjectId && (
@@ -244,6 +267,13 @@ export default function CommandCenterPage() {
         onCreated={() => {
           setRefreshKey(k => k + 1);
         }}
+      />
+
+      {/* 第三层：详情抽屉 */}
+      <DetailDrawer
+        item={state.detailItem}
+        projectId={state.focusedProjectId || undefined}
+        onClose={goBack}
       />
     </div>
   );
