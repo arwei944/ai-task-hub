@@ -1,52 +1,71 @@
 'use client';
 
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { trpc } from '@/lib/trpc/client';
 import { useCommandCenter } from '@/lib/hooks/use-command-center';
 import { useSSE } from '@/lib/hooks/use-sse';
+import { useCCOverview, useCCInvalidate } from '@/lib/hooks/use-command-center-query';
+import { useToast } from '@/components/ui/toast';
 import { ProjectCard } from '@/components/command-center/project-card';
 import { EventStream } from '@/components/command-center/event-stream';
 import { QuickCreateDialog } from '@/components/command-center/quick-create-dialog';
 import { ProjectFocusView } from '@/components/command-center/project-focus-view';
 import { DetailDrawer } from '@/components/command-center/detail-drawer';
+import { StatsDashboard } from '@/components/command-center/stats-dashboard';
 
 export default function CommandCenterPage() {
   const { state, focusProject, openDetail, goBack, reset, setLayoutMode, setStatusFilter, setSearchQuery } = useCommandCenter();
-  const [overview, setOverview] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [refreshKey, setRefreshKey] = useState(0);
+
+  // React Query hooks
+  const { data: overview, isLoading, error } = useCCOverview();
+  const { invalidateAll } = useCCInvalidate();
+
+  // Toast notifications
+  const { info } = useToast();
 
   // SSE 事件收集
   const [sseEvents, setSseEvents] = useState<any[]>([]);
   // 记录哪些项目收到了新事件（用于脉搏动画）
   const [newEventProjectIds, setNewEventProjectIds] = useState<Set<string>>(new Set());
 
+  // SSE 连接状态
+  const [sseConnected, setSseConnected] = useState(false);
+
   // 快速创建对话框
   const [showQuickCreate, setShowQuickCreate] = useState(false);
 
-  // 获取指挥中心概览数据（命令式调用，匹配项目现有模式）
-  const fetchOverview = useCallback(async () => {
-    try {
-      setIsLoading(true);
-      const data = await trpc.commandCenter.overview.query();
-      setOverview(data as any);
-    } catch (err) {
-      console.error('[CommandCenter] Failed to fetch overview:', err);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+  // 搜索防抖
+  const searchTimerRef = useRef<NodeJS.Timeout>();
 
-  useEffect(() => {
-    fetchOverview();
-  }, [fetchOverview, refreshKey]);
+  // Toast 事件消息映射
+  const eventMessages: Record<string, string> = {
+    'project.created': '🆕 新项目已创建',
+    'project.phase.changed': '📋 项目阶段已变更',
+    'project.status.changed': '🔄 项目状态已更新',
+    'task.created': '📝 新任务已创建',
+    'task.status_changed': '✅ 任务状态已变更',
+    'task.completed': '🎉 任务已完成',
+    'agent.registered': '🤖 新智能体已注册',
+    'work-log.created': '💼 新工作日志已记录',
+    'milestone.completed': '🏆 里程碑已完成',
+  };
 
   // SSE 实时订阅
   useSSE({
-    channels: ['projects', 'agents', 'tasks', 'events'],
+    channels: ['projects', 'agents', 'tasks', 'events', 'notifications'],
     onEvent: (event: any) => {
+      // 连接状态
+      if (event.type === 'system.connected') {
+        setSseConnected(true);
+      }
+
       // 收集事件到事件流
       setSseEvents(prev => [...prev.slice(-49), event]);
+
+      // Toast notification for important events
+      if (eventMessages[event.type]) {
+        const desc = event.data?.description || event.data?.name || event.data?.title || '';
+        info(eventMessages[event.type], typeof desc === 'string' ? desc.slice(0, 50) : '');
+      }
 
       // 标记收到新事件的项目（触发脉搏动画）
       if (event.data?.projectId) {
@@ -65,12 +84,21 @@ export default function CommandCenterPage() {
         }, 1500);
       }
 
-      // 触发数据刷新
+      // 触发 React Query 数据刷新
       if (event.type?.startsWith('project.') || event.type?.startsWith('task.') || event.type?.startsWith('agent.')) {
-        setRefreshKey(k => k + 1);
+        invalidateAll();
       }
     },
   });
+
+  // 搜索防抖处理
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+    searchTimerRef.current = setTimeout(() => {
+      setSearchQuery(value);
+    }, 300);
+  };
 
   // Esc 键返回上一层 / 关闭快速创建
   useEffect(() => {
@@ -91,6 +119,24 @@ export default function CommandCenterPage() {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [goBack, showQuickCreate]);
+
+  // 清理搜索定时器
+  useEffect(() => {
+    return () => {
+      if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+    };
+  }, []);
+
+  // 错误状态处理
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
+        <div className="text-4xl mb-2">⚠️</div>
+        <div className="text-sm mb-2">数据加载失败</div>
+        <button onClick={() => invalidateAll()} className="text-xs text-primary hover:underline">点击重试</button>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (
@@ -127,15 +173,15 @@ export default function CommandCenterPage() {
 
   return (
     <div className="h-full flex flex-col">
-      {/* 统计条 */}
+      {/* 统计仪表盘 */}
       <div className="flex items-center gap-4 px-6 py-3 border-b bg-card/50">
-        <div className="flex items-center gap-6 text-sm">
-          <span className="text-muted-foreground">总项目 <strong className="text-foreground">{displayStats.total}</strong></span>
-          <span className="text-green-500">进行中 <strong>{displayStats.active}</strong></span>
-          <span className="text-blue-500">已完成 <strong>{displayStats.completed}</strong></span>
-          <span className="text-yellow-500">暂停 <strong>{displayStats.paused}</strong></span>
-        </div>
+        <StatsDashboard projects={projects} />
         <div className="ml-auto flex items-center gap-2">
+          {/* SSE 连接状态指示器 */}
+          <span
+            className={`w-2 h-2 rounded-full ${sseConnected ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`}
+            title={sseConnected ? '实时连接中' : '未连接'}
+          />
           {/* 快速创建按钮 */}
           <button
             onClick={() => setShowQuickCreate(true)}
@@ -184,8 +230,8 @@ export default function CommandCenterPage() {
         <input
           type="text"
           placeholder="搜索项目..."
-          value={state.searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
+          defaultValue={state.searchQuery}
+          onChange={handleSearchChange}
           className="ml-auto w-48 px-3 py-1 text-sm rounded-md border bg-background"
         />
       </div>
@@ -208,7 +254,7 @@ export default function CommandCenterPage() {
                       top: `${row * 220 + 16}px`,
                     }}
                   >
-                    <ProjectCard project={project} onClick={focusProject} />
+                    <ProjectCard project={project} onClick={focusProject} onUpdated={invalidateAll} />
                   </div>
                 );
               })}
@@ -221,6 +267,7 @@ export default function CommandCenterPage() {
                   project={project}
                   onClick={focusProject}
                   isNewEvent={newEventProjectIds.has(project.id)}
+                  onUpdated={invalidateAll}
                 />
               ))}
             </div>
@@ -265,7 +312,7 @@ export default function CommandCenterPage() {
         open={showQuickCreate}
         onClose={() => setShowQuickCreate(false)}
         onCreated={() => {
-          setRefreshKey(k => k + 1);
+          invalidateAll();
         }}
       />
 

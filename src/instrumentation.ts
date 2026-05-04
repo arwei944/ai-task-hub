@@ -36,6 +36,19 @@ export async function register() {
 
     await initKernel(capabilities);
 
+    // Activate Event Bridge: EventBus → SSE real-time push
+    try {
+      const { getEventBus } = await import('@/lib/core/event-bus');
+      const { getSSEService } = await import('@/lib/modules/realtime/sse.service');
+      const { createEventBridge } = await import('@/lib/modules/realtime/event-bridge');
+      const eventBus = getEventBus();
+      const sseService = getSSEService();
+      createEventBridge(eventBus, sseService, console as any);
+      console.log('[Instrumentation] v3.0 — Event Bridge activated (EventBus → SSE)');
+    } catch (bridgeErr: any) {
+      console.warn(`[Instrumentation] Event Bridge activation failed: ${bridgeErr.message}`);
+    }
+
     const kernel = getKernel();
     const status = kernel.getStatus();
     console.log(

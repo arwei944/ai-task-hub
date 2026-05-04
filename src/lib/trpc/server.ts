@@ -27,6 +27,15 @@ async function ensureServicesInitialized(): Promise<void> {
   _initPromise = (async () => {
     const container = new DIContainer();
     await registerAllServices(container);
+
+    // Activate Event Bridge for tRPC fallback path
+    try {
+      const { getEventBus } = await import('@/lib/core/event-bus');
+      const { getSSEService } = await import('@/lib/modules/realtime/sse.service');
+      const { createEventBridge } = await import('@/lib/modules/realtime/event-bridge');
+      createEventBridge(getEventBus(), getSSEService(), console as any);
+    } catch { /* non-critical */ }
+
     _container = container;
     _services = new ServiceAccessor(container);
   })();

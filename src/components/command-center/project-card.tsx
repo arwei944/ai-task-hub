@@ -1,15 +1,20 @@
 'use client';
 
 import { useState } from 'react';
+import { trpc } from '@/lib/trpc/client';
+import { useToast } from '@/components/ui/toast';
 
 interface ProjectCardProps {
   project: any;
   onClick: (id: string) => void;
-  isNewEvent?: boolean; // 收到新事件时触发脉搏动画
+  isNewEvent?: boolean;
+  onUpdated?: () => void;
 }
 
-export function ProjectCard({ project, onClick, isNewEvent }: ProjectCardProps) {
+export function ProjectCard({ project, onClick, isNewEvent, onUpdated }: ProjectCardProps) {
   const [isHovered, setIsHovered] = useState(false);
+  const [showActions, setShowActions] = useState(false);
+  const { success, error: toastError } = useToast();
 
   const statusColor = {
     active: 'bg-green-500',
@@ -144,12 +149,50 @@ export function ProjectCard({ project, onClick, isNewEvent }: ProjectCardProps) 
       {isHovered && (
         <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
           <button
-            onClick={(e) => { e.stopPropagation(); }}
+            onClick={(e) => { e.stopPropagation(); setShowActions(prev => !prev); }}
             className="w-6 h-6 rounded-md bg-muted/80 flex items-center justify-center text-xs hover:bg-muted"
             title="更多操作"
           >
             ⋯
           </button>
+          {showActions && (
+            <div className="absolute top-7 right-0 z-20 w-32 py-1 rounded-lg border bg-card shadow-lg" onClick={e => e.stopPropagation()}>
+              <button
+                onClick={async () => {
+                  try {
+                    const newPhase = project.phase === 'completed' ? 'implementation' : 'completed';
+                    await trpc.projectHub.projects.update.mutate({ id: project.id, phase: newPhase });
+                    success('阶段已更新', newPhase === 'completed' ? '项目已标记为完成' : '项目已重新开启');
+                    onUpdated?.();
+                  } catch { toastError('更新失败', '无法更改项目阶段'); }
+                  setShowActions(false);
+                }}
+                className="w-full px-3 py-1.5 text-left text-xs hover:bg-muted transition-colors"
+              >
+                {project.phase === 'completed' ? '🔄 重新开启' : '✅ 标记完成'}
+              </button>
+              <button
+                onClick={async () => {
+                  try {
+                    const newStatus = project.status === 'paused' ? 'active' : 'paused';
+                    await trpc.projectHub.projects.update.mutate({ id: project.id, status: newStatus });
+                    success('状态已更新', newStatus === 'paused' ? '项目已暂停' : '项目已恢复');
+                    onUpdated?.();
+                  } catch { toastError('更新失败', '无法更改项目状态'); }
+                  setShowActions(false);
+                }}
+                className="w-full px-3 py-1.5 text-left text-xs hover:bg-muted transition-colors"
+              >
+                {project.status === 'paused' ? '▶️ 恢复项目' : '⏸️ 暂停项目'}
+              </button>
+              <button
+                onClick={() => { onClick(project.id); setShowActions(false); }}
+                className="w-full px-3 py-1.5 text-left text-xs hover:bg-muted transition-colors"
+              >
+                🔍 查看详情
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { trpc } from '@/lib/trpc/client';
+import { useToast } from '@/components/ui/toast';
 
 interface QuickCreateDialogProps {
   open: boolean;
@@ -14,6 +15,7 @@ export function QuickCreateDialog({ open, onClose, onCreated }: QuickCreateDialo
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState('medium');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { success, error: toastError } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,9 +32,10 @@ export function QuickCreateDialog({ open, onClose, onCreated }: QuickCreateDialo
       setDescription('');
       setPriority('medium');
       onCreated?.();
+      success('项目已创建', `「${name.trim()}」已添加到指挥中心`);
       onClose();
     } catch (err) {
-      console.error('[QuickCreate] Failed:', err);
+      toastError('创建失败', '项目创建时发生错误');
     } finally {
       setIsSubmitting(false);
     }

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { trpc } from '@/lib/trpc/client';
+import { useToast } from '@/components/ui/toast';
 
 interface ProjectFocusViewProps {
   projectId: string;
@@ -14,6 +15,7 @@ export function ProjectFocusView({ projectId, onBack, onOpenTaskDetail }: Projec
   const [tasks, setTasks] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshKey, setRefreshKey] = useState(0);
+  const { success, error: toastError } = useToast();
 
   const fetchFocusData = useCallback(async () => {
     try {
@@ -38,9 +40,11 @@ export function ProjectFocusView({ projectId, onBack, onOpenTaskDetail }: Projec
   const updateTaskStatus = async (taskId: string, newStatus: string) => {
     try {
       await trpc.projectHub.tasks.updateStatus.mutate({ id: taskId, status: newStatus });
+      const statusLabel: Record<string, string> = { todo: '待办', in_progress: '进行中', done: '已完成' };
+      success('任务已更新', `状态变更为「${statusLabel[newStatus] || newStatus}」`);
       setRefreshKey(k => k + 1);
     } catch (err) {
-      console.error('[FocusView] Failed to update task:', err);
+      toastError('状态更新失败', '任务状态变更时发生错误');
     }
   };
 

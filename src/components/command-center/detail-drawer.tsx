@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { trpc } from '@/lib/trpc/client';
+import { useToast } from '@/components/ui/toast';
 
 interface DetailDrawerProps {
   item: { type: 'task' | 'doc' | 'agent'; id: string } | null;
@@ -12,6 +13,7 @@ interface DetailDrawerProps {
 export function DetailDrawer({ item, projectId, onClose }: DetailDrawerProps) {
   const [taskData, setTaskData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const { success, error: toastError } = useToast();
 
   const fetchTask = useCallback(async () => {
     if (!item || item.type !== 'task') return;
@@ -132,8 +134,13 @@ export function DetailDrawer({ item, projectId, onClose }: DetailDrawerProps) {
                 {taskData.status === 'todo' && (
                   <button
                     onClick={async () => {
-                      await trpc.projectHub.tasks.updateStatus.mutate({ id: taskData.id, status: 'in_progress' });
-                      fetchTask();
+                      try {
+                        await trpc.projectHub.tasks.updateStatus.mutate({ id: taskData.id, status: 'in_progress' });
+                        success('任务已开始', taskData.title);
+                        fetchTask();
+                      } catch (err) {
+                        toastError('操作失败', '无法开始任务');
+                      }
                     }}
                     className="flex-1 py-2 text-sm rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
                   >
@@ -143,8 +150,13 @@ export function DetailDrawer({ item, projectId, onClose }: DetailDrawerProps) {
                 {taskData.status === 'in_progress' && (
                   <button
                     onClick={async () => {
-                      await trpc.projectHub.tasks.updateStatus.mutate({ id: taskData.id, status: 'done' });
-                      fetchTask();
+                      try {
+                        await trpc.projectHub.tasks.updateStatus.mutate({ id: taskData.id, status: 'done' });
+                        success('任务已完成', taskData.title);
+                        fetchTask();
+                      } catch (err) {
+                        toastError('操作失败', '无法完成任务');
+                      }
                     }}
                     className="flex-1 py-2 text-sm rounded-lg bg-green-500 text-white hover:bg-green-600 transition-colors"
                   >
@@ -154,8 +166,13 @@ export function DetailDrawer({ item, projectId, onClose }: DetailDrawerProps) {
                 <button
                   onClick={async () => {
                     if (confirm('确定删除此任务？')) {
-                      await trpc.projectHub.tasks.delete.mutate({ id: taskData.id });
-                      onClose();
+                      try {
+                        await trpc.projectHub.tasks.delete.mutate({ id: taskData.id });
+                        success('任务已删除', taskData.title);
+                        onClose();
+                      } catch (err) {
+                        toastError('删除失败', '无法删除任务');
+                      }
                     }
                   }}
                   className="py-2 px-4 text-sm rounded-lg border hover:bg-muted transition-colors text-red-500"

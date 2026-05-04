@@ -14,6 +14,7 @@ import { ServiceWorkerRegistration } from "@/components/service-worker-registrat
 import { MobileBottomNav } from "@/components/mobile-bottom-nav";
 import { Breadcrumb } from "@/components/layout/breadcrumb";
 import { GlobalSearch } from "@/components/layout/global-search";
+import { ReactQueryProvider } from "@/components/providers/react-query-provider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -53,6 +54,7 @@ export default function RootLayout({
     >
       <body className="min-h-full flex bg-background text-foreground">
         <ProjectProvider>
+          <ReactQueryProvider>
           <ThemeProvider>
             <I18nProvider>
               <I18nLangSync />
@@ -76,6 +78,7 @@ export default function RootLayout({
               </ToastProvider>
             </I18nProvider>
           </ThemeProvider>
+          </ReactQueryProvider>
         </ProjectProvider>
       </body>
     </html>
