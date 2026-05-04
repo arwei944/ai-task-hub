@@ -50,6 +50,21 @@ export interface NavItem {
 
 export type NavGroup = 'core' | 'collaboration' | 'management' | 'ops' | 'secondary';
 
+// ─── Command Center Tab Items ────────────────────────────
+
+export interface CCTabItem {
+  id: string;
+  label: string;
+  icon: LucideIcon;
+}
+
+export const CC_TAB_ITEMS: CCTabItem[] = [
+  { id: 'projects', label: '项目总览', icon: FolderKanban },
+  { id: 'tasks', label: '任务全局', icon: CheckSquare },
+  { id: 'agents', label: 'Agent 管理', icon: Bot },
+  { id: 'settings', label: '系统设置', icon: Settings },
+];
+
 // ─── Navigation Groups ───────────────────────────────────
 
 export const NAV_GROUPS: Record<NavGroup, { label: string; order: number }> = {
@@ -77,6 +92,7 @@ export const NAV_ITEMS: NavItem[] = [
     href: '/dashboard',
     label: '仪表盘',
     icon: LayoutDashboard,
+    sidebar: false,
     navbar: true,
     mobile: false,
     group: 'core',
@@ -85,16 +101,17 @@ export const NAV_ITEMS: NavItem[] = [
     href: '/project-hub',
     label: '我的项目',
     icon: FolderKanban,
-    sidebar: true,
-    mobile: true,
+    sidebar: false,
+    mobile: false,
     group: 'core',
   },
   {
     href: '/tasks',
     label: '任务',
     icon: CheckSquare,
+    sidebar: false,
     navbar: true,
-    mobile: true,
+    mobile: false,
     group: 'core',
   },
 
@@ -103,7 +120,7 @@ export const NAV_ITEMS: NavItem[] = [
     href: '/workflows',
     label: '工作流',
     icon: GitBranch,
-    sidebar: true,
+    sidebar: false,
     navbar: true,
     group: 'collaboration',
   },
@@ -111,7 +128,7 @@ export const NAV_ITEMS: NavItem[] = [
     href: '/agents',
     label: '智能体',
     icon: Bot,
-    sidebar: true,
+    sidebar: false,
     navbar: true,
     mobile: true,
     group: 'collaboration',
@@ -120,7 +137,7 @@ export const NAV_ITEMS: NavItem[] = [
     href: '/integrations',
     label: '集成管理',
     icon: Link2,
-    sidebar: true,
+    sidebar: false,
     group: 'collaboration',
   },
 
@@ -138,7 +155,7 @@ export const NAV_ITEMS: NavItem[] = [
     href: '/admin/users',
     label: '用户管理',
     icon: Shield,
-    sidebar: true,
+    sidebar: false,
     adminOnly: true,
     group: 'management',
   },
@@ -146,7 +163,7 @@ export const NAV_ITEMS: NavItem[] = [
     href: '/admin/modules',
     label: '模块管理',
     icon: Boxes,
-    sidebar: true,
+    sidebar: false,
     adminOnly: true,
     group: 'management',
   },
@@ -154,23 +171,23 @@ export const NAV_ITEMS: NavItem[] = [
     href: '/plugins',
     label: '插件',
     icon: Puzzle,
-    sidebar: true,
+    sidebar: false,
     navbar: true,
-    mobile: true,
+    mobile: false,
     group: 'management',
   },
   {
     href: '/notifications',
     label: '通知管理',
     icon: Bell,
-    sidebar: true,
+    sidebar: false,
     group: 'management',
   },
   {
     href: '/deployments',
     label: '部署管理',
     icon: Rocket,
-    sidebar: true,
+    sidebar: false,
     group: 'management',
   },
 
@@ -180,13 +197,14 @@ export const NAV_ITEMS: NavItem[] = [
     label: '运维面板',
     icon: Wrench,
     sidebar: true,
+    mobile: false,
     group: 'ops',
   },
   {
     href: '/observability',
     label: '可观测性',
     icon: Activity,
-    sidebar: true,
+    sidebar: false,
     group: 'ops',
   },
 
@@ -195,14 +213,14 @@ export const NAV_ITEMS: NavItem[] = [
     href: '/plugin-market',
     label: '插件市场',
     icon: Store,
-    sidebar: true,
+    sidebar: false,
     group: 'secondary',
   },
   {
     href: '/feedback',
     label: '反馈中心',
     icon: MessageSquare,
-    sidebar: true,
+    sidebar: false,
     group: 'secondary',
   },
   {
@@ -210,21 +228,21 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'API 文档',
     icon: BookOpen,
     navbar: true,
-    sidebar: true,
+    sidebar: false,
     group: 'secondary',
   },
   {
     href: '/releases',
     label: '版本记录',
     icon: GanttChart,
-    sidebar: true,
+    sidebar: false,
     group: 'secondary',
   },
   {
     href: '/about',
     label: '关于',
     icon: Info,
-    sidebar: true,
+    sidebar: false,
     group: 'secondary',
   },
 ];

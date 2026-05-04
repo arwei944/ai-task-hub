@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback, useRef } from 'react';
+import Link from 'next/link';
 import { useCommandCenter } from '@/lib/hooks/use-command-center';
 import { useSSE } from '@/lib/hooks/use-sse';
 import { useCCOverview, useCCInvalidate } from '@/lib/hooks/use-command-center-query';
@@ -11,9 +12,14 @@ import { QuickCreateDialog } from '@/components/command-center/quick-create-dial
 import { ProjectFocusView } from '@/components/command-center/project-focus-view';
 import { DetailDrawer } from '@/components/command-center/detail-drawer';
 import { StatsDashboard } from '@/components/command-center/stats-dashboard';
+import { CC_TAB_ITEMS } from '@/config/navigation';
+import { Settings, Link2, Puzzle, Bell, Rocket, MessageSquare } from 'lucide-react';
 
 export default function CommandCenterPage() {
   const { state, focusProject, openDetail, goBack, reset, setLayoutMode, setStatusFilter, setSearchQuery } = useCommandCenter();
+
+  // Command center tab state
+  const [activeTab, setActiveTab] = useState('projects');
 
   // React Query hooks
   const { data: overview, isLoading, error } = useCCOverview();
@@ -242,62 +248,122 @@ export default function CommandCenterPage() {
         />
       </div>
 
+      {/* Tab bar - only in battlefield view */}
+      {state.viewLevel === 'battlefield' && (
+        <div className="flex items-center gap-1 px-6 border-b bg-card/30">
+          {CC_TAB_ITEMS.map((tab) => {
+            const TabIcon = tab.icon;
+            const isActive = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium transition-colors border-b-2 ${
+                  isActive
+                    ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                    : 'border-transparent text-muted-foreground hover:text-foreground hover:border-gray-300 dark:hover:border-gray-600'
+                }`}
+              >
+                <TabIcon className="w-4 h-4" />
+                {tab.label}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
       {/* 主内容区 */}
       <div className="flex-1 overflow-auto p-6">
-        {state.viewLevel === 'battlefield' && (
-          state.layoutMode === 'free' ? (
-            <div className="relative w-full h-full min-h-[500px]">
-              {searchedProjects.map((project: any, index: number) => {
-                const col = index % 4;
-                const row = Math.floor(index / 4);
-                return (
-                  <div
-                    key={project.id}
-                    onClick={() => focusProject(project.id)}
-                    className="absolute w-72 cursor-move"
-                    style={{
-                      left: `${col * 300 + 16}px`,
-                      top: `${row * 220 + 16}px`,
-                    }}
-                  >
-                    <ProjectCard project={project} onClick={focusProject} onUpdated={invalidateAll} />
-                  </div>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {searchedProjects.map((project: any) => (
-                <ProjectCard
-                  key={project.id}
-                  project={project}
-                  onClick={focusProject}
-                  isNewEvent={newEventProjectIds.has(project.id)}
-                  onUpdated={invalidateAll}
-                />
-              ))}
-            </div>
-          )
+        {activeTab === 'projects' && (
+          <>
+            {state.viewLevel === 'battlefield' && (
+              state.layoutMode === 'free' ? (
+                <div className="relative w-full h-full min-h-[500px]">
+                  {searchedProjects.map((project: any, index: number) => {
+                    const col = index % 4;
+                    const row = Math.floor(index / 4);
+                    return (
+                      <div
+                        key={project.id}
+                        onClick={() => focusProject(project.id)}
+                        className="absolute w-72 cursor-move"
+                        style={{
+                          left: `${col * 300 + 16}px`,
+                          top: `${row * 220 + 16}px`,
+                        }}
+                      >
+                        <ProjectCard project={project} onClick={focusProject} onUpdated={invalidateAll} />
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                  {searchedProjects.map((project: any) => (
+                    <ProjectCard
+                      key={project.id}
+                      project={project}
+                      onClick={focusProject}
+                      isNewEvent={newEventProjectIds.has(project.id)}
+                      onUpdated={invalidateAll}
+                    />
+                  ))}
+                </div>
+              )
+            )}
+
+            {state.viewLevel === 'focus' && state.focusedProjectId && (
+              <ProjectFocusView
+                projectId={state.focusedProjectId}
+                onBack={goBack}
+                onOpenTaskDetail={(taskId) => openDetail('task', taskId)}
+              />
+            )}
+
+            {searchedProjects.length === 0 && state.viewLevel === 'battlefield' && (
+              <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
+                <div className="text-4xl mb-2">🎯</div>
+                <div className="text-sm mb-4">暂无项目</div>
+                <button
+                  onClick={() => setShowQuickCreate(true)}
+                  className="px-4 py-2 text-sm rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+                >
+                  创建第一个项目
+                </button>
+              </div>
+            )}
+          </>
         )}
 
-        {state.viewLevel === 'focus' && state.focusedProjectId && (
-          <ProjectFocusView
-            projectId={state.focusedProjectId}
-            onBack={goBack}
-            onOpenTaskDetail={(taskId) => openDetail('task', taskId)}
-          />
-        )}
-
-        {searchedProjects.length === 0 && state.viewLevel === 'battlefield' && (
+        {activeTab === 'tasks' && (
           <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
-            <div className="text-4xl mb-2">🎯</div>
-            <div className="text-sm mb-4">暂无项目</div>
-            <button
-              onClick={() => setShowQuickCreate(true)}
-              className="px-4 py-2 text-sm rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
-            >
-              创建第一个项目
-            </button>
+            <div className="text-4xl mb-2">📋</div>
+            <div className="text-sm">任务全局视图 - 整合中</div>
+          </div>
+        )}
+
+        {activeTab === 'agents' && (
+          <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
+            <div className="text-4xl mb-2">🤖</div>
+            <div className="text-sm">Agent 管理面板 - 整合中</div>
+          </div>
+        )}
+
+        {activeTab === 'settings' && (
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 p-4">
+            {[
+              { href: '/settings', icon: Settings, label: '系统设置' },
+              { href: '/integrations', icon: Link2, label: '集成管理' },
+              { href: '/plugins', icon: Puzzle, label: '插件管理' },
+              { href: '/notifications', icon: Bell, label: '通知管理' },
+              { href: '/deployments', icon: Rocket, label: '部署管理' },
+              { href: '/feedback', icon: MessageSquare, label: '反馈中心' },
+            ].map(item => (
+              <Link key={item.href} href={item.href} className="flex items-center gap-3 p-4 rounded-xl border bg-card hover:bg-accent/50 transition-colors">
+                <item.icon className="w-5 h-5 text-muted-foreground" />
+                <span className="text-sm font-medium">{item.label}</span>
+              </Link>
+            ))}
           </div>
         )}
       </div>
