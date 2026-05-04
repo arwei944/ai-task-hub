@@ -7,6 +7,7 @@ import { useSSE } from '@/lib/hooks/use-sse';
 import { ProjectCard } from '@/components/command-center/project-card';
 import { EventStream } from '@/components/command-center/event-stream';
 import { QuickCreateDialog } from '@/components/command-center/quick-create-dialog';
+import { ProjectFocusView } from '@/components/command-center/project-focus-view';
 
 export default function CommandCenterPage() {
   const { state, focusProject, goBack, reset, setLayoutMode, setStatusFilter, setSearchQuery } = useCommandCenter();
@@ -204,12 +205,11 @@ export default function CommandCenterPage() {
         )}
 
         {state.viewLevel === 'focus' && state.focusedProjectId && (
-          <div>
-            <button onClick={goBack} className="mb-4 text-sm text-muted-foreground hover:text-foreground flex items-center gap-1">
-              ← 返回全景
-            </button>
-            <div className="text-muted-foreground text-sm">项目聚焦视图开发中...</div>
-          </div>
+          <ProjectFocusView
+            projectId={state.focusedProjectId}
+            onBack={goBack}
+            onOpenTaskDetail={(taskId) => openDetail('task', taskId)}
+          />
         )}
 
         {searchedProjects.length === 0 && state.viewLevel === 'battlefield' && (
