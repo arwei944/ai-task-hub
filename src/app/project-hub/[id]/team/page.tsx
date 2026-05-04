@@ -114,7 +114,7 @@ export default function AgentWorkstationPage() {
   const fetchWorkLogs = useCallback(async () => {
     try {
       const data = await trpc.projectHub.workLogs.list.query({ projectId });
-      setWorkLogs((data as any)?.items ?? []);
+      setWorkLogs((data as { items?: unknown[] })?.items ?? []);
     } catch (err) {
       console.error('Failed to fetch work logs:', err);
     }

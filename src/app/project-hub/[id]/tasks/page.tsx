@@ -52,9 +52,9 @@ export default function ProjectTasksPage() {
     try {
       setLoading(true);
       const data = await trpc.projectHub.tasks.list.query({ projectId });
-      setTasks((data as any)?.items || []);
+      setTasks((data as { items?: unknown[] })?.items || []);
       const s = await trpc.projectHub.tasks.stats.query({ projectId });
-      setStats(s as any);
+      setStats(s as Record<string, unknown>);
     } catch (err) {
       console.error('Failed to fetch tasks:', err);
     } finally {
@@ -72,7 +72,7 @@ export default function ProjectTasksPage() {
         projectId,
         title: newTitle.trim(),
         description: newDesc.trim() || undefined,
-        priority: newPriority as any,
+        priority: newPriority as string,
       });
       setNewTitle('');
       setNewDesc('');
@@ -87,7 +87,7 @@ export default function ProjectTasksPage() {
 
   const handleStatusChange = async (taskId: string, newStatus: string) => {
     try {
-      await trpc.projectHub.tasks.updateStatus.mutate({ id: taskId, status: newStatus as any });
+      await trpc.projectHub.tasks.updateStatus.mutate({ id: taskId, status: newStatus as string });
       fetchTasks();
     } catch (err) {
       console.error('Failed to update task:', err);

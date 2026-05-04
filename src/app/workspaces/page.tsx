@@ -64,7 +64,7 @@ export default function WorkspacesPage() {
     if (selectedWs !== id) {
       try {
         const result = await trpc.workspaces.members.query({ workspaceId: id });
-        setMembers(result as unknown as any[]);
+        setMembers(result as unknown[]);
       } catch { setMembers([]); }
     }
   };

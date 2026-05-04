@@ -10,6 +10,8 @@ import { ProjectProvider } from "@/lib/project-context";
 import { SkipNav } from "@/components/ui/a11y";
 import { ServiceWorkerRegistration } from "@/components/service-worker-registration";
 import { MobileBottomNav } from "@/components/mobile-bottom-nav";
+import { Breadcrumb } from "@/components/layout/breadcrumb";
+import { GlobalSearch } from "@/components/layout/global-search";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -56,7 +58,13 @@ export default function RootLayout({
                   <SkipNav />
                   <Sidebar />
                   <div className="flex-1 flex flex-col min-w-0">
-                    <main id="main-content" className="flex-1 pb-16 md:pb-0">{children}</main>
+                    <div className="flex items-center gap-3 px-4 md:px-6 pt-4">
+                      <Breadcrumb />
+                      <div className="ml-auto">
+                        <GlobalSearch />
+                      </div>
+                    </div>
+                    <main id="main-content" className="flex-1 pb-16 md:pb-0 px-4 md:px-6">{children}</main>
                     <MobileBottomNav />
                   </div>
                   <ServiceWorkerRegistration />

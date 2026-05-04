@@ -47,7 +47,7 @@ async function initializeSharedTools() {
   const prisma = getPrisma();
 
   _sharedTools = await registry.initialize({
-    logger: logger as any,
+    logger: logger as Record<string, (...args: unknown[]) => void>,
     eventBus,
     prisma,
     services: new Map(),
