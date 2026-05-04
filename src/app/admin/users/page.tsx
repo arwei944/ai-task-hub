@@ -7,7 +7,6 @@ import {
   Shield,
   UserCheck,
   UserX,
-  Trash2,
   RefreshCw,
   Search,
   Users,
@@ -51,9 +50,11 @@ export default function AdminUsersPage() {
   );
 
   const handleToggleUser = async (userId: string) => {
+    const user = users.find(u => u.id === userId);
+    if (!user) return;
     setActionLoading(userId);
     try {
-      await trpc.auth.toggleUser.mutate({ id: userId });
+      await trpc.auth.toggleUser.mutate({ userId, isActive: !user.isActive });
       await fetchUsers();
     } catch (err) {
       console.error('Failed to toggle user:', err);
@@ -65,7 +66,7 @@ export default function AdminUsersPage() {
   const handleUpdateRole = async (userId: string, newRole: Role) => {
     setActionLoading(userId);
     try {
-      await trpc.auth.updateRole.mutate({ id: userId, role: newRole });
+      await trpc.auth.updateRole.mutate({ userId, role: newRole });
       await fetchUsers();
     } catch (err) {
       console.error('Failed to update role:', err);
