@@ -104,7 +104,8 @@ export class SOLORESTClient {
         5000,
       );
       return !result.error;
-    } catch {
+    } catch (err) {
+      console.debug('[rest-client] Health check failed:', err instanceof Error ? err.message : err);
       return false;
     }
   }

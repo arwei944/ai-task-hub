@@ -182,10 +182,10 @@ export default function OpsOverviewPage() {
       ]);
 
       setQuickStats({
-        runningWorkflows: wfCount.status === 'fulfilled' ? (wfCount.value as any).running : 0,
-        activeTraces: linkageStats.status === 'fulfilled' ? (linkageStats.value as any).activeTraces : 0,
-        sent24h: notifStats.status === 'fulfilled' ? (notifStats.value as any).sent24h : 0,
-        failed24h: notifStats.status === 'fulfilled' ? (notifStats.value as any).failed24h : 0,
+        runningWorkflows: wfCount.status === 'fulfilled' ? (wfCount.value as { running?: number }).running ?? 0 : 0,
+        activeTraces: linkageStats.status === 'fulfilled' ? (linkageStats.value as { activeTraces?: number }).activeTraces ?? 0 : 0,
+        sent24h: notifStats.status === 'fulfilled' ? (notifStats.value as { sent24h?: number }).sent24h ?? 0 : 0,
+        failed24h: notifStats.status === 'fulfilled' ? (notifStats.value as { failed24h?: number }).failed24h ?? 0 : 0,
       });
     } catch {
       // ignore

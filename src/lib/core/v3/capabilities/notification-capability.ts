@@ -26,7 +26,7 @@ export class NotificationCapability extends BaseCapability {
     if (this._container) {
       try {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const ruleEngine = this._container.resolve(ServiceTokens.ruleEngine) as any;
+        const ruleEngine = this._container.resolve<import('@/lib/modules/notifications/rule-engine').NotificationRuleEngine>(ServiceTokens.ruleEngine);
         if (ruleEngine && typeof ruleEngine.start === 'function') {
           ruleEngine.start();
         }

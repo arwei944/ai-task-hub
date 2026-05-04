@@ -30,7 +30,7 @@ export const tasksRouter = createTRPCRouter({
         dueBefore: input.dueBefore ? new Date(input.dueBefore) : undefined,
         dueAfter: input.dueAfter ? new Date(input.dueAfter) : undefined,
       };
-      return service.listTasks(query as any);
+      return service.listTasks(query);
     }),
 
   // Get single task

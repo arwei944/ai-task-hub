@@ -185,7 +185,7 @@ export class AuthService {
     if (!isValid) throw new Error('原密码错误');
 
     const passwordHash = await bcrypt.hash(newPassword, SALT_ROUNDS);
-    await this.userRepo.update(userId, { passwordHash } as any);
+    await this.userRepo.update(userId, { passwordHash } as Parameters<typeof this.userRepo.update>[1]);
 
     this.logger.info(`Password changed for user: ${user.username}`);
   }

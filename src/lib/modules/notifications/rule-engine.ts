@@ -94,7 +94,7 @@ export class NotificationRuleEngine {
         where,
         orderBy: { priority: 'desc' },
       });
-      return rules.map((r: any) => this.mapDbRule(r));
+      return rules.map((r) => this.mapDbRule(r));
     } finally {
       await prisma.$disconnect();
     }
@@ -170,7 +170,7 @@ export class NotificationRuleEngine {
       });
 
       // Keep only in-memory rules (non-DB), then add DB rules
-      this.rules = this.rules.filter(r => !(r as any)._fromDb);
+      this.rules = this.rules.filter(r => !(r as NotificationRule & { _fromDb?: boolean })._fromDb);
       for (const rule of dbRules) {
         this.rules.push(this.dbRuleToNotificationRule(rule));
       }
@@ -318,8 +318,9 @@ export class NotificationRuleEngine {
     }
 
     // Check if rule specifies target channels
-    const targetChannels = (rule as any).channels
-      ? String((rule as any).channels).split(',').map((c: string) => c.trim())
+    const ruleRecord = rule as NotificationRule & { _channels?: string };
+    const targetChannels = ruleRecord._channels
+      ? String(ruleRecord._channels).split(',').map((c: string) => c.trim())
       : null;
 
     for (const channel of this.channels.values()) {
@@ -383,7 +384,7 @@ export class NotificationRuleEngine {
   }
 
   private defaultMessage(event: DomainEvent): string {
-    const payload = event.payload as any;
+    const payload = event.payload as Record<string, unknown>;
     if (payload?.repository && payload?.ref) return `${payload.repository} 推送: ${payload.ref}`;
     if (payload?.repository && payload?.prNumber) return `${payload.repository} PR #${payload.prNumber}: ${payload.title}`;
     if (payload?.repository && payload?.issueNumber) return `${payload.repository} Issue #${payload.issueNumber}: ${payload.title}`;
@@ -412,20 +413,20 @@ export class NotificationRuleEngine {
     return 'info';
   }
 
-  private dbRuleToNotificationRule(dbRule: any): NotificationRule & { _fromDb: boolean } {
+  private dbRuleToNotificationRule(dbRule: { id: string; eventPattern: string; action: string; level?: string | null; titleTemplate?: string | null; messageTemplate?: string | null; channels?: string | null }): NotificationRule & { _fromDb: boolean } {
     return {
       event: dbRule.eventPattern,
-      action: dbRule.action as any,
-      level: dbRule.level as any ?? undefined,
+      action: dbRule.action as NotificationRule['action'],
+      level: (dbRule.level as NotificationRule['level']) ?? undefined,
       titleTemplate: dbRule.titleTemplate ?? undefined,
       messageTemplate: dbRule.messageTemplate ?? undefined,
       _fromDb: true,
       _dbId: dbRule.id,
-      _channels: dbRule.channels,
-    } as any;
+      _channels: dbRule.channels ?? undefined,
+    };
   }
 
-  private mapDbRule(rule: any): NotificationRuleRecord {
+  private mapDbRule(rule: NotificationRuleRecord & { createdAt: Date; updatedAt: Date }): NotificationRuleRecord {
     return {
       id: rule.id,
       name: rule.name,

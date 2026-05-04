@@ -91,7 +91,9 @@ export const createTRPCContext = async (opts: { req?: Request }) => {
     try {
       const authService = services.authService;
       user = await authService.getUserFromRequest(opts.req);
-    } catch {}
+    } catch (err) {
+      console.warn('[auth] Failed to verify token, falling back to admin:', err instanceof Error ? err.message : err);
+    }
   }
 
   if (!user) {
@@ -111,7 +113,7 @@ const t = initTRPC.context<typeof createTRPCContext>().create({
   transformer: superjson,
   errorFormatter({ error, path }) {
     const code = error.code;
-    const appCode = (error.cause as any)?.code ?? AppErrorCode.INTERNAL_ERROR;
+    const appCode = (error.cause as { code?: string } | undefined)?.code ?? AppErrorCode.INTERNAL_ERROR;
     let message = error.message;
     if (code === 'INTERNAL_SERVER_ERROR' && !message.includes('请')) {
       message = errorCodeToMessage(appCode);

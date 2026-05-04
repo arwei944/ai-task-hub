@@ -66,11 +66,11 @@ export class TaskService {
     const trackableFields = ['title', 'description', 'status', 'priority', 'progress', 'type', 'assignee'];
     for (const field of trackableFields) {
       const key = field as keyof UpdateTaskDTO;
-      if (data[key] !== undefined && data[key] !== (existing as any)[key]) {
+      if (data[key] !== undefined && data[key] !== (existing as Record<string, unknown>)[key]) {
         await this.historyRepo.create({
           taskId: id,
           field,
-          oldValue: String((existing as any)[key] ?? ''),
+          oldValue: String((existing as Record<string, unknown>)[key] ?? ''),
           newValue: String(data[key] ?? ''),
           actor,
         });

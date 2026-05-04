@@ -256,7 +256,7 @@ export class McpAutoRegistry {
 
     // Resolve tools
     for (const toolConfig of toolConfigs) {
-      const handler = (handlerMap as any)[toolConfig.name];
+      const handler = (handlerMap as Record<string, (args: Record<string, unknown>) => Promise<unknown>>)[toolConfig.name];
       if (handler !== undefined) {
         this.tools.push({
           name: toolConfig.name,

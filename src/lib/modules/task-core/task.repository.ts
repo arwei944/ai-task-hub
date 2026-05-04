@@ -44,7 +44,7 @@ export class TaskRepository {
       if (query.dueAfter) where.dueDate.gte = query.dueAfter;
     }
     // Exclude deleted tasks by default
-    if (query.status?.includes('deleted' as any)) {
+    if (query.status?.includes('deleted' as string)) {
       // User explicitly wants deleted tasks, keep status filter as-is
     } else if (where.status && where.status.in) {
       // Status filter already set (e.g. { in: ['in_progress'] }), add deleted exclusion

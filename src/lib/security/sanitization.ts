@@ -84,7 +84,8 @@ export function sanitizeUrl(url: string): string | null {
       return null;
     }
     return parsed.toString();
-  } catch {
+  } catch (err) {
+    console.warn('[sanitization] URL parse failed:', err instanceof Error ? err.message : err);
     return null;
   }
 }

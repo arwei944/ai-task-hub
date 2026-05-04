@@ -45,7 +45,7 @@ export async function GET(request: Request) {
     const tableResults = await Promise.all(
       TABLES.map(async (table) => {
         try {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic Prisma model access by table name
           const records = await (prisma as any)[table.charAt(0).toLowerCase() + table.slice(1)].findMany();
           return {
             table,
@@ -122,7 +122,7 @@ export async function POST(request: Request) {
       const modelName = table.charAt(0).toLowerCase() + table.slice(1);
 
       try {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic Prisma model access by table name
         const model = (prisma as any)[modelName];
         if (!model || typeof model.createMany !== 'function') {
           results[table] = 0;

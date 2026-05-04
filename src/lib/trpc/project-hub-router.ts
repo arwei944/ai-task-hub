@@ -364,7 +364,7 @@ export const projectHubRouter = createTRPCRouter({
       }))
       .query(async ({ ctx, input }) => {
         const { projectId, ...query } = input;
-        return ctx.services.taskService.listTasks({ ...query, projectId } as any);
+        return ctx.services.taskService.listTasks({ ...query, projectId });
       }),
 
     create: protectedProcedure

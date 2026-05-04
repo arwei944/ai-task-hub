@@ -28,7 +28,7 @@ export const pluginsRouter = createTRPCRouter({
     }))
     .mutation(async ({ input, ctx }) => {
       const loader = ctx.services.pluginLoader;
-      return loader.install(input as any);
+      return loader.install(input);
     }),
 
   // Enable a plugin (admin only)

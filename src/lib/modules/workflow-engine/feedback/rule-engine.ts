@@ -178,7 +178,8 @@ export class FeedbackRuleEngine {
                   reason: `Rule "${rule.name}" triggered: error message matched pattern "${pattern}"`,
                 };
               }
-            } catch {
+            } catch (err) {
+              console.warn('[rule-engine] Invalid regex pattern:', pattern, err instanceof Error ? err.message : err);
               // Invalid regex pattern, skip
             }
           }
