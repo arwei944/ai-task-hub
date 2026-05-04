@@ -41,31 +41,35 @@ echo ""
 # Test database connection
 echo "Testing database..."
 node -e "
-try {
-  const Database = require('better-sqlite3');
-  const db = new Database('/data/dev.db');
-  const tables = db.prepare(\"SELECT name FROM sqlite_master WHERE type='table'\").all();
-  console.log('✓ DB connected, tables:', tables.map(t => t.name).join(', '));
-  db.close();
-} catch(e) {
-  console.error('✗ DB error:', e.message);
-  process.exit(1);
-}
+  try {
+    const Database = require('better-sqlite3');
+    const db = new Database('/data/dev.db');
+    const tables = db.prepare(\"SELECT name FROM sqlite_master WHERE type='table'\").all();
+    console.log('✓ DB connected, tables:', tables.map(t => t.name).join(', '));
+    db.close();
+  } catch(e) {
+    console.error('✗ DB error:', e.message);
+    process.exit(1);
+  }
 "
 echo ""
 
-# Start Ops Agent (auto-updating bootstrap)
-echo "Starting Ops Agent..."
-python3 /app/ops_agent.py \
-  --server "${OPS_SERVER:-https://arwei944-ops-center.hf.space}" \
-  --project-id ai-task-hub \
-  --project-name "AI Task Hub" \
-  --project-url "https://github.com/arwei944/ai-task-hub" \
-  --project-type hf_docker \
-  --version 3.1.0 \
-  --env production \
-  --heartbeat 120 &
-echo "Ops Agent started (PID: $!)"
+# Start Ops Agent (optional - only if ops_agent.py exists)
+if [ -f /app/ops_agent.py ]; then
+  echo "Starting Ops Agent..."
+  python3 /app/ops_agent.py \
+    --server "${OPS_SERVER:-https://arwei944-ops-center.hf.space}" \
+    --project-id ai-task-hub \
+    --project-name "AI Task Hub" \
+    --project-url "https://github.com/arwei944/ai-task-hub" \
+    --project-type hf_docker \
+    --version 3.1.0 \
+    --env production \
+    --heartbeat 120 &
+  echo "Ops Agent started (PID: $!)"
+else
+  echo "Ops Agent not found, skipping..."
+fi
 echo ""
 
 # Start server
