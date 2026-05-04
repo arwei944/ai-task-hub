@@ -128,7 +128,7 @@ export const feedbackRouter = createTRPCRouter({
             totalCheckpoints: result.analysis.totalCheckpoints,
             approvalRate: result.analysis.approvalRate,
             rejectionRate: result.analysis.rejectionRate,
-            highRiskSteps: ((result.analysis as Record<string, unknown>)?.highRiskSteps as unknown[] | undefined)?.length ?? 0,
+            highRiskSteps: ((result.analysis as unknown as Record<string, unknown>)?.highRiskSteps as unknown[] | undefined)?.length ?? 0,
           },
           recommendationsCount: result.recommendations.length,
           appliedCount: result.appliedCount,
