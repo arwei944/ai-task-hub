@@ -1,17 +1,39 @@
 # AI Task Hub - Roadmap
 
-## Current Version: v3.0.0 "Kernel Reborn"
+## Current Version: v6.2.0
 
 ### Completed
 
-- **v3.0.0** "Kernel Reborn" (2026-05-02)
-  - Real-time collaboration
-  - Whiteboard/flowchart for workflow design
-  - Mobile app (React Native)
-  - Desktop app (Electron)
-  - AI copilot chat interface
-  - Voice commands
-  - Graph-based task dependency visualization
+- **v6.2.0** (2026-05-04)
+  - Phase 2: Type safety hardening
+  - Eliminated ~86 `as any` casts from core modules
+  - Fixed critical empty catch blocks (auth, sanitization, condition eval)
+  - PrismaClient type root cause fix
+  - IntegrationService ServiceRegistry fix
+
+- **v6.1.0** (2026-05-04)
+  - Phase 1: Code governance
+  - Orphan module cleanup
+  - Navigation entry fixes (feedback center, dead links)
+  - fetch → tRPC client migration (3 pages)
+  - CI pipeline hardening
+
+- **v6.0.0** (2026-05-04)
+  - Phase 0: Security hardening
+  - JWT persistence across restarts
+  - Admin procedure role check
+  - CORS whitelist, CSP hardening
+  - Webhook HMAC signature verification
+  - SSE token verification
+  - Secure API key generation
+  - .env.example, LICENSE, compliance fixes
+
+- **v5.6.0** (2026-05-02)
+  - v3 Kernel architecture
+  - AppKernel + 7 Capability modules
+  - DI Container + ServiceRegistry (32 typed services)
+  - Self-healing system (circuit breaker, DLQ)
+  - 8-view ops dashboard
 
 - **v2.7.0** (2026-05-02)
   - 智能闭环
@@ -123,30 +145,30 @@
   - 首次发布
   - 全功能上线
 
-### Planned (v3.1.0+)
+### Planned (v6.3.0+)
 
-#### v3.1.0 - "Global Reach"
+#### v6.3.0 - "Global Reach"
 - [ ] PostgreSQL adapter support
 - [ ] Multi-language i18n (Japanese, Korean)
 - [ ] API rate limiting
 - [ ] OAuth2/OIDC authentication
 - [ ] Role-based access control (RBAC)
 
-#### v3.2.0 - "Intelligence Amplification"
+#### v6.4.0 - "Intelligence Amplification"
 - [ ] A2A (Agent-to-Agent) protocol
 - [ ] Multi-agent orchestration
 - [ ] AI-powered workflow generation from natural language
 - [ ] Smart task routing based on agent capabilities
 - [ ] Context-aware AI suggestions
 
-#### v3.3.0 - "Enterprise Ready"
+#### v6.5.0 - "Enterprise Ready"
 - [ ] SSO/SAML integration
 - [ ] Audit log with compliance reporting
 - [ ] Data retention policies
 - [ ] Backup/restore automation
 - [ ] High availability deployment guide
 
-#### v3.4.0 - "Ecosystem"
+#### v6.6.0 - "Ecosystem"
 - [ ] Plugin SDK with TypeScript types
 - [ ] Plugin marketplace with community contributions
 - [ ] Webhook marketplace (pre-built integrations)
