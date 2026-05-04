@@ -46,7 +46,7 @@ export const commandCenterRouter = createTRPCRouter({
             dueDate: m.dueDate,
             completedAt: m.completedAt,
           })),
-          latestActivity: recentLogs.items?.[0] ?? null,
+          latestActivity,
         };
       }),
     );
@@ -73,10 +73,43 @@ export const commandCenterRouter = createTRPCRouter({
         return null;
       }
 
+      // Get full work log timeline
+      const fullWorkLogs = await workLogService.list({
+        projectId: input.projectId,
+        pageSize: 50,
+      }).catch(() => ({ items: [], total: 0 }));
+
+      // Workload summary
+      const allLogs = fullWorkLogs.items ?? [];
+      const workloadSummary = {
+        totalHours: allLogs.reduce((sum: number, log: any) => sum + (log.hours || 0), 0),
+        totalEntries: allLogs.length,
+        byTask: allLogs.reduce((acc: any, log: any) => {
+          if (log.taskId) {
+            acc[log.taskId] = (acc[log.taskId] || 0) + (log.hours || 0);
+          }
+          return acc;
+        }, {}),
+      };
+
+      // Agent info
+      const agentInfo = detail?.agents?.[0] ? {
+        id: detail.agents[0].id,
+        name: detail.agents[0].name,
+        clientType: detail.agents[0].clientType,
+        role: detail.agents[0].role,
+        capabilities: detail.agents[0].capabilities,
+        isActive: detail.agents[0].isActive,
+        apiKey: detail.agents[0].apiKey,
+      } : null;
+
       return {
         project: detail,
         milestones,
         recentWorkLogs: workLogsResult.items ?? [],
+        fullWorkLogs: fullWorkLogs.items ?? [],
+        workloadSummary,
+        agentInfo,
       };
     }),
 
@@ -87,7 +120,7 @@ export const commandCenterRouter = createTRPCRouter({
       limit: z.number().default(50),
     }))
     .query(async ({ ctx, input }) => {
-      const { workLogService } = ctx.services;
+      const { workLogService, projectHubService } = ctx.services;
 
       if (input.projectId) {
         const result = await workLogService.list({
@@ -100,10 +133,23 @@ export const commandCenterRouter = createTRPCRouter({
         };
       }
 
-      // Without projectId, return empty for now (can be extended later)
+      // Without projectId, get recent logs across all projects
+      const allProjects = await projectHubService.listProjects({ pageSize: 20 });
+      const recentLogsByProject = await Promise.all(
+        allProjects.items.slice(0, 10).map(async (p: any) => {
+          try {
+            const logs = await workLogService.list({ projectId: p.id, pageSize: 3 });
+            return (logs.items ?? []).map((log: any) => ({ ...log, projectName: p.name, projectId: p.id }));
+          } catch { return []; }
+        })
+      );
+      const allRecentLogs = recentLogsByProject.flat().sort((a, b) =>
+        new Date(b.createdAt || b.date).getTime() - new Date(a.createdAt || a.date).getTime()
+      ).slice(0, input.limit);
+
       return {
-        events: [],
-        total: 0,
+        events: allRecentLogs,
+        total: allRecentLogs.length,
       };
     }),
 });
