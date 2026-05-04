@@ -19,6 +19,8 @@ import {
   Network,
   MessageSquare,
   Settings,
+  Shield,
+  Cubes,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -120,6 +122,22 @@ export const NAV_ITEMS: NavItem[] = [
     sidebar: true,
     navbar: true,
     mobile: true,
+    group: 'management',
+  },
+  {
+    href: '/admin/users',
+    label: '用户管理',
+    icon: Shield,
+    sidebar: true,
+    adminOnly: true,
+    group: 'management',
+  },
+  {
+    href: '/admin/modules',
+    label: '模块管理',
+    icon: Cubes,
+    sidebar: true,
+    adminOnly: true,
     group: 'management',
   },
   {
