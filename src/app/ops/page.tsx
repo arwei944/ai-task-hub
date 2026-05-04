@@ -201,15 +201,10 @@ export default function OpsOverviewPage() {
 
   async function fetchOverview() {
     try {
-      const res = await fetch('/api/trpc/selfHealing.healthOverview');
-      if (res.ok) {
-        const json = await res.json();
-        // tRPC returns superjson-wrapped data: { result: { data: { json: actualData } } }
-        const actualData = json?.result?.data?.json ?? json?.result?.data;
-        if (actualData) {
-          setOverview(actualData);
-          setLoading(false);
-        }
+      const data = await trpc.selfHealing.healthOverview.query();
+      if (data) {
+        setOverview(data as HealthOverview);
+        setLoading(false);
       }
     } catch {
       // Silently fail - SSE should be the primary source
@@ -219,19 +214,13 @@ export default function OpsOverviewPage() {
   async function triggerHealthCheck() {
     setTriggering(true);
     try {
-      const res = await fetch('/api/trpc/selfHealing.triggerHealthCheck', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-      });
-      if (res.ok) {
-        const json = await res.json();
-        if (json?.result?.data?.reports) {
-          setOverview(prev => prev ? {
-            ...prev,
-            health: json.result.data.reports,
-            timestamp: Date.now(),
-          } : prev);
-        }
+      const result = await trpc.selfHealing.triggerHealthCheck.mutate();
+      if (result?.reports) {
+        setOverview(prev => prev ? {
+          ...prev,
+          health: result.reports,
+          timestamp: Date.now(),
+        } : prev);
       }
     } catch {
       // ignore

@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { MessageSquare, CheckCircle, XCircle, Clock, Star, AlertTriangle, ChevronRight } from 'lucide-react';
+import { trpc } from '@/lib/trpc/client';
 
 interface FeedbackCheckpoint {
   id: string;
@@ -34,20 +35,18 @@ export default function FeedbackPage() {
   const [activeTab, setActiveTab] = useState<'pending' | 'all'>('pending');
   const [selectedCheckpoint, setSelectedCheckpoint] = useState<FeedbackCheckpoint | null>(null);
 
-  const fetchCheckpoints = useCallback(async () => {
+  const fetchCheckpoints = async () => {
     try {
       setLoading(true);
-      // Phase A: 直接用 Prisma 查询（通过 tRPC）
-      const res = await fetch('/api/trpc/feedback.listCheckpoints?input=%7B%7D');
-      const data = await res.json();
-      setCheckpoints(data?.result?.data?.items ?? []);
+      const data = await trpc.feedback.listCheckpoints.query();
+      setCheckpoints(data?.items ?? []);
     } catch (err) {
       console.error('Failed to fetch checkpoints:', err);
       setCheckpoints([]);
     } finally {
       setLoading(false);
     }
-  }, []);
+  };
 
   useEffect(() => { fetchCheckpoints(); }, [fetchCheckpoints]);
 
@@ -58,7 +57,7 @@ export default function FeedbackPage() {
 
   const handleApprove = async (id: string) => {
     try {
-      await fetch('/api/trpc/feedback.handleApproval?input=' + encodeURIComponent(JSON.stringify({ checkpointId: id, action: 'approved' })), { method: 'POST' });
+      await trpc.feedback.handleApproval.mutate({ checkpointId: id, action: 'approved' });
       fetchCheckpoints();
       setSelectedCheckpoint(null);
     } catch (err) {
@@ -68,7 +67,7 @@ export default function FeedbackPage() {
 
   const handleReject = async (id: string) => {
     try {
-      await fetch('/api/trpc/feedback.handleApproval?input=' + encodeURIComponent(JSON.stringify({ checkpointId: id, action: 'rejected' })), { method: 'POST' });
+      await trpc.feedback.handleApproval.mutate({ checkpointId: id, action: 'rejected' });
       fetchCheckpoints();
       setSelectedCheckpoint(null);
     } catch (err) {

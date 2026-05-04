@@ -25,6 +25,7 @@ import {
   FileText,
   GanttChart,
   Network,
+  MessageSquare,
 } from 'lucide-react';
 import { ThemeToggle } from './theme-toggle';
 import { LanguageSwitcher } from './language-switcher';
@@ -49,6 +50,7 @@ const systemNavItems: NavItem[] = [
 
 const secondaryNavItems: NavItem[] = [
   { href: '/plugin-market', label: '插件市场', icon: Store },
+  { href: '/feedback', label: '反馈中心', icon: MessageSquare },
   { href: '/api-docs', label: 'API 文档', icon: BookOpen },
   { href: '/releases', label: '版本记录', icon: BookOpen },
   { href: '/about', label: '关于', icon: Info },

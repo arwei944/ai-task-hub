@@ -10,18 +10,10 @@ const navItems = [
   { href: '/dashboard', label: '仪表盘', icon: '📊' },
   { href: '/tasks', label: '任务', icon: '✅' },
   { href: '/agents', label: '智能体', icon: '🤖' },
-  { href: '/workspaces', label: '工作区', icon: '🏢' },
   { href: '/integrations', label: '集成', icon: '🔗' },
   { href: '/plugins', label: '插件', icon: '🔌' },
   { href: '/api-docs', label: 'API', icon: '📖' },
   { href: '/settings', label: '设置', icon: '⚙️' },
-];
-
-// More pages (accessible via sidebar or direct URL)
-export const morePages = [
-  { href: '/plugin-market', label: '插件市场', icon: '🏪' },
-  { href: '/dashboard-settings', label: '仪表盘设置', icon: '🎛️' },
-  { href: '/agent-workflows', label: 'Agent 工作流', icon: '🤖' },
 ];
 
 export default function Navbar() {
