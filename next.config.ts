@@ -1,61 +1,30 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Enable standalone output for Docker deployment
   output: 'standalone',
-
-  // Prisma and native modules must be external in standalone
   serverExternalPackages: [
     '@prisma/adapter-better-sqlite3',
+    '@prisma/client',
     'better-sqlite3',
+    'bcryptjs',
+    'nodemailer',
+    'web-push',
   ],
-
-  // Turbopack config (Next.js 16 default bundler)
-  turbopack: {},
-
-  // Image optimization
+  turbopack: {
+    resolveAlias: {
+      '@modelcontextprotocol/sdk': '@modelcontextprotocol/sdk',
+    },
+  },
   images: {
-    remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: '**',
-      },
-    ],
+    remotePatterns: [{ protocol: 'https', hostname: '**' }],
   },
-
-  // Experimental optimizations
   experimental: {
-    // Optimize package imports for smaller bundles
-    optimizePackageImports: [
-      'lucide-react',
-      'date-fns',
-      'clsx',
-      'tailwind-merge',
-      'zod',
-    ],
+    optimizePackageImports: ['lucide-react', 'date-fns', 'clsx', 'tailwind-merge', 'zod'],
   },
-
-  // Headers for caching static assets
   async headers() {
     return [
-      {
-        source: '/_next/static/:path*',
-        headers: [
-          {
-            key: 'Cache-Control',
-            value: 'public, max-age=31536000, immutable',
-          },
-        ],
-      },
-      {
-        source: '/favicon.ico',
-        headers: [
-          {
-            key: 'Cache-Control',
-            value: 'public, max-age=86400',
-          },
-        ],
-      },
+      { source: '/_next/static/:path*', headers: [{ key: 'Cache-Control', value: 'public, max-age=31536000, immutable' }] },
+      { source: '/favicon.ico', headers: [{ key: 'Cache-Control', value: 'public, max-age=86400' }] },
     ];
   },
 };
