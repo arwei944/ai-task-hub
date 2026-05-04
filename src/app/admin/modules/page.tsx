@@ -35,7 +35,7 @@ export default function AdminModulesPage() {
     try {
       setLoading(true);
       const data = await trpc.updater.listModules.query();
-      const items = (data as Record<string, unknown>)?.modules ?? data;
+      const items = (data as unknown as Record<string, unknown>)?.modules ?? data;
       setModules((Array.isArray(items) ? items : []) as ModuleRecord[]);
     } catch (err) {
       console.error('Failed to fetch modules:', err);
