@@ -128,8 +128,8 @@ export default function OpsOverviewPage() {
   const handleEvent = useCallback((event: HealthSSEEvent) => {
     if (event.type === 'health.initial' && event.data.health) {
       setOverview({
-        health: event.data.health as Record<string, HealthReport>,
-        circuits: (event.data.circuits as Record<string, CircuitStatus>) ?? {},
+        health: event.data.health as unknown as Record<string, HealthReport>,
+        circuits: (event.data.circuits as unknown as Record<string, CircuitStatus>) ?? {},
         dlq: (event.data.dlq as unknown as DLQStats) ?? { total: 0, pending: 0, exhausted: 0, oldestEntryAge: 0 },
         timestamp: event.timestamp,
       });
@@ -144,7 +144,7 @@ export default function OpsOverviewPage() {
           ...prev,
           health: {
             ...prev.health,
-            [capId]: event.data.report as HealthReport,
+            [capId]: event.data.report as unknown as HealthReport,
           },
           timestamp: event.timestamp,
         };
@@ -203,7 +203,7 @@ export default function OpsOverviewPage() {
     try {
       const data = await trpc.selfHealing.healthOverview.query();
       if (data) {
-        setOverview(data as HealthOverview);
+        setOverview(data as unknown as HealthOverview);
         setLoading(false);
       }
     } catch {
@@ -454,15 +454,15 @@ export default function OpsOverviewPage() {
                     </div>
                     <div className="p-3 rounded-lg bg-gray-50 dark:bg-gray-800/50 text-center">
                       <p className="text-2xl font-bold text-amber-600 dark:text-amber-400">{overview.dlq.pending ?? 0}</p>
-                      <p className="text-xs text-gray-500">待重试</p>
+                      <p className="text-xs text-gray-500">待处理</p>
                     </div>
                     <div className="p-3 rounded-lg bg-gray-50 dark:bg-gray-800/50 text-center">
                       <p className="text-2xl font-bold text-red-600 dark:text-red-400">{overview.dlq.exhausted ?? 0}</p>
                       <p className="text-xs text-gray-500">已耗尽</p>
                     </div>
                     <div className="p-3 rounded-lg bg-gray-50 dark:bg-gray-800/50 text-center">
-                      <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{formatAge(overview.dlq.oldestEntryAge)}</p>
-                      <p className="text-xs text-gray-500">最早条目</p>
+                      <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{formatAge(overview.dlq.oldestEntryAge ?? 0)}</p>
+                      <p className="text-xs text-gray-500">最老条目</p>
                     </div>
                   </div>
                 )}
@@ -474,29 +474,20 @@ export default function OpsOverviewPage() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Radio className="w-4 h-4 text-orange-500" />
+                <Radio className="w-4 h-4 text-blue-500" />
                 最近事件
               </CardTitle>
             </CardHeader>
             <CardContent>
               {recentEvents.length === 0 ? (
-                <p className="text-sm text-gray-400 py-4 text-center">暂无事件，等待 SSE 推送...</p>
+                <p className="text-sm text-gray-400 py-4 text-center">暂无最近事件</p>
               ) : (
-                <div className="space-y-1.5 max-h-[300px] overflow-y-auto">
-                  {recentEvents.map((event, i) => (
-                    <div key={`${event.timestamp}-${i}`} className="flex items-center gap-3 py-1.5 px-2 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800/50">
-                      <Badge variant="outline" className="text-[10px] shrink-0">
-                        {event.type}
-                      </Badge>
-                      <span className="text-sm text-gray-700 dark:text-gray-300 font-mono">
-                        {event.data.capabilityId}
-                      </span>
-                      {event.data.circuitState && (
-                        <CircuitStateBadge state={event.data.circuitState} />
-                      )}
-                      <span className="ml-auto text-xs text-gray-400 shrink-0">
-                        {formatTime(event.timestamp)}
-                      </span>
+                <div className="space-y-1.5 max-h-60 overflow-y-auto">
+                  {recentEvents.map((evt, idx) => (
+                    <div key={idx} className="flex items-center gap-2 py-1 px-2 rounded-md bg-gray-50 dark:bg-gray-800/50 text-xs">
+                      <span className="text-gray-400 shrink-0">{formatTime(evt.timestamp)}</span>
+                      <Badge variant="outline" className="text-[10px] px-1 py-0 shrink-0">{evt.type}</Badge>
+                      <span className="text-gray-600 dark:text-gray-300 truncate">{JSON.stringify(evt.data).slice(0, 80)}</span>
                     </div>
                   ))}
                 </div>
