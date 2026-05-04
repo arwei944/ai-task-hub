@@ -52,9 +52,9 @@ export default function ProjectTasksPage() {
     try {
       setLoading(true);
       const data = await trpc.projectHub.tasks.list.query({ projectId });
-      setTasks((data as { items?: unknown[] })?.items || []);
+      setTasks(((data as unknown as { items?: TaskItem[] })?.items ?? []) as TaskItem[]);
       const s = await trpc.projectHub.tasks.stats.query({ projectId });
-      setStats(s as Record<string, unknown>);
+      setStats(s as unknown as Record<string, number>);
     } catch (err) {
       console.error('Failed to fetch tasks:', err);
     } finally {
