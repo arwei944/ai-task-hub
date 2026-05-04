@@ -143,7 +143,7 @@ export class WorkLogService {
     const [items, total] = await Promise.all([
       this.prisma.agentWorkLog.findMany({
         where,
-        include: { projectAgent: { include: { agent: true } }, task: true },
+        include: { projectAgent: { include: { agent: true } } },
         orderBy: { date: 'desc' },
         skip: (page - 1) * pageSize,
         take: pageSize,
