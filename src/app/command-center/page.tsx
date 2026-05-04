@@ -146,7 +146,13 @@ export default function CommandCenterPage() {
     );
   }
 
-  const projects = overview?.projects ?? [];
+  const projects = Array.isArray(overview?.projects)
+    ? overview.projects.map((p: any) => ({
+        ...p,
+        techStack: p.techStack ?? '',
+        taskStats: p.taskStats ?? { total: 0, done: 0, inProgress: 0, todo: 0 },
+      }))
+    : [];
   const stats = overview?.stats ?? { total: 0, active: 0, completed: 0, paused: 0, healthScore: 0 };
 
   // 从 projects 中计算统计（API 返回 enrichedProjects，stats 可能需要从 projects 推导）

@@ -19,12 +19,27 @@ export function useCCOverview() {
   return useQuery({
     queryKey: ccKeys.overview,
     queryFn: async () => {
-      const data = await trpc.commandCenter.overview.query();
-      return data as any;
+      try {
+        const data = await trpc.commandCenter.overview.query();
+        // Defensive: ensure projects is always an array
+        const result = data as any;
+        if (result && Array.isArray(result.projects)) {
+          return result;
+        }
+        // Fallback: try to unwrap nested structure
+        if (result?.result?.data?.json) {
+          return result.result.data.json;
+        }
+        return { projects: [], total: 0 };
+      } catch (err) {
+        console.error('[useCCOverview] Query failed:', err);
+        return { projects: [], total: 0 };
+      }
     },
-    refetchInterval: 30_000,       // Auto-refresh every 30s
-    refetchOnWindowFocus: true,    // Refresh when tab gains focus
-    staleTime: 15_000,             // Consider data stale after 15s
+    refetchInterval: 30_000,
+    refetchOnWindowFocus: true,
+    staleTime: 15_000,
+    retry: 1,
   });
 }
 
@@ -36,19 +51,27 @@ export function useCCProjectFocus(projectId: string | null) {
     queryKey: ccKeys.projectFocus(projectId ?? ''),
     queryFn: async () => {
       if (!projectId) return null;
-      const [focusData, tasksData] = await Promise.all([
-        trpc.commandCenter.projectFocus.query({ projectId }),
-        trpc.projectHub.tasks.list.query({ projectId }),
-      ]);
-      return {
-        ...(focusData as any),
-        tasks: ((tasksData as any)?.items ?? []) as any[],
-      };
+      try {
+        const [focusData, tasksData] = await Promise.all([
+          trpc.commandCenter.projectFocus.query({ projectId }),
+          trpc.projectHub.tasks.list.query({ projectId }),
+        ]);
+        const focus = focusData as any;
+        const tasks = tasksData as any;
+        return {
+          ...(focus && focus.project ? focus : { project: null }),
+          tasks: Array.isArray(tasks?.items) ? tasks.items : [],
+        };
+      } catch (err) {
+        console.error('[useCCProjectFocus] Query failed:', err);
+        return { project: null, tasks: [] };
+      }
     },
     enabled: !!projectId,
     refetchInterval: 15_000,
     refetchOnWindowFocus: true,
     staleTime: 10_000,
+    retry: 1,
   });
 }
 
