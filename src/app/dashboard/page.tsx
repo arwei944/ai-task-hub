@@ -73,26 +73,24 @@ function DashboardContent() {
       const fbStats = results[6].status === 'fulfilled' ? results[6].value : null;
 
       setStatusCounts(counts as unknown as StatusCount);
-      setRecentTasks((tasksRes as { items?: unknown[] }).items ?? []);
-      setNotifications((notifs as { notifications?: unknown[] }).notifications ?? []);
+      setRecentTasks(((tasksRes as unknown as { items?: TaskItem[] }).items ?? []) as TaskItem[]);
+      setNotifications(((notifs as unknown as { notifications?: NotificationItem[] }).notifications ?? []) as NotificationItem[]);
       setUnreadCount(unread);
       setDailyTrends(trends as unknown as DailyTrend[]);
-      setWorkflowStats(wfStats as Record<string, unknown>);
+      setWorkflowStats(wfStats as unknown as { totalExecutions: number; successRate: number; avgDurationMs: number; totalSOLOCalls: number } | null);
       setPendingFeedback((fbStats as { pending?: number })?.pending ?? 0);
 
       const now = new Date();
-      const overdue = ((tasksRes as { items?: Array<{ dueDate?: string; status?: string }> }).items ?? []).filter(
-        (t: TaskItem) => t.dueDate && new Date(t.dueDate) < now && t.status !== 'done' && t.status !== 'closed',
+      const overdue = (((tasksRes as unknown as { items?: Array<{ dueDate?: string; status?: string }> }).items ?? []) as Array<{ dueDate?: string; status?: string }>).filter(
+        (t) => t.dueDate && new Date(t.dueDate) < now && t.status !== 'done' && t.status !== 'closed',
       );
-      setOverdueTasks(overdue);
+      setOverdueTasks(overdue as TaskItem[]);
     } catch (err: any) {
       console.error('Dashboard fetch error:', err);
     }
   }, []);
 
-  useEffect(() => {
-    fetchData().finally(() => setLoading(false));
-  }, [fetchData]);
+  useEffect(() => { fetchData().finally(() => setLoading(false)); }, [fetchData]);
 
   // SSE real-time refresh
   useSSE({
@@ -114,9 +112,7 @@ function DashboardContent() {
     closed: 'bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300',
   };
 
-  const statusLabels: Record<string, string> = {
-    todo: '待办', in_progress: '进行中', done: '已完成', closed: '已关闭',
-  };
+  const statusLabels: Record<string, string> = { todo: '待办', in_progress: '进行中', done: '已完成', closed: '已关闭', };
 
   const levelColors: Record<string, string> = {
     info: 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300',
@@ -193,15 +189,15 @@ function DashboardContent() {
                   const pct = totalTasks > 0 ? Math.round((count / totalTasks) * 100) : 0;
                   return (
                     <div key={status} className="flex items-center gap-3">
-                      <span className={`text-xs px-2 py-1 rounded-full ${statusColors[status]}`}>
-                        {statusLabels[status]}
+                      <span className={`text-xs px-2 py-1 rounded-full ${statusColors[status]}`}>                        {statusLabels[status]}
                       </span>
                       <div className="flex-1 bg-gray-100 dark:bg-gray-800 rounded-full h-3 overflow-hidden">
                         <div
                           className={`h-full rounded-full transition-all duration-500 ${
                             status === 'todo' ? 'bg-gray-400 dark:bg-gray-500' :
                             status === 'in_progress' ? 'bg-blue-500 dark:bg-blue-600' :
-                            status === 'done' ? 'bg-green-500 dark:bg-green-600' : 'bg-purple-500 dark:bg-purple-600'
+                            status === 'done' ? 'bg-green-500 dark:bg-green-600' :
+                            'bg-purple-500 dark:bg-purple-600'
                           }`}
                           style={{ width: `${pct}%` }}
                         />
@@ -229,8 +225,7 @@ function DashboardContent() {
                           {task.dueDate && ` · 截止: ${new Date(task.dueDate).toLocaleDateString()}`}
                         </div>
                       </div>
-                      <span className={`text-xs px-2 py-1 rounded-full ${statusColors[task.status] || 'bg-gray-100'}`}>
-                        {statusLabels[task.status] || task.status}
+                      <span className={`text-xs px-2 py-1 rounded-full ${statusColors[task.status] || 'bg-gray-100'}`}>                        {statusLabels[task.status] || task.status}
                       </span>
                     </div>
                   ))
@@ -265,8 +260,7 @@ function DashboardContent() {
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-gray-500 dark:text-gray-400">待审批检查点</span>
-                  <span className={`text-sm font-medium ${pendingFeedback > 0 ? 'text-orange-600 dark:text-orange-400' : 'text-gray-900 dark:text-gray-100'}`}>
-                    {pendingFeedback}
+                  <span className={`text-sm font-medium ${pendingFeedback > 0 ? 'text-orange-600 dark:text-orange-400' : 'text-gray-900 dark:text-gray-100'}`}>                    {pendingFeedback}
                   </span>
                 </div>
               </div>
@@ -307,8 +301,7 @@ function DashboardContent() {
                     <div key={notif.id} className="py-2">
                       <div className="flex items-center justify-between">
                         <span className="text-sm font-medium text-gray-900 dark:text-gray-100">{notif.title}</span>
-                        <span className={`text-xs px-1.5 py-0.5 rounded ${levelColors[notif.level] || 'bg-gray-100'}`}>
-                          {notif.level}
+                        <span className={`text-xs px-1.5 py-0.5 rounded ${levelColors[notif.level] || 'bg-gray-100'}`}>                          {notif.level}
                         </span>
                       </div>
                       <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{notif.message}</div>
