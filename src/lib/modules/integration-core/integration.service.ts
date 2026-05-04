@@ -105,7 +105,7 @@ export class IntegrationService {
     const adapter = this.adapters.get(integration.type);
     if (!adapter) throw new Error(`No adapter for type: ${integration.type}`);
 
-    return adapter.testConnection(integration.config as Record<string, string>);
+    return adapter.testConnection(integration.config as unknown as Record<string, string>);
   }
 
   /**
@@ -138,10 +138,7 @@ export class IntegrationService {
 
       return result;
     } catch (error: any) {
-      await this.integrationRepo.update(id, {
-        syncStatus: 'error',
-        lastError: error.message,
-      });
+      await this.integrationRepo.update(id, { syncStatus: 'error', lastError: error.message });
       return { success: false, synced: 0, created: 0, updated: 0, errors: [error.message] };
     }
   }
