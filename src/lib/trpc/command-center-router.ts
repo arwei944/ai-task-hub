@@ -22,10 +22,17 @@ export const commandCenterRouter = createTRPCRouter({
         const agents = detail?.agents ?? [];
 
         // Get the latest activity for this project
-        const recentLogs = await workLogService.list({
-          projectId: project.id,
-          pageSize: 1,
-        });
+        let latestActivity = null;
+        try {
+          const recentLogs = await workLogService.list({
+            projectId: project.id,
+            pageSize: 1,
+          });
+          latestActivity = recentLogs.items?.[0] ?? null;
+        } catch (logErr: any) {
+          // workLogService.list may fail if Prisma relations are out of sync
+          ctx.services.logger?.warn(`[CommandCenter] Failed to fetch work logs for ${project.id}: ${logErr.message}`);
+        }
 
         return {
           ...project,
@@ -56,10 +63,10 @@ export const commandCenterRouter = createTRPCRouter({
     .query(async ({ ctx, input }) => {
       const { projectHubService, milestoneService, workLogService } = ctx.services;
 
-      const [detail, milestones, workLogs] = await Promise.all([
+      const [detail, milestones, workLogsResult] = await Promise.all([
         projectHubService.getProjectDetail(input.projectId),
         milestoneService.list({ projectId: input.projectId }),
-        workLogService.list({ projectId: input.projectId, pageSize: 20 }),
+        workLogService.list({ projectId: input.projectId, pageSize: 20 }).catch(() => ({ items: [], total: 0 })),
       ]);
 
       if (!detail) {
@@ -69,7 +76,7 @@ export const commandCenterRouter = createTRPCRouter({
       return {
         project: detail,
         milestones,
-        recentWorkLogs: workLogs.items ?? [],
+        recentWorkLogs: workLogsResult.items ?? [],
       };
     }),
 
