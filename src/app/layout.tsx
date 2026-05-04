@@ -6,6 +6,8 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { ToastProvider } from "@/components/ui/toast";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { I18nProvider } from "@/lib/i18n";
+import { I18nLangSync } from "@/components/i18n-lang-sync";
+import { PWAInstallPrompt } from "@/components/pwa-install-prompt";
 import { ProjectProvider } from "@/lib/project-context";
 import { SkipNav } from "@/components/ui/a11y";
 import { ServiceWorkerRegistration } from "@/components/service-worker-registration";
@@ -53,6 +55,7 @@ export default function RootLayout({
         <ProjectProvider>
           <ThemeProvider>
             <I18nProvider>
+              <I18nLangSync />
               <ToastProvider>
                 <ErrorBoundary>
                   <SkipNav />
@@ -68,6 +71,7 @@ export default function RootLayout({
                     <MobileBottomNav />
                   </div>
                   <ServiceWorkerRegistration />
+                  <PWAInstallPrompt />
                 </ErrorBoundary>
               </ToastProvider>
             </I18nProvider>

@@ -2,13 +2,16 @@
 // Service Worker - Offline Cache
 // ============================================================
 
-const CACHE_NAME = 'ai-task-hub-v3';
+const CACHE_NAME = 'ai-task-hub-v4';
 const STATIC_ASSETS = [
   '/',
   '/dashboard',
   '/tasks',
   '/login',
+  '/offline',
   '/manifest.json',
+  '/icons/icon-192.png',
+  '/icons/icon-512.png',
 ];
 
 // Install: cache static assets
@@ -73,7 +76,13 @@ self.addEventListener('fetch', (event) => {
         const clone = response.clone();
         caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
         return response;
-      }).catch(() => cached);
+      }).catch(() => {
+        // Fallback to offline page for navigation requests
+        if (request.mode === 'navigate') {
+          return caches.match('/offline');
+        }
+        return cached;
+      });
 
       return cached || fetchPromise;
     })

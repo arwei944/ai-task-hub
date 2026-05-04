@@ -165,4 +165,50 @@ export default {
   // Integrations
   'integrations.title': 'Integrations',
   'integrations.subtitle': 'Connect external services',
+
+  // Admin
+  'admin.users.title': 'User Management',
+  'admin.users.subtitle': 'Manage users, roles and permissions',
+  'admin.users.search': 'Search username or display name...',
+  'admin.users.total': '{count} users total',
+  'admin.users.role.admin': 'Admin',
+  'admin.users.role.user': 'User',
+  'admin.users.role.agent': 'Agent',
+  'admin.users.status.active': 'Active',
+  'admin.users.status.disabled': 'Disabled',
+  'admin.users.action.enable': 'Enable user',
+  'admin.users.action.disable': 'Disable user',
+  'admin.users.noUsers': 'No users',
+  'admin.users.noMatch': 'No matching users',
+
+  'admin.modules.title': 'Module Management',
+  'admin.modules.subtitle': 'Enable, disable and hot-reload system modules',
+  'admin.modules.search': 'Search modules...',
+  'admin.modules.stats': '{enabled}/{total} enabled · {locked} locked',
+  'admin.modules.action.enable': 'Enable',
+  'admin.modules.action.disable': 'Disable',
+  'admin.modules.action.reload': 'Reload',
+  'admin.modules.locked': 'Core module (locked)',
+  'admin.modules.noModules': 'No modules',
+  'admin.modules.noMatch': 'No matching modules',
+
+  // Notification Settings
+  'settings.notifications.title': 'Notification Settings',
+  'settings.notifications.subtitle': 'Configure notification channels and preferences',
+  'settings.notifications.push': 'Browser Push',
+  'settings.notifications.pushEnabled': 'Enabled',
+  'settings.notifications.pushDisabled': 'Disabled',
+  'settings.notifications.pushUnsupported': 'Not supported in this browser',
+  'settings.notifications.testPush': 'Send Test',
+  'settings.notifications.channels': 'Notification Channels',
+  'settings.notifications.rules': 'Notification Rules',
+  'settings.notifications.noRules': 'No rules yet. Create one in the notification management page.',
+
+  // PWA
+  'pwa.install.title': 'Install AI Task Hub',
+  'pwa.install.description': 'Add to home screen for a better experience',
+  'pwa.install.button': 'Install',
+  'pwa.offline.title': 'Network Connection Lost',
+  'pwa.offline.description': 'AI Task Hub requires a network connection. Please check your settings and try again.',
+  'pwa.offline.retry': 'Reconnect',
 } as const;
