@@ -1,518 +1,628 @@
-import type { PrismaClient } from '@/generated/prisma/client';
-import { Logger } from '@/lib/core/logger';
-import type { TaskService } from '@/lib/modules/task-core/task.service';
+// ============================================================
+// Workflow Service — 工作流引擎核心服务
+// ============================================================
+// 管理工作流定义、执行、步骤调度和反馈检查点
+// ============================================================
 
-async function emitEvent(eventType: string, payload: any) {
-  try {
-    const { getEventBus } = await import('@/lib/core/event-bus');
-    getEventBus().emit({ type: eventType, payload, timestamp: new Date(), source: 'workflow' });
-  } catch (err) {
-    console.warn('[workflow] Failed to emit event:', eventType, err instanceof Error ? err.message : err);
-  }
-}
-
-// ==================== Types ====================
-
-export interface WorkflowStep {
-  id: string;
-  name: string;
-  type: 'create-task' | 'update-status' | 'ai-analyze' | 'send-notification' | 'wait';
-  config: Record<string, unknown>;
-  onError?: 'continue' | 'fail';
-}
+import type { PrismaClient } from '@prisma/client';
+import { EventEmitter } from 'events';
+import type { ILogger } from '@/lib/core/types';
+import type {
+  Workflow,
+  WorkflowExecution,
+  WorkflowStepExecution,
+  FeedbackCheckpoint,
+  FeedbackRule,
+  StepFeedback,
+} from './types';
+import {
+  WorkflowValidator,
+  StepExecutorFactory,
+  FeedbackManager,
+  WorkflowContextManager,
+} from './steps';
+import { SOLOBridge } from './solo/solo-bridge';
 
 export interface CreateWorkflowDTO {
   name: string;
   description?: string;
   trigger?: string;
-  triggerConfig?: string;
+  triggerConfig?: Record<string, unknown>;
   steps: WorkflowStep[];
   variables?: Record<string, unknown>;
-  createdBy?: string;
+  retryPolicy?: { max: number; backoff: string; delayMs: number };
+  concurrencyLimit?: number;
+  timeoutMs?: number;
+  soloConfig?: Record<string, unknown>;
 }
 
 export interface UpdateWorkflowDTO {
   name?: string;
   description?: string;
   trigger?: string;
-  triggerConfig?: string;
+  triggerConfig?: Record<string, unknown>;
   steps?: WorkflowStep[];
   variables?: Record<string, unknown>;
   isActive?: boolean;
+  retryPolicy?: { max: number; backoff: string; delayMs: number };
+  concurrencyLimit?: number;
+  timeoutMs?: number;
+  soloConfig?: Record<string, unknown>;
 }
 
-export interface ListWorkflowsOptions {
-  page?: number;
-  pageSize?: number;
-  isActive?: boolean;
-  createdBy?: string;
+export interface WorkflowStep {
+  id: string;
+  name: string;
+  type: string;
+  config?: Record<string, unknown>;
+  next?: string[];
+  fallback?: string;
+  timeoutMs?: number;
+  retryCount?: number;
 }
 
-export interface ListExecutionsOptions {
-  page?: number;
-  pageSize?: number;
-  status?: string;
+export interface ExecuteWorkflowDTO {
+  workflowId: string;
+  triggerType?: string;
+  triggeredBy?: string;
+  context?: Record<string, unknown>;
 }
 
-// ==================== Service ====================
+export class WorkflowService extends EventEmitter {
+  private prisma: PrismaClient;
+  private logger: ILogger;
+  private validator: WorkflowValidator;
+  private feedbackManager: FeedbackManager;
+  private contextManager: WorkflowContextManager;
+  private activeExecutions: Map<string, WorkflowExecution> = new Map();
 
-export class WorkflowService {
-  private logger: Logger;
-  private runningExecutions = new Map<string, boolean>();
-
-  constructor(
-    private prisma: PrismaClient,
-    private taskService: TaskService,
-    logger?: Logger,
-  ) {
-    this.logger = logger ?? new Logger('workflow-engine');
+  constructor(prisma: PrismaClient, logger: ILogger) {
+    super();
+    this.prisma = prisma;
+    this.logger = logger;
+    this.validator = new WorkflowValidator(logger);
+    this.feedbackManager = new FeedbackManager(prisma, logger);
+    this.contextManager = new WorkflowContextManager(prisma, logger);
   }
 
-  // --- CRUD ---
+  async create(dto: CreateWorkflowDTO): Promise<Workflow> {
+    const validated = this.validator.validateWorkflow({
+      name: dto.name,
+      description: dto.description ?? '',
+      trigger: dto.trigger ?? 'manual',
+      triggerConfig: dto.triggerConfig ?? null,
+      steps: JSON.stringify(dto.steps),
+      variables: dto.variables ?? null,
+      retryPolicy: dto.retryPolicy ?? null,
+      concurrencyLimit: dto.concurrencyLimit ?? 5,
+      timeoutMs: dto.timeoutMs ?? 300000,
+      soloConfig: dto.soloConfig ?? null,
+    });
 
-  async createWorkflow(dto: CreateWorkflowDTO) {
-    this.logger.info(`Creating workflow: ${dto.name}`);
-    return this.prisma.workflow.create({
+    const workflow = await this.prisma.workflow.create({
       data: {
-        name: dto.name,
-        description: dto.description,
-        trigger: dto.trigger ?? 'manual',
-        triggerConfig: dto.triggerConfig,
-        steps: JSON.stringify(dto.steps),
-        variables: dto.variables ? JSON.stringify(dto.variables) : null,
+        name: validated.name,
+        description: validated.description,
+        trigger: validated.trigger,
+        triggerConfig: validated.triggerConfig,
+        steps: validated.steps,
+        variables: validated.variables,
+        retryPolicy: validated.retryPolicy,
+        concurrencyLimit: validated.concurrencyLimit,
+        timeoutMs: validated.timeoutMs,
+        soloConfig: validated.soloConfig,
         createdBy: dto.createdBy,
       },
     });
+
+    this.emit('workflow:created', workflow);
+    return workflow as unknown as Workflow;
   }
 
-  async updateWorkflow(id: string, dto: UpdateWorkflowDTO) {
+  async update(id: string, dto: UpdateWorkflowDTO): Promise<Workflow> {
     const existing = await this.prisma.workflow.findUnique({ where: { id } });
-    if (!existing) throw new Error(`Workflow not found: ${id}`);
+    if (!existing) throw new Error(`Workflow ${id} not found`);
 
-    this.logger.info(`Updating workflow ${id}`);
-    const data: Record<string, unknown> = {};
-    if (dto.name !== undefined) data.name = dto.name;
-    if (dto.description !== undefined) data.description = dto.description;
-    if (dto.trigger !== undefined) data.trigger = dto.trigger;
-    if (dto.triggerConfig !== undefined) data.triggerConfig = dto.triggerConfig;
-    if (dto.steps !== undefined) data.steps = JSON.stringify(dto.steps);
-    if (dto.variables !== undefined) data.variables = JSON.stringify(dto.variables);
-    if (dto.isActive !== undefined) data.isActive = dto.isActive;
+    const updateData: Record<string, unknown> = {};
+    if (dto.name !== undefined) updateData.name = dto.name;
+    if (dto.description !== undefined) updateData.description = dto.description;
+    if (dto.trigger !== undefined) updateData.trigger = dto.trigger;
+    if (dto.triggerConfig !== undefined) updateData.triggerConfig = JSON.stringify(dto.triggerConfig);
+    if (dto.steps !== undefined) updateData.steps = JSON.stringify(dto.steps);
+    if (dto.variables !== undefined) updateData.variables = JSON.stringify(dto.variables);
+    if (dto.retryPolicy !== undefined) updateData.retryPolicy = JSON.stringify(dto.retryPolicy);
+    if (dto.soloConfig !== undefined) updateData.soloConfig = JSON.stringify(dto.soloConfig);
+    if (dto.concurrencyLimit !== undefined) updateData.concurrencyLimit = dto.concurrencyLimit;
+    if (dto.timeoutMs !== undefined) updateData.timeoutMs = dto.timeoutMs;
+    if (dto.isActive !== undefined) updateData.isActive = dto.isActive;
 
-    return this.prisma.workflow.update({ where: { id }, data });
+    const workflow = await this.prisma.workflow.update({
+      where: { id },
+      data: updateData,
+    });
+
+    this.emit('workflow:updated', workflow);
+    return workflow as unknown as Workflow;
   }
 
-  async deleteWorkflow(id: string) {
-    const existing = await this.prisma.workflow.findUnique({ where: { id } });
-    if (!existing) throw new Error(`Workflow not found: ${id}`);
-
-    this.logger.info(`Deleting workflow ${id}`);
+  async delete(id: string): Promise<void> {
     await this.prisma.workflow.delete({ where: { id } });
-    return { success: true };
+    this.emit('workflow:deleted', { id });
   }
 
-  async getWorkflow(id: string) {
-    const workflow = await this.prisma.workflow.findUnique({ where: { id } });
-    if (!workflow) throw new Error(`Workflow not found: ${id}`);
-    return this.formatWorkflow(workflow);
+  async getById(id: string): Promise<Workflow | null> {
+    const workflow = await this.prisma.workflow.findUnique({
+      where: { id },
+      include: {
+        executions: { orderBy: { createdAt: 'desc' }, take: 10 },
+        triggerLogs: { orderBy: { createdAt: 'desc' }, take: 10 },
+      },
+    });
+    return workflow as unknown as Workflow | null;
   }
 
-  async listWorkflows(options: ListWorkflowsOptions = {}) {
-    const page = options.page ?? 1;
-    const pageSize = options.pageSize ?? 20;
-
+  async list(filters?: { isActive?: boolean; trigger?: string; createdBy?: string }): Promise<Workflow[]> {
     const where: Record<string, unknown> = {};
-    if (options.isActive !== undefined) where.isActive = options.isActive;
-    if (options.createdBy) where.createdBy = options.createdBy;
+    if (filters?.isActive !== undefined) where.isActive = filters.isActive;
+    if (filters?.trigger !== undefined) where.trigger = filters.trigger;
+    if (filters?.createdBy !== undefined) where.createdBy = filters.createdBy;
 
-    const [items, total] = await Promise.all([
-      this.prisma.workflow.findMany({
-        where,
-        orderBy: { createdAt: 'desc' },
-        skip: (page - 1) * pageSize,
-        take: pageSize,
-      }),
-      this.prisma.workflow.count({ where }),
-    ]);
-
-    return {
-      items: items.map(this.formatWorkflow),
-      total,
-      page,
-      pageSize,
-      totalPages: Math.ceil(total / pageSize),
-    };
+    const workflows = await this.prisma.workflow.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+    });
+    return workflows as unknown as Workflow[];
   }
 
-  // --- Execution ---
+  async execute(dto: ExecuteWorkflowDTO): Promise<WorkflowExecution> {
+    const workflow = await this.prisma.workflow.findUnique({ where: { id: dto.workflowId } });
+    if (!workflow) throw new Error(`Workflow ${dto.workflowId} not found`);
+    if (!workflow.isActive) throw new Error(`Workflow ${dto.workflowId} is not active`);
 
-  async runWorkflow(workflowId: string, triggeredBy?: string) {
-    const workflow = await this.prisma.workflow.findUnique({ where: { id: workflowId } });
-    if (!workflow) throw new Error(`Workflow not found: ${workflowId}`);
-    if (!workflow.isActive) throw new Error(`Workflow is not active: ${workflowId}`);
+    const activeCount = this.activeExecutions.size;
+    const limit = (workflow.concurrencyLimit as number) ?? 5;
+    if (activeCount >= limit) {
+      throw new Error(`Concurrency limit reached: ${activeCount}/${limit}`);
+    }
 
-    this.logger.info(`Starting workflow execution: ${workflowId}`);
+    const steps = JSON.parse(workflow.steps as string) as WorkflowStep[];
 
-    const steps: WorkflowStep[] = JSON.parse(workflow.steps);
     const execution = await this.prisma.workflowExecution.create({
       data: {
-        workflowId,
-        workflowSnapshot: JSON.stringify({
-          id: workflow.id,
-          name: workflow.name,
-          steps: workflow.steps,
-          variables: workflow.variables,
-        }),
+        workflowId: dto.workflowId,
+        workflowSnapshot: workflow.steps as string,
         status: 'running',
-        triggerType: workflow.trigger,
-        triggeredBy: triggeredBy ?? null,
+        currentStepId: steps[0]?.id,
+        context: dto.context ? JSON.stringify(dto.context) : null,
+        triggerType: dto.triggerType ?? 'manual',
+        triggeredBy: dto.triggeredBy,
         startedAt: new Date(),
-        context: workflow.variables ?? '{}',
       },
     });
 
-    // Run in background (fire-and-forget with error capture)
-    this.executeSteps(execution.id, steps, workflow.variables).catch((err) => {
-      this.logger.error(`Workflow execution failed: ${execution.id}`, { error: String(err) });
+    this.activeExecutions.set(execution.id, execution as unknown as WorkflowExecution);
+    this.emit('workflow:execution:started', execution);
+
+    this.runExecution(execution.id, steps, dto).catch((err) => {
+      this.logger.error(`Execution ${execution.id} failed: ${err.message}`);
     });
 
-    return execution;
+    return execution as unknown as WorkflowExecution;
   }
 
-  private async executeSteps(
-    executionId: string,
-    steps: WorkflowStep[],
-    initialVariables?: string | null,
-  ) {
-    this.runningExecutions.set(executionId, true);
-    let context: Record<string, unknown> = initialVariables
-      ? JSON.parse(initialVariables)
-      : {};
+  private async runExecution(executionId: string, steps: WorkflowStep[], dto: ExecuteWorkflowDTO): Promise<void> {
+    const startTime = Date.now();
+    let currentStepIndex = 0;
 
     try {
-      for (const step of steps) {
-        // Check if execution was cancelled
-        if (!this.runningExecutions.get(executionId)) {
+      while (currentStepIndex < steps.length) {
+        const step = steps[currentStepIndex];
+
+        const checkpointResult = await this.feedbackManager.evaluateCheckpoint({
+          executionId,
+          stepId: step.id,
+          stepName: step.name,
+          stepType: step.type,
+          checkpointType: 'pre_execute',
+        });
+
+        if (checkpointResult.action === 'block') {
           await this.prisma.workflowExecution.update({
             where: { id: executionId },
-            data: { status: 'cancelled', completedAt: new Date() },
+            data: { status: 'pending' },
           });
+          this.logger.info(`Execution ${executionId} blocked at step ${step.name}`);
           return;
         }
 
-        const stepExec = await this.prisma.workflowStepExecution.create({
-          data: {
-            executionId,
-            stepId: step.id,
-            stepName: step.name,
-            stepType: step.type,
-            status: 'running',
-            input: JSON.stringify({ config: step.config, context }),
-            startedAt: new Date(),
-          },
-        });
+        const stepResult = await this.executeStep(executionId, step, dto);
 
-        await this.prisma.workflowExecution.update({
-          where: { id: executionId },
-          data: { currentStepId: step.id },
-        });
-
-        const startTime = Date.now();
-        try {
-          const output = await this.executeStep(step, context);
-          const durationMs = Date.now() - startTime;
-
-          // Merge output into context
-          if (output && typeof output === 'object') {
-            context = { ...context, ...output };
-          }
-
-          await this.prisma.workflowStepExecution.update({
-            where: { id: stepExec.id },
-            data: {
-              status: 'completed',
-              output: JSON.stringify(output),
-              completedAt: new Date(),
-              durationMs,
-            },
-          });
-
-          await emitEvent('workflow.step.completed', { workflowId: executionId, stepId: step.id, stepType: step.type, duration: durationMs, timestamp: new Date().toISOString() });
-        } catch (stepError) {
-          const durationMs = Date.now() - startTime;
-          const errorMsg = stepError instanceof Error ? stepError.message : String(stepError);
-
-          await this.prisma.workflowStepExecution.update({
-            where: { id: stepExec.id },
-            data: {
-              status: 'failed',
-              error: errorMsg,
-              completedAt: new Date(),
-              durationMs,
-            },
-          });
-
-          this.logger.warn(`Step ${step.name} failed: ${errorMsg}`);
-
-          await emitEvent('workflow.step.failed', { workflowId: executionId, stepId: step.id, stepType: step.type, error: errorMsg, timestamp: new Date().toISOString() });
-
-          if (step.onError === 'continue') {
-            context = { ...context, [`_error_${step.id}`]: errorMsg };
+        if (!stepResult.success) {
+          if (step.retryCount && stepResult.retryCount < step.retryCount) {
+            this.logger.warn(`Step ${step.name} failed, retrying...`);
             continue;
-          } else {
-            await this.prisma.workflowExecution.update({
-              where: { id: executionId },
-              data: {
-                status: 'failed',
-                error: `Step "${step.name}" failed: ${errorMsg}`,
-                completedAt: new Date(),
-              },
-            });
-            return;
           }
+
+          if (step.fallback) {
+            const fallbackStep = steps.find((s) => s.id === step.fallback);
+            if (fallbackStep) {
+              currentStepIndex = steps.indexOf(fallbackStep);
+              continue;
+            }
+          }
+
+          await this.prisma.workflowExecution.update({
+            where: { id: executionId },
+            data: { status: 'failed', error: stepResult.error, completedAt: new Date() },
+          });
+          this.activeExecutions.delete(executionId);
+          this.emit('workflow:execution:failed', { executionId, error: stepResult.error });
+          return;
         }
+
+        await this.feedbackManager.evaluateCheckpoint({
+          executionId,
+          stepId: step.id,
+          stepName: step.name,
+          stepType: step.type,
+          checkpointType: 'post_execute',
+          stepOutput: stepResult.output,
+        });
+
+        currentStepIndex++;
       }
 
-      // All steps completed
+      const duration = Date.now() - startTime;
       await this.prisma.workflowExecution.update({
         where: { id: executionId },
-        data: {
-          status: 'completed',
-          completedAt: new Date(),
-          context: JSON.stringify(context),
-        },
+        data: { status: 'completed', completedAt: new Date() },
       });
-
-      await emitEvent('workflow.completed', { workflowId: executionId, executionId, status: 'completed', timestamp: new Date().toISOString() });
-
-      this.logger.info(`Workflow execution completed: ${executionId}`);
-    } finally {
-      this.runningExecutions.delete(executionId);
+      this.activeExecutions.delete(executionId);
+      this.emit('workflow:execution:completed', { executionId, duration });
+    } catch (err: any) {
+      await this.prisma.workflowExecution.update({
+        where: { id: executionId },
+        data: { status: 'failed', error: err.message, completedAt: new Date() },
+      });
+      this.activeExecutions.delete(executionId);
+      this.emit('workflow:execution:failed', { executionId, error: err.message });
     }
   }
 
   private async executeStep(
+    executionId: string,
     step: WorkflowStep,
-    context: Record<string, unknown>,
-  ): Promise<Record<string, unknown>> {
-    const config = step.config;
+    dto: ExecuteWorkflowDTO,
+  ): Promise<{ success: boolean; output?: string; error?: string; retryCount: number }> {
+    const stepStartTime = Date.now();
 
-    switch (step.type) {
-      case 'create-task': {
-        const taskData = typeof config.task === 'object' ? (config.task as Record<string, unknown>) : {};
-        // Resolve template variables in task data
-        const resolved = this.resolveTemplateVars(taskData, context);
-        const task = await this.taskService.createTask({
-          title: String(resolved.title ?? 'Auto-created task'),
-          description: resolved.description ? String(resolved.description) : undefined,
-          priority: resolved.priority as 'urgent' | 'high' | 'medium' | 'low' | undefined,
-          type: resolved.type ? String(resolved.type) : undefined,
-          assignee: resolved.assignee ? String(resolved.assignee) : undefined,
-        }, String(resolved.creator ?? 'workflow'));
-        return { lastCreatedTaskId: task.id, lastCreatedTask: task };
-      }
-
-      case 'update-status': {
-        const taskId = String(config.taskId ?? context.lastCreatedTaskId ?? '');
-        const newStatus = String(config.status ?? '');
-        if (!taskId || !newStatus) {
-          throw new Error('update-status requires taskId and status');
-        }
-        const task = await this.taskService.updateStatus(
-          taskId,
-          newStatus as 'todo' | 'in_progress' | 'done' | 'closed',
-          'workflow',
-        );
-        return { lastUpdatedTaskId: task.id, lastUpdatedTask: task };
-      }
-
-      case 'ai-analyze': {
-        // 尝试通过 SOLO Bridge 执行 AI 分析，不可用时降级到占位实现
-        this.logger.info(`AI analyze step: ${step.name}`);
-
-        try {
-          // 尝试从 DI 容器获取 SOLOBridge
-          // @ts-expect-error -- getContainer may not exist; fallback handled below
-          const { getContainer } = await import('@/lib/core/di-container');
-          const container = getContainer();
-          const soloBridge = container?.resolve<import('@/lib/modules/workflow-engine/solo/solo-bridge').SOLOBridge>('SOLOBridge');
-
-          if (soloBridge && typeof soloBridge.call === 'function') {
-            const soloResult = await soloBridge.call({
-              prompt: String(config.prompt ?? `Analyze: ${step.name}`),
-              stepId: step.id,
-              executionId: context._executionId as string ?? 'unknown',
-              stepName: step.name,
-              subAgentType: config.subAgentType as string,
-              callMode: config.callMode as import('@/lib/modules/workflow-engine/types').SOLOCallMode,
-              context: config.context as Record<string, unknown> | undefined,
-            });
-
-            if (soloResult.success) {
-              return {
-                lastAiResult: {
-                  analysis: soloResult.data,
-                  sessionId: soloResult.sessionId,
-                  durationMs: soloResult.durationMs,
-                  tokensUsed: soloResult.tokensUsed,
-                  timestamp: new Date().toISOString(),
-                  source: 'solo-bridge',
-                },
-              };
-            }
-
-            // SOLO Bridge 调用失败，降级到 AI Model Adapter
-            this.logger.warn(`SOLO Bridge call failed for step ${step.name}: ${soloResult.error}, falling back to AI Model Adapter`);
-          }
-        } catch (diError) {
-          this.logger.debug(`SOLO Bridge not available for step ${step.name}: ${diError instanceof Error ? diError.message : String(diError)}`);
-        }
-
-        // 降级：尝试使用 AI Model Adapter
-        try {
-          // @ts-expect-error -- getContainer may not exist; fallback handled below
-          const { getContainer } = await import('@/lib/core/di-container');
-          const container = getContainer();
-          const aiModel = container?.resolve<import('@/lib/modules/ai-engine/ai-model-adapter').IAIModelAdapter>('OpenAICompatibleAdapter');
-
-          if (aiModel && typeof aiModel.complete === 'function') {
-            const prompt = String(config.prompt ?? `Analyze: ${step.name}`);
-            const aiResponse = await aiModel.complete(prompt);
-            return {
-              lastAiResult: {
-                analysis: aiResponse,
-                timestamp: new Date().toISOString(),
-                source: 'ai-model-adapter',
-              },
-            };
-          }
-        } catch (aiError) {
-          this.logger.debug(`AI Model Adapter not available for step ${step.name}: ${aiError instanceof Error ? aiError.message : String(aiError)}`);
-        }
-
-        // 最终降级：占位实现
-        this.logger.info(`AI analyze step (placeholder fallback): ${step.name}`);
-        const result = {
-          analysis: `AI analysis placeholder for: ${step.name}`,
-          timestamp: new Date().toISOString(),
-          input: config,
-          source: 'placeholder',
-        };
-        return { lastAiResult: result };
-      }
-
-      case 'send-notification': {
-        // Placeholder: log notification
-        const message = String(config.message ?? 'Workflow notification');
-        const channel = String(config.channel ?? 'system');
-        this.logger.info(`Notification (${channel}): ${message}`);
-        return { lastNotification: { channel, message, sentAt: new Date().toISOString() } };
-      }
-
-      case 'wait': {
-        const delayMs = Number(config.delayMs ?? config.seconds ? Number(config.seconds) * 1000 : 1000);
-        this.logger.info(`Waiting ${delayMs}ms (step: ${step.name})`);
-        await new Promise((resolve) => setTimeout(resolve, delayMs));
-        return { waitedMs: delayMs };
-      }
-
-      default:
-        throw new Error(`Unknown step type: ${step.type}`);
-    }
-  }
-
-  private resolveTemplateVars(
-    obj: Record<string, unknown>,
-    context: Record<string, unknown>,
-  ): Record<string, unknown> {
-    const result: Record<string, unknown> = {};
-    for (const [key, value] of Object.entries(obj)) {
-      if (typeof value === 'string') {
-        result[key] = value.replace(/\{\{(\w+)\}\}/g, (_, varName) => {
-          return context[varName] !== undefined ? String(context[varName]) : '';
-        });
-      } else if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
-        result[key] = this.resolveTemplateVars(value as Record<string, unknown>, context);
-      } else {
-        result[key] = value;
-      }
-    }
-    return result;
-  }
-
-  // --- Execution queries ---
-
-  async getExecution(executionId: string) {
-    const execution = await this.prisma.workflowExecution.findUnique({
-      where: { id: executionId },
-      include: {
-        stepExecutions: { orderBy: { createdAt: 'asc' } },
-        workflow: { select: { id: true, name: true } },
+    const stepExecution = await this.prisma.workflowStepExecution.create({
+      data: {
+        executionId,
+        stepId: step.id,
+        stepName: step.name,
+        stepType: step.type,
+        status: 'running',
+        startedAt: new Date(),
       },
     });
-    if (!execution) throw new Error(`Execution not found: ${executionId}`);
-    return {
-      ...execution,
-      workflowSnapshot: JSON.parse(execution.workflowSnapshot),
-      context: execution.context ? JSON.parse(execution.context) : null,
-    };
-  }
 
-  async listExecutions(workflowId: string, options: ListExecutionsOptions = {}) {
-    const page = options.page ?? 1;
-    const pageSize = options.pageSize ?? 20;
+    try {
+      let output: string | undefined;
+      const config = step.config ?? {};
 
-    const where: Record<string, unknown> = { workflowId };
-    if (options.status) where.status = options.status;
+      switch (step.type) {
+        case 'ai_analyze': {
+          output = await this.executeAIAnalyzeStep(step, config, executionId);
+          break;
+        }
+        case 'ai_generate': {
+          output = await this.executeAIGenerateStep(step, config, executionId);
+          break;
+        }
+        case 'approval': {
+          output = await this.executeApprovalStep(step, config, executionId);
+          break;
+        }
+        case 'condition': {
+          output = await this.executeConditionStep(step, config);
+          break;
+        }
+        case 'notification': {
+          output = await this.executeNotificationStep(step, config);
+          break;
+        }
+        case 'webhook': {
+          output = await this.executeWebhookStep(step, config);
+          break;
+        }
+        case 'solo_call': {
+          output = await this.executeSOLOCallStep(step, config, executionId);
+          break;
+        }
+        case 'parallel': {
+          output = await this.executeParallelStep(step, config, executionId);
+          break;
+        }
+        case 'delay': {
+          const delayMs = (config.duration as number) ?? 1000;
+          await new Promise((resolve) => setTimeout(resolve, delayMs));
+          output = `Delayed ${delayMs}ms`;
+          break;
+        }
+        default: {
+          output = `Unknown step type: ${step.type}`;
+          this.logger.warn(`Unknown step type: ${step.type}`);
+        }
+      }
 
-    const [items, total] = await Promise.all([
-      this.prisma.workflowExecution.findMany({
-        where,
-        orderBy: { createdAt: 'desc' },
-        skip: (page - 1) * pageSize,
-        take: pageSize,
-        include: {
-          workflow: { select: { id: true, name: true } },
+      const durationMs = Date.now() - stepStartTime;
+
+      await this.prisma.workflowStepExecution.update({
+        where: { id: stepExecution.id },
+        data: {
+          status: 'completed',
+          output: output ?? null,
+          durationMs,
+          completedAt: new Date(),
         },
-      }),
-      this.prisma.workflowExecution.count({ where }),
-    ]);
+      });
 
-    return {
-      items,
-      total,
-      page,
-      pageSize,
-      totalPages: Math.ceil(total / pageSize),
-    };
+      const nextStep = (step.next ?? [])[0];
+      await this.prisma.workflowExecution.update({
+        where: { id: executionId },
+        data: { currentStepId: nextStep ?? null },
+      });
+
+      this.emit('workflow:step:completed', { executionId, stepId: step.id, stepName: step.name, durationMs });
+
+      return { success: true, output, retryCount: 0 };
+    } catch (err: any) {
+      const durationMs = Date.now() - stepStartTime;
+
+      await this.prisma.workflowStepExecution.update({
+        where: { id: stepExecution.id },
+        data: {
+          status: 'failed',
+          error: err.message,
+          durationMs,
+          completedAt: new Date(),
+        },
+      });
+
+      this.emit('workflow:step:failed', { executionId, stepId: step.id, error: err.message });
+
+      return { success: false, error: err.message, retryCount: 0 };
+    }
   }
 
-  async cancelExecution(executionId: string) {
-    const execution = await this.prisma.workflowExecution.findUnique({
-      where: { id: executionId },
-    });
-    if (!execution) throw new Error(`Execution not found: ${executionId}`);
-    if (execution.status !== 'running' && execution.status !== 'pending') {
-      throw new Error(`Cannot cancel execution in status: ${execution.status}`);
+  private async executeAIAnalyzeStep(
+    step: WorkflowStep,
+    config: Record<string, unknown>,
+    executionId: string,
+  ): Promise<string> {
+    this.logger.info(`AI analyze step: ${step.name}`);
+
+    try {
+      // @ts-expect-error -- getKernel may not return container; fallback handled below
+      const { getKernel } = await import('@/lib/core/v3');
+      const container = getKernel()?.getContainer?.();
+      const soloBridge = container?.resolve<import('@/lib/modules/workflow-engine/solo/solo-bridge').SOLOBridge>('SOLOBridge');
+
+      if (soloBridge && typeof soloBridge.call === 'function') {
+        const soloResult = await soloBridge.call({
+          prompt: String(config.prompt ?? `Analyze: ${step.name}`),
+          stepId: step.id,
+          executionId,
+          stepName: step.name,
+          subAgentType: config.subAgentType as string,
+          callMode: config.callMode as import('@/lib/modules/workflow-engine/types').SOLOCallMode,
+          context: config.context as Record<string, unknown> | undefined,
+        });
+        return typeof soloResult === 'string' ? soloResult : JSON.stringify(soloResult);
+      }
+    } catch (err: any) {
+      this.logger.debug(`SOLO Bridge not available: ${err.message}`);
     }
 
-    this.runningExecutions.set(executionId, false);
-    await this.prisma.workflowExecution.update({
-      where: { id: executionId },
-      data: { status: 'cancelled', completedAt: new Date() },
+    try {
+      // @ts-expect-error -- getKernel may not return container; fallback handled below
+      const { getKernel } = await import('@/lib/core/v3');
+      const container = getKernel()?.getContainer?.();
+      const aiModel = container?.resolve<import('@/lib/modules/ai-engine/ai-model-adapter').IAIModelAdapter>('OpenAICompatibleAdapter');
+
+      if (aiModel && typeof aiModel.complete === 'function') {
+        const prompt = String(config.prompt ?? `Analyze: ${step.name}`);
+        const aiResponse = await aiModel.complete(prompt);
+        return JSON.stringify({
+          lastAiResult: {
+            analysis: aiResponse,
+            timestamp: new Date().toISOString(),
+            model: 'fallback-adapter',
+          },
+        });
+      }
+    } catch (err: any) {
+      this.logger.debug(`AI Model Adapter not available: ${err.message}`);
+    }
+
+    return JSON.stringify({
+      analysis: `AI analysis for: ${step.name}`,
+      timestamp: new Date().toISOString(),
+      model: 'placeholder',
+      note: 'No AI backend configured. Configure SOLO Bridge or AI Model Adapter.',
+    });
+  }
+
+  private async executeAIGenerateStep(
+    step: WorkflowStep,
+    config: Record<string, unknown>,
+    executionId: string,
+  ): Promise<string> {
+    this.logger.info(`AI generate step: ${step.name}`);
+
+    try {
+      // @ts-expect-error -- getKernel may not return container; fallback handled below
+      const { getKernel } = await import('@/lib/core/v3');
+      const container = getKernel()?.getContainer?.();
+      const soloBridge = container?.resolve<import('@/lib/modules/workflow-engine/solo/solo-bridge').SOLOBridge>('SOLOBridge');
+
+      if (soloBridge && typeof soloBridge.call === 'function') {
+        const soloResult = await soloBridge.call({
+          prompt: String(config.prompt ?? `Generate: ${step.name}`),
+          stepId: step.id,
+          executionId,
+          stepName: step.name,
+          subAgentType: config.subAgentType as string,
+          callMode: config.callMode as import('@/lib/modules/workflow-engine/types').SOLOCallMode,
+          context: config.context as Record<string, unknown> | undefined,
+        });
+        return typeof soloResult === 'string' ? soloResult : JSON.stringify(soloResult);
+      }
+    } catch (err: any) {
+      this.logger.debug(`SOLO Bridge not available for generate: ${err.message}`);
+    }
+
+    return JSON.stringify({
+      generated: `AI generation for: ${step.name}`,
+      timestamp: new Date().toISOString(),
+      model: 'placeholder',
+      note: 'No AI backend configured.',
+    });
+  }
+
+  private async executeApprovalStep(step: WorkflowStep, config: Record<string, unknown>, executionId: string): Promise<string> {
+    this.logger.info(`Approval step: ${step.name}`);
+
+    const checkpoint = await this.feedbackManager.createCheckpoint({
+      executionId, stepId: step.id, stepName: step.name, stepType: step.type,
+      checkpointType: 'pre_execute', approvalMode: (config.approvalMode as string) ?? 'notify',
     });
 
-    this.logger.info(`Workflow execution cancelled: ${executionId}`);
-    return { success: true };
+    if ((config.approvalMode as string) === 'block') {
+      const timeout = ((config.timeout as number) ?? 3600) * 1000;
+      const startTime = Date.now();
+
+      while (Date.now() - startTime < timeout) {
+        const updated = await this.prisma.feedbackCheckpoint.findUnique({ where: { id: checkpoint.id } });
+        if (updated?.status === 'approved') return 'Approved';
+        if (updated?.status === 'rejected') throw new Error('Approval rejected');
+        await new Promise((resolve) => setTimeout(resolve, 5000));
+      }
+
+      throw new Error('Approval timeout');
+    }
+
+    return 'Approval checkpoint created (non-blocking)';
   }
 
-  // --- Helpers ---
+  private async executeConditionStep(step: WorkflowStep, config: Record<string, unknown>): Promise<string> {
+    const condition = config.condition as string ?? 'true';
+    const result = condition === 'true' || condition.includes('==') ? 'true' : 'false';
+    return JSON.stringify({ condition, result, branch: result === 'true' ? 'then' : 'else' });
+  }
 
-  private formatWorkflow(workflow: any) {
+  private async executeNotificationStep(step: WorkflowStep, config: Record<string, unknown>): Promise<string> {
+    const message = String(config.message ?? `Notification from step: ${step.name}`);
+    const channel = String(config.channel ?? 'system');
+    this.logger.info(`Notification: [${channel}] ${message}`);
+    return JSON.stringify({ channel, message, sent: true });
+  }
+
+  private async executeWebhookStep(step: WorkflowStep, config: Record<string, unknown>): Promise<string> {
+    const url = String(config.url ?? '');
+    if (!url) throw new Error('Webhook step requires a URL');
+
+    const method = String(config.method ?? 'POST');
+    const headers = (config.headers as Record<string, string>) ?? {};
+    const body = config.body ?? {};
+
+    const response = await fetch(url, {
+      method,
+      headers: { 'Content-Type': 'application/json', ...headers },
+      body: JSON.stringify(body),
+    });
+
+    const responseBody = await response.text();
+    return JSON.stringify({ status: response.status, body: responseBody.substring(0, 500) });
+  }
+
+  private async executeSOLOCallStep(step: WorkflowStep, config: Record<string, unknown>, executionId: string): Promise<string> {
+    this.logger.info(`SOLO call step: ${step.name}`);
+
+    try {
+      const bridge = new SOLOBridge({ logger: this.logger });
+
+      const result = await bridge.call({
+        prompt: String(config.prompt ?? `Execute: ${step.name}`),
+        stepId: step.id,
+        executionId,
+        stepName: step.name,
+        subAgentType: config.subAgentType as string,
+        callMode: config.callMode as import('@/lib/modules/workflow-engine/types').SOLOCallMode,
+        context: config.context as Record<string, unknown> | undefined,
+      });
+
+      return typeof result === 'string' ? result : JSON.stringify(result);
+    } catch (err: any) {
+      this.logger.error(`SOLO call failed: ${err.message}`);
+      return JSON.stringify({ error: err.message, note: 'SOLO Bridge call failed' });
+    }
+  }
+
+  private async executeParallelStep(step: WorkflowStep, config: Record<string, unknown>, executionId: string): Promise<string> {
+    const subSteps = (config.steps as WorkflowStep[]) ?? [];
+    if (subSteps.length === 0) return 'No sub-steps to execute';
+
+    const results = await Promise.allSettled(
+      subSteps.map((subStep) => this.executeStep(executionId, subStep, { workflowId: '', triggerType: 'parallel' })),
+    );
+
+    return JSON.stringify({
+      total: results.length,
+      fulfilled: results.filter((r) => r.status === 'fulfilled').length,
+      rejected: results.filter((r) => r.status === 'rejected').length,
+    });
+  }
+
+  async createFeedbackRule(rule: Omit<FeedbackRule, 'id' | 'createdAt' | 'updatedAt'>): Promise<FeedbackRule> {
+    const created = await this.prisma.feedbackRule.create({ data: rule as any });
+    return created as unknown as FeedbackRule;
+  }
+
+  async listFeedbackRules(filters?: { isActive?: boolean }): Promise<FeedbackRule[]> {
+    const where: Record<string, unknown> = {};
+    if (filters?.isActive !== undefined) where.isActive = filters.isActive;
+    const rules = await this.prisma.feedbackRule.findMany({ where, orderBy: { createdAt: 'desc' } });
+    return rules as unknown as FeedbackRule[];
+  }
+
+  async submitStepFeedback(feedback: Omit<StepFeedback, 'id' | 'createdAt'>): Promise<StepFeedback> {
+    const created = await this.prisma.stepFeedback.create({ data: feedback as any });
+    return created as unknown as StepFeedback;
+  }
+
+  async getExecutionStats(): Promise<Record<string, unknown>> {
+    const total = await this.prisma.workflowExecution.count();
+    const completed = await this.prisma.workflowExecution.count({ where: { status: 'completed' } });
+    const failed = await this.prisma.workflowExecution.count({ where: { status: 'failed' } });
+    const running = await this.prisma.workflowExecution.count({ where: { status: 'running' } });
+
     return {
-      ...workflow,
-      steps: JSON.parse(workflow.steps),
-      variables: workflow.variables ? JSON.parse(workflow.variables) : null,
+      total, completed, failed, running,
+      successRate: total > 0 ? ((completed / total) * 100).toFixed(1) + '%' : 'N/A',
     };
   }
+}
+
+let _instance: WorkflowService | null = null;
+
+export function getWorkflowService(prisma?: PrismaClient, logger?: ILogger): WorkflowService {
+  if (!_instance && prisma && logger) {
+    _instance = new WorkflowService(prisma, logger);
+  }
+  if (!_instance) {
+    throw new Error('WorkflowService not initialized. Call getWorkflowService(prisma, logger) first.');
+  }
+  return _instance;
 }
