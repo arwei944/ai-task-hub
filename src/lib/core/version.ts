@@ -8,14 +8,18 @@
 
 // ---- 应用版本 ----
 // 主版本号 (与 package.json 保持同步)
-// 注意: 不能使用 fs 读取 package.json，因为此文件会被客户端组件导入
-export const APP_VERSION: string = '5.6.0';
+// 优先从环境变量获取（Next.js 自动注入 npm_package_version），
+// 降级到硬编码兜底（仅用于开发环境）
+export const APP_VERSION: string =
+  typeof process !== 'undefined' && (process as any).env?.npm_package_version
+    ? (process as any).env.npm_package_version
+    : '7.0.0';
 
 /** 应用名称 */
 export const APP_NAME: string = 'AI Task Hub';
 
 /** 应用代号 */
-export const APP_CODENAME: string = 'Agent Toolkit';
+export const APP_CODENAME: string = 'Command Center';
 
 // ---- 模块版本 ----
 // 所有模块统一使用应用版本号，不再单独维护
@@ -105,6 +109,11 @@ export const VERSION_HISTORY: ReadonlyArray<{
   date: string;
   highlights: string[];
 }> = [
+  { version: '7.0.0', date: '2026-05-04', highlights: ['智能体指挥中心（三层空间模型：战场全景 → 项目聚焦 → 详情下钻）', 'ProjectCard 微型仪表盘（状态脉搏、进度颜色分级、Agent 状态）', '实时事件流（SSE 推送，底部时间线）', '快速创建项目（⌘N 快捷键）', '自由布局模式（网格/自由切换）', 'DetailDrawer 详情抽屉（任务操作、状态变更）', 'ProjectFocusView 聚焦视图（任务看板 + Agent 面板 + 里程碑）', 'command-center-router tRPC API（overview/projectFocus/eventStream）', 'EventBridge 增强（projects/agents/events 频道）', 'Prisma Schema 扩展（progress/tags/layout/sortOrder/coverImage）'] },
+  { version: '6.3.0', date: '2026-05-04', highlights: ['版本号管理规范化', 'GitHub Release v6.3.0 发布', '部署验证流程建立（AGENTS.md 规则）'] },
+  { version: '6.2.0', date: '2026-05-04', highlights: ['全面评估报告（14 维度雷达图，30 项改进建议）', '3D 赛车游戏原型（Three.js）', 'AI Task Hub 项目管理演示'] },
+  { version: '6.1.0', date: '2026-05-04', highlights: ['Docker 部署修复（Alpine 兼容）', 'Prisma Schema 修复', 'TypeScript 错误修复', 'lucide-react 兼容修复'] },
+  { version: '6.0.0', date: '2026-05-04', highlights: ['HF Space Docker 部署', 'pnpm-lock.yaml 修复', 'offline 页面 prerender 修复'] },
   { version: '5.6.0', date: '2026-05-03', highlights: ['ph_manage_docs MCP 工具重构（简化为 create/update/list/search）', 'ph_list_projects MCP 工具重构（支持状态/优先级/搜索筛选）', '项目空状态 UI 增强（引导式设计 + 模板创建入口）', '任务看板移动端响应式（单列 tab 切换模式）', '项目概览页移动端响应式优化'] },
   { version: '5.5.0', date: '2026-05-03', highlights: ['项目概览页增强（进度条渐变 + 里程碑/任务双维度统计）', '快速操作按钮行（新建任务/文档/生成报告/工作台）', '近期动态模块（工作日志实时展示）', 'ph_log_work MCP 工具（智能体自动记录工作日志）', 'useRouter 路由导航集成'] },
   { version: '5.4.0', date: '2026-05-03', highlights: ['项目任务深度集成（Kanban 看板页面）', '任务 tRPC 路由支持 projectId 过滤', 'Project Tasks 子路由（list/create/updateStatus/delete/stats）', 'ph_manage_tasks MCP 工具（创建/状态更新/删除/列表）', '侧边栏项目内"任务"导航入口', '项目详情页"创建任务"链接到项目看板'] },

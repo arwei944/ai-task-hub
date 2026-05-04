@@ -8,6 +8,11 @@ import { APP_VERSION, APP_CODENAME, VERSION_HISTORY } from '@/lib/core/version';
 
 // ---- 版本代号映射 ----
 const CODENAMES: Record<string, string> = {
+  '7.0.0': 'Command Center',
+  '6.3.0': 'Agent Toolkit',
+  '6.2.0': 'Agent Toolkit',
+  '6.1.0': 'Agent Toolkit',
+  '6.0.0': 'Agent Toolkit',
   '5.6.0': 'Agent Toolkit',
   '5.5.0': 'Project Overview',
   '5.4.0': 'Task Integration',
