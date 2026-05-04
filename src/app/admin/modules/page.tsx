@@ -12,7 +12,7 @@ import {
   Search,
   Lock,
   Unlock,
-  Cubes,
+  Boxes,
 } from 'lucide-react';
 
 interface ModuleRecord {
@@ -90,7 +90,7 @@ export default function AdminModulesPage() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="p-2 rounded-lg bg-purple-100 dark:bg-purple-950">
-            <Cubes className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+            <Boxes className="w-5 h-5 text-purple-600 dark:text-purple-400" />
           </div>
           <div>
             <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">模块管理</h1>

@@ -20,7 +20,7 @@ import {
   MessageSquare,
   Settings,
   Shield,
-  Cubes,
+  Boxes,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -135,7 +135,7 @@ export const NAV_ITEMS: NavItem[] = [
   {
     href: '/admin/modules',
     label: '模块管理',
-    icon: Cubes,
+    icon: Boxes,
     sidebar: true,
     adminOnly: true,
     group: 'management',
