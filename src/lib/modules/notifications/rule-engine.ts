@@ -338,9 +338,9 @@ export class NotificationRuleEngine {
 
   private interpolate(template: string, event: DomainEvent): string {
     return template
-      .replace(/\{event\}/g, event.type)
-      .replace(/\{source\}/g, event.source ?? 'unknown')
-      .replace(/\{timestamp\}/g, new Date(event.timestamp).toLocaleString());
+      .replace(/\\{event\\}/g, event.type)
+      .replace(/\\{source\\}/g, event.source ?? 'unknown')
+      .replace(/\\{timestamp\\}/g, new Date(event.timestamp).toLocaleString());
   }
 
   private defaultTitle(eventType: string): string {
@@ -384,7 +384,7 @@ export class NotificationRuleEngine {
   }
 
   private defaultMessage(event: DomainEvent): string {
-    const payload = event.payload as Record<string, unknown>;
+    const payload = event.payload as unknown as Record<string, unknown>;
     if (payload?.repository && payload?.ref) return `${payload.repository} 推送: ${payload.ref}`;
     if (payload?.repository && payload?.prNumber) return `${payload.repository} PR #${payload.prNumber}: ${payload.title}`;
     if (payload?.repository && payload?.issueNumber) return `${payload.repository} Issue #${payload.issueNumber}: ${payload.title}`;
