@@ -385,6 +385,11 @@ model Project {
   creatorId   String?  // Agent ID or User ID
   creatorType String   @default("agent") // agent, user
   metadata    String?  // JSON: project settings, config, etc.
+  progress   Int    @default(0)
+  tags       String?
+  layout     String?
+  sortOrder  Int    @default(0)
+  coverImage String?
   startedAt   DateTime?
   completedAt DateTime?
   createdAt   DateTime @default(now())

@@ -29,6 +29,22 @@ const EVENT_CHANNEL_MAP: Record<string, string> = {
   'agent.operation': 'agents',
   'agent.operation.completed': 'agents',
 
+  // Project events → projects channel (Command Center)
+  'project.created': 'projects',
+  'project.updated': 'projects',
+  'project.phase.changed': 'projects',
+  'project.status.changed': 'projects',
+  'project.archived': 'projects',
+
+  // Work log events → events channel (Command Center timeline)
+  'work-log.created': 'events',
+  'work-log.updated': 'events',
+
+  // Milestone events → events channel
+  'milestone.created': 'events',
+  'milestone.updated': 'events',
+  'milestone.completed': 'events',
+
   // Notification events → notifications channel
   'notification.created': 'notifications',
   'notification.read': 'notifications',

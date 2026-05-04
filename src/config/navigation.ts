@@ -21,6 +21,7 @@ import {
   Settings,
   Shield,
   Boxes,
+  Radar,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -63,6 +64,15 @@ export const NAV_GROUPS: Record<NavGroup, { label: string; order: number }> = {
 
 export const NAV_ITEMS: NavItem[] = [
   // ── Core ──
+  {
+    href: '/command-center',
+    label: '指挥中心',
+    icon: Radar,
+    sidebar: true,
+    navbar: true,
+    mobile: true,
+    group: 'core',
+  },
   {
     href: '/dashboard',
     label: '仪表盘',
