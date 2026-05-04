@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { trpc } from '@/lib/trpc/client';
 
 // ==================== Types ====================
 
@@ -116,9 +117,8 @@ function RulesTab() {
 
   const fetchRules = useCallback(async () => {
     try {
-      const res = await fetch('/api/trpc/notificationRules.list');
-      const data = await res.json();
-      setRules(data?.result?.data?.json ?? data?.result?.data ?? []);
+      const data = await trpc.notificationRules.list.query();
+      setRules(data ?? []);
     } catch (err) {
       console.error('Failed to fetch rules:', err);
     } finally {
@@ -175,17 +175,9 @@ function RulesTab() {
       };
 
       if (editingRule) {
-        await fetch('/api/trpc/notificationRules.update', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ...payload, id: editingRule.id }),
-        });
+        await trpc.notificationRules.update.mutate({ ...payload, id: editingRule.id });
       } else {
-        await fetch('/api/trpc/notificationRules.create', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        });
+        await trpc.notificationRules.create.mutate(payload);
       }
       resetForm();
       fetchRules();
@@ -198,11 +190,7 @@ function RulesTab() {
 
   const handleDelete = async (id: string) => {
     try {
-      await fetch('/api/trpc/notificationRules.delete', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id }),
-      });
+      await trpc.notificationRules.delete.mutate({ id });
       setDeleteConfirm(null);
       fetchRules();
     } catch (err) {
@@ -486,9 +474,8 @@ function HistoryTab() {
     try {
       const params: Record<string, unknown> = { limit: 100 };
       if (filterLevel) params.level = filterLevel;
-      const res = await fetch('/api/trpc/notifications.list?input=' + encodeURIComponent(JSON.stringify(params)));
-      const data = await res.json();
-      let items = data?.result?.data?.json ?? data?.result?.data ?? [];
+      const data = await trpc.notifications.list.query(params as { limit?: number; level?: string });
+      let items = data ?? [];
 
       if (filterChannel) {
         items = items.filter((n: NotificationHistory) => n.channel === filterChannel);
@@ -512,11 +499,7 @@ function HistoryTab() {
 
   const markAsRead = async (id: string) => {
     try {
-      await fetch('/api/trpc/notifications.markAsRead', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id }),
-      });
+      await trpc.notifications.markAsRead.mutate({ id });
       fetchNotifications();
     } catch (err) {
       console.error('Failed to mark as read:', err);
@@ -525,7 +508,7 @@ function HistoryTab() {
 
   const markAllAsRead = async () => {
     try {
-      await fetch('/api/trpc/notifications.markAllAsRead', { method: 'POST' });
+      await trpc.notifications.markAllAsRead.mutate();
       fetchNotifications();
     } catch (err) {
       console.error('Failed to mark all as read:', err);
@@ -640,18 +623,14 @@ function PreferencesTab() {
     setSaving(true);
     setSaved(false);
     try {
-      await fetch('/api/trpc/notificationRules.update', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      await trpc.notificationRules.update.mutate({
           id: userId,
           name: `Preference for ${userId}`,
           eventPattern: '*',
           level: minLevel || undefined,
           channels: 'system',
           priority: 0,
-        }),
-      });
+        });
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch (err) {

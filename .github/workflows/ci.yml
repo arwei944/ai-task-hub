@@ -29,7 +29,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
 
       - name: ESLint
-        run: pnpm lint --max-warnings=0 || true
+        run: pnpm lint --max-warnings=0
 
       - name: Type Check
         run: pnpm tsc --noEmit
@@ -51,6 +51,11 @@ jobs:
           cache: pnpm
 
       - run: pnpm install --frozen-lockfile
+
+      - name: Initialize database
+        run: pnpm prisma db push --skip-generate
+        env:
+          DATABASE_URL: file:./prisma/dev.db
 
       - name: Run tests
         run: pnpm vitest run --coverage
