@@ -7,8 +7,26 @@ import { registerAllServices } from '@/lib/core/v3/service-factory';
 import { ServiceAccessor } from '@/lib/core/v3/trpc-context';
 
 // Auto-set JWT_SECRET if not configured (for single-admin / demo deployments)
+// JWT_SECRET: require from env or generate once and persist to /data
 if (!process.env.JWT_SECRET) {
-  process.env.JWT_SECRET = `auto_${crypto.randomUUID().replace(/-/g, '')}`;
+  const fs = require('fs');
+  const path = require('path');
+  const secretPath = path.join(process.env.DATA_DIR || '/data', '.jwt_secret');
+  try {
+    if (fs.existsSync(secretPath)) {
+      process.env.JWT_SECRET = fs.readFileSync(secretPath, 'utf-8').trim();
+    } else {
+      const secret = crypto.randomUUID().replace(/-/g, '') + crypto.randomUUID().replace(/-/g, '');
+      fs.mkdirSync(path.dirname(secretPath), { recursive: true });
+      fs.writeFileSync(secretPath, secret, 'utf-8');
+      process.env.JWT_SECRET = secret;
+      console.log(`[auth] Generated new JWT_SECRET and saved to ${secretPath}`);
+    }
+  } catch {
+    // Fallback for read-only filesystems (e.g., some CI environments)
+    process.env.JWT_SECRET = `dev_${crypto.randomUUID().replace(/-/g, '')}`;
+    console.warn('[auth] WARNING: Using ephemeral JWT_SECRET (filesystem not writable). Tokens will invalidate on restart.');
+  }
 }
 
 // ---- v3 Service Container (singleton) ----
@@ -71,7 +89,18 @@ async function ensureAdmin(): Promise<AuthUser> {
       role: 'admin',
     });
 
-    services.logger.info('Auto-created default admin user');
+    // Log admin credentials so the user can actually log in
+    if (!process.env.ADMIN_PASSWORD) {
+      services.logger.warn(
+        '╔══════════════════════════════════════════════════════════════╗\n' +
+        '║  DEFAULT ADMIN CREDENTIALS (set ADMIN_PASSWORD to override) ║\n' +
+        `║  Username: admin                                            ║\n` +
+        `║  Password: ${adminPassword.padEnd(50)}║\n` +
+        '╚══════════════════════════════════════════════════════════════╝',
+      );
+    } else {
+      services.logger.info('Auto-created default admin user (password set via ADMIN_PASSWORD)');
+    }
     return userRepo.toAuthUser(admin);
   })();
 
@@ -129,6 +158,9 @@ export const protectedProcedure = t.procedure.use(async ({ ctx, next }) => {
   return next({ ctx: { ...ctx, user: ctx.user } });
 });
 export const adminProcedure = protectedProcedure.use(async ({ ctx, next }) => {
+  if (ctx.user.role !== 'admin') {
+    throw new TRPCError({ code: 'FORBIDDEN', message: 'Admin access required' });
+  }
   return next({ ctx: { ...ctx, user: ctx.user } });
 });
 

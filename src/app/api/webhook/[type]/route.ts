@@ -26,7 +26,25 @@ import { WebhookAdapter } from '@/lib/modules/integration-webhook/webhook.adapte
 import { TelegramAdapter } from '@/lib/modules/integration-telegram/telegram.adapter';
 import { WeChatAdapter } from '@/lib/modules/integration-wechat/wechat.adapter';
 
-// No auth required - single admin mode
+// Webhook signature verification using WEBHOOK_SECRET env var.
+// If WEBHOOK_SECRET is set, all webhook requests must include a valid
+// X-Webhook-Signature header (HMAC-SHA256 of the body).
+// If WEBHOOK_SECRET is not set, webhooks are accepted without verification
+// (single-admin/demo mode).
+
+import { createHmac } from 'crypto';
+
+function verifyWebhookSignature(body: string, signature: string | null): boolean {
+  const secret = process.env.WEBHOOK_SECRET;
+  if (!secret) return true; // No secret configured = open mode
+  if (!signature) return false;
+  const expected = createHmac('sha256', secret).update(body).digest('hex');
+  try {
+    return signature === expected || signature === `sha256=${expected}`;
+  } catch {
+    return false;
+  }
+}
 
 let _service: IntegrationService | null = null;
 
@@ -64,7 +82,17 @@ export async function POST(
   const logger = new Logger('webhook-receiver');
 
   try {
-    const payload = await request.json();
+    const rawBody = await request.text();
+    const signature = request.headers.get('x-webhook-signature');
+
+    if (!verifyWebhookSignature(rawBody, signature)) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid webhook signature' },
+        { status: 401 },
+      );
+    }
+
+    const payload = JSON.parse(rawBody);
     const headers: Record<string, string> = {};
     request.headers.forEach((value, key) => {
       headers[key] = value;

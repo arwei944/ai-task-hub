@@ -20,7 +20,7 @@ export interface CORSConfig {
 const DEFAULT_CORS: CORSConfig = {
   origins: process.env.CORS_ORIGINS
     ? process.env.CORS_ORIGINS.split(',').map(s => s.trim())
-    : ['*'],
+    : ['http://localhost:3000', 'http://localhost:7860'],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
   exposedHeaders: ['X-RateLimit-Limit', 'X-RateLimit-Remaining', 'X-RateLimit-Reset'],
