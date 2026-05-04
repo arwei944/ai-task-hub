@@ -73,15 +73,15 @@ function DashboardContent() {
       const fbStats = results[6].status === 'fulfilled' ? results[6].value : null;
 
       setStatusCounts(counts as unknown as StatusCount);
-      setRecentTasks((tasksRes as any).items ?? []);
-      setNotifications((notifs as any).notifications ?? []);
+      setRecentTasks((tasksRes as { items?: unknown[] }).items ?? []);
+      setNotifications((notifs as { notifications?: unknown[] }).notifications ?? []);
       setUnreadCount(unread);
       setDailyTrends(trends as unknown as DailyTrend[]);
-      setWorkflowStats(wfStats as any);
-      setPendingFeedback((fbStats as any)?.pending ?? 0);
+      setWorkflowStats(wfStats as Record<string, unknown>);
+      setPendingFeedback((fbStats as { pending?: number })?.pending ?? 0);
 
       const now = new Date();
-      const overdue = ((tasksRes as any).items ?? []).filter(
+      const overdue = ((tasksRes as { items?: Array<{ dueDate?: string; status?: string }> }).items ?? []).filter(
         (t: TaskItem) => t.dueDate && new Date(t.dueDate) < now && t.status !== 'done' && t.status !== 'closed',
       );
       setOverdueTasks(overdue);

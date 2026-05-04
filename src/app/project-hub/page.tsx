@@ -169,7 +169,7 @@ export default function ProjectHubDashboardPage() {
   const fetchArchivedProjects = useCallback(async () => {
     try {
       const data = await trpc.projectHub.projects.list.query({ status: 'archived' });
-      setArchivedProjects((data as any)?.items ?? []);
+      setArchivedProjects((data as { items?: unknown[] })?.items ?? []);
     } catch (err) {
       console.error('Failed to fetch archived projects:', err);
     }

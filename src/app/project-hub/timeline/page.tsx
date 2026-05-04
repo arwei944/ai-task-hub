@@ -377,7 +377,7 @@ export default function TimelinePage() {
     try {
       setIsLoading(true);
       const data = await trpc.projectHub.projects.list.query({});
-      const items = (data as any)?.items ?? [];
+      const items = (data as { items?: unknown[] })?.items ?? [];
 
       // Fetch milestones for each project for gantt view
       const projectsWithMilestones = await Promise.all(

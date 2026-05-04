@@ -89,7 +89,7 @@ export default function OpsNotificationsPage() {
 
       // Notification list → map to NotificationRecord
       const listData = listRes.status === 'fulfilled' ? listRes.value : { items: [], total: 0 };
-      const items = (listData.items ?? []) as any[];
+      const items = (listData.items ?? []) as unknown[];
       setNotifications(
         items.map((n: any) => {
           let status: NotificationRecord['status'];

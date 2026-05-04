@@ -225,7 +225,7 @@ export default function ProjectDetailPage() {
   const fetchRecentLogs = useCallback(async () => {
     try {
       const data = await trpc.projectHub.workLogs.list.query({ projectId: id });
-      setRecentLogs((data as any) || []);
+      setRecentLogs((data as unknown[]) || []);
     } catch (err) {
       console.error('Failed to fetch recent logs:', err);
       setRecentLogs([]);

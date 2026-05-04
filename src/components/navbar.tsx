@@ -5,20 +5,12 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ThemeToggle } from './theme-toggle';
 import { LanguageSwitcher } from './language-switcher';
-
-const navItems = [
-  { href: '/dashboard', label: '仪表盘', icon: '📊' },
-  { href: '/tasks', label: '任务', icon: '✅' },
-  { href: '/agents', label: '智能体', icon: '🤖' },
-  { href: '/integrations', label: '集成', icon: '🔗' },
-  { href: '/plugins', label: '插件', icon: '🔌' },
-  { href: '/api-docs', label: 'API', icon: '📖' },
-  { href: '/settings', label: '设置', icon: '⚙️' },
-];
+import { getNavbarItems } from '@/config/navigation';
 
 export default function Navbar() {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const navItems = getNavbarItems();
 
   const isActive = (href: string) =>
     pathname === href || (href !== '/' && pathname.startsWith(href));
@@ -42,12 +34,15 @@ export default function Navbar() {
 
           {/* Desktop nav */}
           <div className="hidden md:flex items-center gap-1">
-            {navItems.map((item) => (
-              <Link key={item.href} href={item.href} className={linkClass(item.href)}>
-                <span className="mr-1">{item.icon}</span>
-                {item.label}
-              </Link>
-            ))}
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              return (
+                <Link key={item.href} href={item.href} className={linkClass(item.href)}>
+                  <Icon className="w-4 h-4 inline mr-1.5 -mt-0.5" strokeWidth={1.8} />
+                  {item.label}
+                </Link>
+              );
+            })}
             <div className="ml-2 border-l border-gray-200 dark:border-gray-700 pl-2 flex items-center gap-2">
               <LanguageSwitcher />
               <ThemeToggle />
@@ -78,17 +73,20 @@ export default function Navbar() {
         {/* Mobile menu */}
         {mobileOpen && (
           <div className="md:hidden border-t border-gray-200 dark:border-gray-800 py-3 space-y-1" role="navigation" aria-label="Mobile navigation">
-            {navItems.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={linkClass(item.href)}
-                onClick={() => setMobileOpen(false)}
-              >
-                <span className="mr-2" aria-hidden="true">{item.icon}</span>
-                {item.label}
-              </Link>
-            ))}
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={linkClass(item.href)}
+                  onClick={() => setMobileOpen(false)}
+                >
+                  <Icon className="w-4 h-4 inline mr-2 -mt-0.5" strokeWidth={1.8} />
+                  {item.label}
+                </Link>
+              );
+            })}
           </div>
         )}
       </div>

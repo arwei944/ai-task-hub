@@ -2,25 +2,11 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { FolderKanban, CheckSquare, Bot, Puzzle, Settings } from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
-
-interface BottomNavItem {
-  href: string;
-  label: string;
-  icon: LucideIcon;
-}
-
-const bottomNavItems: BottomNavItem[] = [
-  { href: '/project-hub', label: '项目', icon: FolderKanban },
-  { href: '/tasks', label: '任务', icon: CheckSquare },
-  { href: '/agents', label: '智能体', icon: Bot },
-  { href: '/plugins', label: '插件', icon: Puzzle },
-  { href: '/settings', label: '设置', icon: Settings },
-];
+import { getMobileNavItems } from '@/config/navigation';
 
 export function MobileBottomNav() {
   const pathname = usePathname();
+  const items = getMobileNavItems();
 
   return (
     <nav
@@ -29,7 +15,7 @@ export function MobileBottomNav() {
       aria-label="Bottom navigation"
     >
       <div className="flex items-center justify-around h-16 px-2">
-        {bottomNavItems.map((item) => {
+        {items.map((item) => {
           const Icon = item.icon;
           const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
 
