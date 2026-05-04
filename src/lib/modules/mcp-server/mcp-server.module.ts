@@ -96,13 +96,13 @@ export default class McpServerModule implements Module {
 
       // Register all tools from module declarations
       await this.toolRegistry.registerModuleTools(
-        { id: 'task-core', mcpTools: taskCoreMcpTools } as any,
+        { id: 'task-core', mcpTools: taskCoreMcpTools } as Pick<Module, 'id' | 'mcpTools'>,
         (_mod, toolName) => handlerMap[toolName],
       );
 
       if (context.container.has('TaskExtractor')) {
         await this.toolRegistry.registerModuleTools(
-          { id: 'ai-engine', mcpTools: aiEngineMcpTools } as any,
+          { id: 'ai-engine', mcpTools: aiEngineMcpTools } as Pick<Module, 'id' | 'mcpTools'>,
           (_mod, toolName) => handlerMap[toolName],
         );
       }
@@ -113,7 +113,7 @@ export default class McpServerModule implements Module {
         const lifecycleHandlers = createLifecycleToolHandlers(lifecycleService, context.logger);
         Object.assign(handlerMap, lifecycleHandlers);
         await this.toolRegistry.registerModuleTools(
-          { id: 'lifecycle', mcpTools: lifecycleMcpTools } as any,
+          { id: 'lifecycle', mcpTools: lifecycleMcpTools } as Pick<Module, 'id' | 'mcpTools'>,
           (_mod, toolName) => handlerMap[toolName],
         );
       }
@@ -124,7 +124,7 @@ export default class McpServerModule implements Module {
         const requirementHandlers = createRequirementToolHandlers(requirementsService, context.logger);
         Object.assign(handlerMap, requirementHandlers);
         await this.toolRegistry.registerModuleTools(
-          { id: 'requirements', mcpTools: requirementMcpTools } as any,
+          { id: 'requirements', mcpTools: requirementMcpTools } as Pick<Module, 'id' | 'mcpTools'>,
           (_mod, toolName) => handlerMap[toolName],
         );
       }
@@ -135,7 +135,7 @@ export default class McpServerModule implements Module {
         const knowledgeHandlers = createKnowledgeToolHandlers(knowledgeService, context.logger);
         Object.assign(handlerMap, knowledgeHandlers);
         await this.toolRegistry.registerModuleTools(
-          { id: 'knowledge', mcpTools: knowledgeMcpTools } as any,
+          { id: 'knowledge', mcpTools: knowledgeMcpTools } as Pick<Module, 'id' | 'mcpTools'>,
           (_mod, toolName) => handlerMap[toolName],
         );
       }
@@ -144,7 +144,7 @@ export default class McpServerModule implements Module {
       const promptHandlers = createPromptToolHandlers(context.logger);
       Object.assign(handlerMap, promptHandlers);
       await this.toolRegistry.registerModuleTools(
-        { id: 'prompt-tools', mcpTools: promptMcpTools } as any,
+        { id: 'prompt-tools', mcpTools: promptMcpTools } as Pick<Module, 'id' | 'mcpTools'>,
         (_mod, toolName) => handlerMap[toolName],
       );
 
@@ -169,7 +169,7 @@ export default class McpServerModule implements Module {
         const hubHandlers = createProjectHubToolHandlers(hubService, milestoneSvc, agentSvc, depSvc, workLogSvc, docSvc, templateSvc, reportSvc, context.logger, context.container.resolve(ServiceTokens.prisma));
         Object.assign(handlerMap, hubHandlers);
         await this.toolRegistry.registerModuleTools(
-          { id: 'project-hub', mcpTools: projectHubMcpTools } as any,
+          { id: 'project-hub', mcpTools: projectHubMcpTools } as Pick<Module, 'id' | 'mcpTools'>,
           (_mod, toolName) => handlerMap[toolName],
         );
       }

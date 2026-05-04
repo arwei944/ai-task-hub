@@ -1,6 +1,9 @@
 import type { Module, ModuleContext } from '@/lib/core/types';
 import type { SOLOBridgeConfig, SOLOCallMode } from './types';
 import { APP_VERSION } from '@/lib/core/version';
+import type { Logger } from '@/lib/core/logger';
+import type { EventBus } from '@/lib/core/event-bus';
+import type { TaskService } from '@/lib/modules/task-core/task.service';
 
 export default class WorkflowEngineModule implements Module {
   id = 'workflow-engine';
@@ -32,8 +35,8 @@ export default class WorkflowEngineModule implements Module {
       const { WorkflowParser } = await import('./config/workflow-parser');
       const { WorkflowValidator } = await import('./config/workflow-validator');
 
-      const logger = context.logger as any;
-      const eventBus = context.eventBus as any;
+      const logger = context.logger as Logger;
+      const eventBus = context.eventBus as EventBus;
 
       // SOLO bridge config - 从环境变量读取
       const validModes: SOLOCallMode[] = ['mcp', 'rest', 'pull'];
@@ -61,7 +64,7 @@ export default class WorkflowEngineModule implements Module {
       const improvementLoop = new ImprovementLoop(prisma, soloBridge, observability, logger);
 
       // Get TaskService from DI container (dependency: task-core)
-      const taskService = context.container.resolve('TaskService') as any;
+      const taskService = context.container.resolve<TaskService>('TaskService');
 
       const executor = new WorkflowExecutor(prisma, taskService, soloBridge, feedbackModule, observability, logger);
       const orchestrator = new WorkflowOrchestrator(prisma, executor, concurrencyController, observability, logger);

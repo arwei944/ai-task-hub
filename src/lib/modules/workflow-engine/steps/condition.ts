@@ -63,7 +63,8 @@ export class ConditionStep implements StepHandler {
       const values = Object.values(context);
       const fn = new Function(...keys, `"use strict"; return !!(${safeExpr});`);
       return fn(...values) === true;
-    } catch {
+    } catch (err) {
+      console.warn('[condition] Expression evaluation failed:', expression, err instanceof Error ? err.message : err);
       return false;
     }
   }

@@ -33,7 +33,7 @@ export class InvokeAgentStep implements StepHandler {
       executionId: String(context._executionId ?? ''),
       stepName: String(context._stepName ?? 'invoke-agent'),
       subAgentType: agentType,
-      callMode: callMode as any,
+      callMode: callMode as import('@/lib/modules/workflow-engine/types').SOLOCallMode,
       sessionId: context._soloSessionId as string | undefined,
       context,
       timeoutMs,

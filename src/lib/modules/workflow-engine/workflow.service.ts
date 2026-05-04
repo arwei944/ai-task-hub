@@ -6,7 +6,9 @@ async function emitEvent(eventType: string, payload: any) {
   try {
     const { getEventBus } = await import('@/lib/core/event-bus');
     getEventBus().emit({ type: eventType, payload, timestamp: new Date(), source: 'workflow' });
-  } catch {}
+  } catch (err) {
+    console.warn('[workflow] Failed to emit event:', eventType, err instanceof Error ? err.message : err);
+  }
 }
 
 // ==================== Types ====================
@@ -333,7 +335,7 @@ export class WorkflowService {
           // @ts-expect-error -- getContainer may not exist; fallback handled below
           const { getContainer } = await import('@/lib/core/di-container');
           const container = getContainer();
-          const soloBridge = container?.resolve('SOLOBridge') as any;
+          const soloBridge = container?.resolve<import('@/lib/modules/workflow-engine/solo/solo-bridge').SOLOBridge>('SOLOBridge');
 
           if (soloBridge && typeof soloBridge.call === 'function') {
             const soloResult = await soloBridge.call({
@@ -341,8 +343,8 @@ export class WorkflowService {
               stepId: step.id,
               executionId: context._executionId as string ?? 'unknown',
               stepName: step.name,
-              subAgentType: config.subAgentType as any,
-              callMode: config.callMode as any,
+              subAgentType: config.subAgentType as string,
+              callMode: config.callMode as import('@/lib/modules/workflow-engine/types').SOLOCallMode,
               context: config.context as Record<string, unknown> | undefined,
             });
 
@@ -371,7 +373,7 @@ export class WorkflowService {
           // @ts-expect-error -- getContainer may not exist; fallback handled below
           const { getContainer } = await import('@/lib/core/di-container');
           const container = getContainer();
-          const aiModel = container?.resolve('OpenAICompatibleAdapter') as any;
+          const aiModel = container?.resolve<import('@/lib/modules/ai-engine/ai-model-adapter').IAIModelAdapter>('OpenAICompatibleAdapter');
 
           if (aiModel && typeof aiModel.complete === 'function') {
             const prompt = String(config.prompt ?? `Analyze: ${step.name}`);

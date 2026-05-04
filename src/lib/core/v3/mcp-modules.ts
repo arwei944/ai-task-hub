@@ -376,7 +376,7 @@ export const mcpToolModules: McpToolModuleDescriptor[] = [
       const { createSOLOBridgeToolHandlers } = await import('@/lib/modules/mcp-server/tools/solo-bridge-handlers');
       const soloBridge = new SOLOBridge(
         {
-          defaultMode: (process.env.SOLO_DEFAULT_MODE as any) || 'mcp',
+          defaultMode: (process.env.SOLO_DEFAULT_MODE as 'mcp' | 'rest' | 'pull') || 'mcp',
           mcpEndpoint: process.env.SOLO_MCP_ENDPOINT || 'http://localhost:3001/mcp',
           restEndpoint: process.env.SOLO_REST_ENDPOINT || 'http://localhost:3001/api/solo/call',
           defaultTimeoutMs: parseInt(process.env.SOLO_TIMEOUT_MS || '30000', 10),

@@ -259,7 +259,7 @@ export class EventBus implements IEventBus {
     const cutoff = new Date(Date.now() - this.eventTTLHours * 60 * 60 * 1000);
     try {
       // Use the event store's clean method if available
-      const store = this.eventStore as any;
+      const store = this.eventStore as { getEvents?(filter?: Record<string, unknown>): unknown[] };
       if (typeof store.cleanOldEvents === 'function') {
         return await store.cleanOldEvents(cutoff);
       }

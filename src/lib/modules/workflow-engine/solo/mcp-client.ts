@@ -124,7 +124,8 @@ export class SOLOMCPClient {
         5000,
       );
       return true;
-    } catch {
+    } catch (err) {
+      console.debug('[mcp-client] Connection verification failed:', err instanceof Error ? err.message : err);
       this.markDisconnected();
       return false;
     }
