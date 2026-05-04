@@ -165,4 +165,50 @@ export default {
   // Integrations
   'integrations.title': '集成管理',
   'integrations.subtitle': '连接外部服务',
+
+  // Admin
+  'admin.users.title': '用户管理',
+  'admin.users.subtitle': '管理系统用户、角色和权限',
+  'admin.users.search': '搜索用户名或显示名...',
+  'admin.users.total': '共 {count} 位用户',
+  'admin.users.role.admin': '管理员',
+  'admin.users.role.user': '用户',
+  'admin.users.role.agent': '智能体',
+  'admin.users.status.active': '活跃',
+  'admin.users.status.disabled': '已禁用',
+  'admin.users.action.enable': '启用用户',
+  'admin.users.action.disable': '禁用用户',
+  'admin.users.noUsers': '暂无用户',
+  'admin.users.noMatch': '未找到匹配用户',
+
+  'admin.modules.title': '模块管理',
+  'admin.modules.subtitle': '管理系统模块的启用、禁用和热重载',
+  'admin.modules.search': '搜索模块...',
+  'admin.modules.stats': '{enabled}/{total} 已启用 · {locked} 锁定',
+  'admin.modules.action.enable': '启用',
+  'admin.modules.action.disable': '禁用',
+  'admin.modules.action.reload': '重载',
+  'admin.modules.locked': '核心模块（锁定）',
+  'admin.modules.noModules': '暂无模块',
+  'admin.modules.noMatch': '未找到匹配模块',
+
+  // Notification Settings
+  'settings.notifications.title': '通知设置',
+  'settings.notifications.subtitle': '配置通知渠道和偏好',
+  'settings.notifications.push': '浏览器推送',
+  'settings.notifications.pushEnabled': '已启用',
+  'settings.notifications.pushDisabled': '未启用',
+  'settings.notifications.pushUnsupported': '当前浏览器不支持',
+  'settings.notifications.testPush': '发送测试',
+  'settings.notifications.channels': '通知渠道',
+  'settings.notifications.rules': '通知规则',
+  'settings.notifications.noRules': '暂无通知规则，请在通知管理页面创建',
+
+  // PWA
+  'pwa.install.title': '安装 AI Task Hub',
+  'pwa.install.description': '添加到主屏幕，获得更好的使用体验',
+  'pwa.install.button': '安装',
+  'pwa.offline.title': '网络连接已断开',
+  'pwa.offline.description': 'AI Task Hub 需要网络连接才能正常工作。请检查你的网络设置后重试。',
+  'pwa.offline.retry': '重新连接',
 } as const;
