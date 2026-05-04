@@ -198,7 +198,7 @@ export const workflowsRouter = createTRPCRouter({
     // Calculate avg duration from startedAt -> completedAt
     let avgDurationMs = 0;
     if (completedExecs.length > 0) {
-      const totalDuration = completedExecs.reduce((sum: any, e: any) => {
+      const totalDuration = completedExecs.reduce((sum: number, e: { completedAt?: Date | null; startedAt?: Date | null }) => {
         return sum + ((e.completedAt?.getTime() ?? 0) - (e.startedAt?.getTime() ?? 0));
       }, 0);
       avgDurationMs = Math.round(totalDuration / completedExecs.length);
@@ -361,10 +361,10 @@ export const workflowsRouter = createTRPCRouter({
     });
 
     const failCountMap = new Map(
-      failCounts.map((f: any) => [f.stepType, f._count.id]),
+      failCounts.map((f: { stepType: string; _count: { id: number } }) => [f.stepType, f._count.id]),
     );
 
-    const items = stepGroups.map((group: any) => {
+    const items = stepGroups.map((group: { stepType: string; _count: { id: number }; _avg: { durationMs: number | null } }) => {
       const totalCalls = group._count.id;
       const failCount = failCountMap.get(group.stepType) ?? 0;
       const successCount = Number(totalCalls) - Number(failCount);
@@ -397,7 +397,7 @@ export const workflowsRouter = createTRPCRouter({
         take: limit,
       });
 
-      const items = soloSteps.map((step: any) => {
+      const items = soloSteps.map((step: { id: string; input?: string | null; soloCallMode?: string | null; soloSubAgent?: string | null; durationMs?: number | null; status: string; tokensUsed?: number | null; startedAt?: Date | null; createdAt: Date }) => {
         let prompt = '';
         if (step.input) {
           try {
