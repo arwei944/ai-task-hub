@@ -5,5 +5,473 @@ generator client {
 
 datasource db {
   provider = "sqlite"
-  url      = env("DATABASE_URL")
+}
+
+// ==================== User ====================
+model User {
+  id           String    @id @default(uuid())
+  username     String    @unique
+  email        String    @unique
+  passwordHash String
+  displayName  String?
+  role         String    @default("user") // admin, user, agent
+  avatar       String?
+  isActive     Boolean   @default(true)
+  lastLoginAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([username])
+  @@index([email])
+  @@index([role])
+  @@index([isActive])
+}
+
+// ==================== Task ====================
+model Task {
+  id            String     @id @default(uuid())
+  title         String
+  description   String?
+  status        String     @default("todo") // todo, in_progress, done, closed, deleted
+  priority      String     @default("medium") // urgent, high, medium, low
+  progress      Int        @default(0) // 0-100
+  type          String     @default("general")
+  phase         String     @default("implementation") // requirements, planning, architecture, implementation, testing, deployment, review
+  source        String     @default("manual") // trae, cursor, windsurf, manual, ai, import, mcp
+  sourceRef     String?
+  assignee      String?
+  creator       String? // agentId or userId
+  parentTaskId  String?
+  projectId     String? // 所属项目
+  dueDate       DateTime?
+  startedAt     DateTime?
+  completedAt   DateTime?
+  metadata      String? // JSON string
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  project     Project?         @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  parentTask  Task?           @relation("SubTasks", fields: [parentTaskId], references: [id])
+  subTasks    Task[]          @relation("SubTasks")
+  dependencies TaskDependency[] @relation("TaskDependsOn")
+  dependents   TaskDependency[] @relation("TaskDependentOf")
+  history     TaskHistory[]
+  tags        TaskTag[]
+  activities  ActivityLog[]
+
+  @@index([status])
+  @@index([priority])
+  @@index([type])
+  @@index([creator])
+  @@index([parentTaskId])
+  @@index([dueDate])
+  @@index([createdAt])
+  @@index([status, createdAt])
+  @@index([status, priority])
+  @@index([assignee, status])
+  @@index([projectId])
+  @@index([phase])
+  @@index([source])
+}
+
+// ==================== Task Dependency ====================
+model TaskDependency {
+  id          String   @id @default(uuid())
+  taskId      String
+  dependsOnId String
+  createdAt   DateTime @default(now())
+
+  task      Task @relation("TaskDependsOn", fields: [taskId], references: [id])
+  dependsOn Task @relation("TaskDependentOf", fields: [dependsOnId], references: [id])
+
+  @@unique([taskId, dependsOnId])
+  @@index([taskId])
+  @@index([dependsOnId])
+}
+
+// ==================== Task History ====================
+model TaskHistory {
+  id        String   @id @default(uuid())
+  taskId    String
+  field     String // status, priority, progress, title, description, etc.
+  oldValue  String?
+  newValue  String?
+  actor     String? // user or agent id
+  createdAt DateTime @default(now())
+
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
+  @@index([createdAt])
+}
+
+// ==================== Workflow Trigger Log ====================
+model WorkflowTriggerLog {
+  id          String   @id @default(uuid())
+  workflowId  String
+  triggerType String // manual | webhook | schedule | event | github-issue | approval
+  payload     String? // JSON
+  success     Boolean  @default(true)
+  error       String?
+  createdAt   DateTime @default(now())
+
+  workflow Workflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+
+  @@index([workflowId])
+  @@index([triggerType])
+  @@index([createdAt])
+}
+
+// ==================== Tag ====================
+model Tag {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  color     String   @default("#6B7280")
+  createdAt DateTime @default(now())
+
+  tasks TaskTag[]
+
+  @@index([name])
+}
+
+// ==================== Task Tag ====================
+model TaskTag {
+  taskId String
+  tagId  String
+
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  tag  Tag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([taskId, tagId])
+  @@index([taskId])
+  @@index([tagId])
+}
+
+// ==================== AI Audit Log ====================
+model AIAuditLog {
+  id           String   @id @default(uuid())
+  processor    String
+  input        String
+  output       String
+  model        String
+  tokensUsed   Int      @default(0)
+  duration     Int
+  success      Boolean
+  error        String?
+  createdAt    DateTime @default(now())
+
+  @@index([processor])
+  @@index([createdAt])
+}
+
+// ==================== Agent ====================
+model Agent {
+  id              String    @id @default(uuid())
+  name            String
+  description     String?
+  apiKey          String    @unique
+  clientType      String    @default("mcp") // trae, cursor, windsurf, vscode, claude, chatgpt, mcp, api
+  clientVersion   String? // e.g., "Trae 1.2.0"
+  capabilities    String? // JSON string: ["task_crud", "ai_extract", ...]
+  permissionLevel String    @default("agent") // "user" (最高权限) | "agent" (创建者隔离+全局只读)
+  isActive        Boolean   @default(true)
+  lastSeenAt      DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  operations    AgentOperation[]
+  projects      Project[]
+  activities    ActivityLog[]
+  projectAgents ProjectAgent[]
+
+  @@index([apiKey])
+  @@index([isActive])
+  @@index([clientType])
+  @@index([createdAt])
+}
+
+// ==================== Agent Operation ====================
+model AgentOperation {
+  id        String   @id @default(uuid())
+  agentId   String
+  action    String // create_task, update_task, delete_task, query, etc.
+  target    String? // task ID or other target
+  details   String? // JSON
+  success   Boolean
+  error     String?
+  createdAt DateTime @default(now())
+
+  agent Agent @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+  @@index([agentId])
+  @@index([action])
+  @@index([createdAt])
+}
+
+// ==================== Activity Log ====================
+model ActivityLog {
+  id        String   @id @default(uuid())
+  userId    String?
+  agentId   String?
+  action    String
+  target    String? // task ID, project ID, etc.
+  details   String? // JSON
+  createdAt DateTime @default(now())
+
+  user   User?  @relation(fields: [userId], references: [id], onDelete: SetNull)
+  agent  Agent? @relation(fields: [agentId], references: [id], onDelete: SetNull)
+  task   Task?  @relation(fields: [target], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([agentId])
+  @@index([action])
+  @@index([createdAt])
+}
+
+// ==================== Project ====================
+model Project {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  status      String   @default("active") // active, archived, completed
+  priority    String   @default("medium")
+  startDate   DateTime?
+  endDate     DateTime?
+  creatorId   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tasks        Task[]
+  agents       Agent[]
+  projectAgents ProjectAgent[]
+  activities   ActivityLog[]
+  deployments  Deployment[]
+  docs         ProjectDoc[]
+  notifications ProjectNotification[]
+
+  @@index([status])
+  @@index([creatorId])
+  @@index([createdAt])
+}
+
+// ==================== Project Agent ====================
+model ProjectAgent {
+  id        String   @id @default(uuid())
+  projectId String
+  agentId   String
+  role      String   @default("member") // owner, member, viewer
+  joinedAt  DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  agent   Agent   @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, agentId])
+  @@index([projectId])
+  @@index([agentId])
+}
+
+// ==================== Deployment ====================
+model Deployment {
+  id        String   @id @default(uuid())
+  projectId String
+  version   String?
+  environment String @default("production") // development, staging, production
+  status    String   @default("pending") // pending, running, success, failed, rolled_back
+  deployedBy String?
+  deployedAt DateTime?
+  logs      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+// ==================== Project Doc ====================
+model ProjectDoc {
+  id        String   @id @default(uuid())
+  projectId String
+  title     String
+  content   String? // Markdown content
+  docType   String   @default("doc") // doc, api, guide, readme
+  authorId  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@index([docType])
+  @@index([createdAt])
+}
+
+// ==================== Project Notification ====================
+model ProjectNotification {
+  id        String   @id @default(uuid())
+  projectId String
+  type      String // mention, assignment, status_change, deadline, custom
+  title     String
+  message   String?
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@index([type])
+  @@index([read])
+  @@index([createdAt])
+}
+
+// ==================== Workflow ====================
+model Workflow {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  triggerType String   @default("manual") // manual, webhook, schedule, event, github-issue, approval
+  triggerConfig String? // JSON
+  steps       String   // JSON array of workflow steps
+  isActive    Boolean  @default(true)
+  creatorId   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  triggerLogs WorkflowTriggerLog[]
+
+  @@index([triggerType])
+  @@index([isActive])
+  @@index([creatorId])
+  @@index([createdAt])
+}
+
+// ==================== Notification Rule ====================
+model NotificationRule {
+  id        String   @id @default(uuid())
+  userId    String?
+  agentId   String?
+  name      String
+  eventType String   // task_created, task_updated, task_completed, etc.
+  channel   String   @default("in_app") // in_app, email, webhook, push
+  config    String?  // JSON
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([agentId])
+  @@index([eventType])
+  @@index([channel])
+  @@index([isActive])
+}
+
+// ==================== Backup ====================
+model Backup {
+  id        String   @id @default(uuid())
+  filename  String
+  fileSize  Int
+  checksum  String?
+  status    String   @default("completed") // pending, completed, failed
+  createdAt DateTime @default(now())
+
+  @@index([status])
+  @@index([createdAt])
+}
+
+// ==================== Webhook Event ====================
+model WebhookEvent {
+  id        String   @id @default(uuid())
+  type      String
+  payload   String   // JSON
+  status    String   @default("pending") // pending, processed, failed
+  response  String?
+  createdAt DateTime @default(now())
+  processedAt DateTime?
+
+  @@index([type])
+  @@index([status])
+  @@index([createdAt])
+}
+
+// ==================== Project Template ====================
+model ProjectTemplate {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  config      String   // JSON
+  category    String?
+  isPublic    Boolean  @default(false)
+  creatorId   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([category])
+  @@index([isPublic])
+  @@index([creatorId])
+  @@index([createdAt])
+}
+
+// ==================== SSE Connection ====================
+model SSEConnection {
+  id        String   @id @default(uuid())
+  userId    String?
+  agentId   String?
+  connectedAt DateTime @default(now())
+  lastPingAt  DateTime?
+  metadata  String? // JSON
+
+  @@index([userId])
+  @@index([agentId])
+}
+
+// ==================== System Config ====================
+model SystemConfig {
+  id    String @id @default(uuid())
+  key   String @unique
+  value String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([key])
+}
+
+// ==================== Observability Event ====================
+model ObservabilityEvent {
+  id        String   @id @default(uuid())
+  source    String   // agent, workflow, system, api
+  level     String   @default("info") // debug, info, warn, error
+  eventType String
+  message   String?
+  metadata  String? // JSON
+  createdAt DateTime @default(now())
+
+  @@index([source])
+  @@index([level])
+  @@index([eventType])
+  @@index([createdAt])
+}
+
+// ==================== Intervention ====================
+model Intervention {
+  id          String   @id @default(uuid())
+  source      String   // agent, workflow, system
+  type        String   // approval, escalation, notification, manual_action
+  title       String
+  description String?
+  status      String   @default("pending") // pending, approved, rejected, completed, expired
+  priority    String   @default("medium")
+  assigneeId  String?
+  metadata    String? // JSON
+  resolvedAt  DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([source])
+  @@index([type])
+  @@index([status])
+  @@index([priority])
+  @@index([assigneeId])
+  @@index([createdAt])
 }
