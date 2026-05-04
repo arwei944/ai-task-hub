@@ -159,7 +159,9 @@ export default function AdminModulesPage() {
                   </div>
                 </div>
                 {mod.locked ? (
-                  <Lock className="w-4 h-4 text-amber-500" title="核心模块（锁定）" />
+                  <span title="核心模块（锁定）">
+                    <Lock className="w-4 h-4 text-amber-500" />
+                  </span>
                 ) : (
                   <Unlock className="w-4 h-4 text-gray-300 dark:text-gray-600" />
                 )}
