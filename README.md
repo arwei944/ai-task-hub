@@ -1,109 +1,153 @@
-# AI Task Hub v3.0 — 智能任务管理系统
+# 🧠 AI Task Hub
 
-AI 驱动的智能任务管理平台，基于 v3 内核化架构，支持 MCP 协议和 tRPC API 双接口。
+> AI 驱动的智能任务管理平台 — 让 AI Agent 成为你团队的任务协作伙伴
 
-## 架构概览
+[在线体验](https://arwei944-ai-task-hub.hf.space) · [静态演示](./demo.html) · [部署文档](./DEPLOYMENT.md) · [贡献指南](./CONTRIBUTING.md)
+
+AI Task Hub 是一个开源的智能任务管理平台，通过 MCP (Model Context Protocol) 协议与 AI Agent 深度集成。它不是又一个 Todo 应用——而是一个让 AI Agent 能够创建、分解、执行和追踪任务的协作平台。
+
+## ✨ 核心特性
+
+- **📋 任务管理** — CRUD、状态机、依赖关系、标签系统、优先级排序
+- **🤖 AI 引擎** — 自然语言任务提取、智能推断、自动拆解、NL 查询
+- **🔄 工作流引擎** — 14 种步骤类型、触发器、子工作流、断点恢复
+- **🤝 智能体协作** — Agent 注册、权限管理、操作审计日志
+- **🔗 平台集成** — GitHub / 飞书 / Notion / Telegram / Webhook
+- **📊 数据仪表盘** — 全局统计、趋势分析、实时监控
+- **🔔 通知系统** — 多渠道投递（系统/Web Push/Email/Telegram/企业微信）、规则引擎
+- **🔌 MCP 服务端** — 162+ 工具，Streamable HTTP 协议
+- **🔌 插件系统** — 可扩展架构，8 种插件能力
+- **🛡️ 自愈系统** — 熔断器、死信队列、30s 周期健康检查
+
+## 🖥️ 界面预览
+
+> 📸 截图待补充 — 运行项目后访问各页面截图
+
+| 页面 | 路径 | 说明 |
+|------|------|------|
+| 项目总览 | `/project-hub` | 项目列表、模板、时间线 |
+| 任务看板 | `/project-hub/[id]/tasks` | 看板/列表视图、拖拽排序 |
+| 工作流管理 | `/workflows` | 可视化工作流编辑器 |
+| 运维面板 | `/ops` | 8 视图实时监控 |
+| 仪表盘 | `/dashboard` | 全局数据统计 |
+
+## 🚀 快速开始
+
+### 前置条件
+
+- **Node.js** ≥ 20
+- **pnpm** ≥ 10 (`npm install -g pnpm`)
+- **Git**
+
+### 方式一：本地开发
+
+```bash
+# 1. 克隆仓库
+git clone https://github.com/arwei944/ai-task-hub.git
+cd ai-task-hub
+
+# 2. 安装依赖
+pnpm install
+
+# 3. 初始化数据库
+pnpm prisma db push
+
+# 4. 启动开发服务器
+pnpm dev
+```
+
+打开 [http://localhost:3000](http://localhost:3000) 即可访问。首次启动会自动创建管理员账户。
+
+### 方式二：Docker 一键启动
+
+```bash
+# 1. 克隆仓库
+git clone https://github.com/arwei944/ai-task-hub.git
+cd ai-task-hub
+
+# 2. Docker Compose 启动
+docker compose up -d
+```
+
+打开 [http://localhost:7860](http://localhost:7860) 即可访问。
+
+### 方式三：在线体验
+
+直接访问 [HuggingFace Spaces 在线演示](https://arwei944-ai-task-hub.hf.space)，无需安装任何依赖。
+
+> 💡 还有一个 [静态 HTML 演示](./demo.html) 展示 UI 设计，无需后端即可浏览。
+
+## 🏗️ 技术架构
 
 ### 技术栈
 
-- **Next.js 16** + Turbopack + TypeScript
-- **v3 内核**: AppKernel + 7 Capability 模块
-- **DI Container** + ServiceRegistry (32 typed services)
-- **tRPC API** (17 routers)
-- **Prisma ORM** + SQLite
-- **Vitest** 测试框架
+| 层级 | 技术 |
+|------|------|
+| 框架 | Next.js 16 + React 19 + TypeScript |
+| API | tRPC v11 (17 routers) + MCP (162+ tools) |
+| 数据库 | Prisma 7 + SQLite |
+| 样式 | Tailwind CSS v4 |
+| 测试 | Vitest |
+| 部署 | Docker / HuggingFace Spaces |
 
 ### v3 内核架构
 
-v3 内核采用模块化 Capability 注册机制，通过 AppKernel 统一管理 7 大能力模块：
-
-| 模块 | 职责 |
-|------|------|
-| **Task** | 任务管理核心 — CRUD、状态机、依赖关系、标签系统 |
-| **AI** | AI 引擎 — 任务提取、智能推断、事件驱动处理器 |
-| **Workflow** | 工作流引擎 — 14 种步骤类型、触发器、子工作流 |
-| **Notification** | 通知系统 — 多渠道投递、规则引擎、偏好管理 |
-| **Integration** | 平台集成 — GitHub / 飞书 / Notion / Webhook |
-| **Agent** | 智能体协作 — 注册、权限、操作日志 |
-| **Observability** | 可观测性 — 指标收集、执行追踪、健康检查 |
-
-### DI Container + ServiceRegistry
-
-- **依赖注入容器** — 32 个服务全类型化注册，零 `any` 泛型推断
-- **ServiceRegistry** — 完整类型接口，支持服务发现和依赖解析
-- **冷启动** — 322ms 内完成全部模块初始化
-
-### V3 EventBus
-
-- 类型安全的事件总线，支持 38+ 事件类型
-- 事件 TTL 自动清理（默认 7 天）
-- 事件持久化 + Schema 校验
-- 死信队列 (DLQ) + 指数退避重试
-
-## 快速开始
-
-```bash
-# 安装依赖
-pnpm install
-
-# 启动开发服务器
-pnpm dev
-
-# 运行测试
-pnpm test
+```
+┌─────────────────────────────────────────────┐
+│                  AppKernel                   │
+├─────────────────────────────────────────────┤
+│  Task  │  AI   │ Workflow │ Notification    │
+│  Core  │ Engine│ Engine  │ System          │
+├─────────────────────────────────────────────┤
+│ Integration │ Agent │ Observability │ Plugin │
+├─────────────────────────────────────────────┤
+│            DI Container (32 services)        │
+├─────────────────────────────────────────────┤
+│         EventBus (38+ event types)           │
+├─────────────────────────────────────────────┤
+│         Prisma ORM + SQLite                  │
+└─────────────────────────────────────────────┘
 ```
 
-打开 [http://localhost:3000](http://localhost:3000) 即可访问。
-
-## 项目结构
+### 项目结构
 
 ```
 src/
+├── app/                    # Next.js App Router (19 pages)
+│   ├── api/                # API Routes (MCP, SSE, Webhook, REST)
+│   ├── project-hub/        # 项目管理 (含子页面)
+│   ├── ops/                # 运维面板 (8 views)
+│   ├── dashboard/          # 仪表盘
+│   └── workflows/          # 工作流管理
 ├── lib/
-│   ├── core/
-│   │   └── v3/              # v3 内核 — AppKernel, Capability, DI Container
-│   ├── trpc/                # tRPC API — 17 routers
-│   ├── db.ts                # Prisma 数据库客户端
-│   └── modules/             # 业务模块
-├── app/
-│   ├── ops/                 # 运维面板 — 8 个视图
-│   ├── dashboard/           # 主仪表盘
-│   ├── workflows/           # 工作流管理
-│   └── ...
-└── prisma/
-    └── schema.prisma        # 数据模型定义
+│   ├── core/v3/            # v3 内核 (AppKernel, DI, EventBus)
+│   ├── trpc/               # tRPC API (17 routers)
+│   └── modules/            # 业务模块 (12 modules)
+├── components/             # React 组件
+└── prisma/                 # 数据模型 (36+ models)
 ```
 
-## 运维面板
+## 📊 项目统计
 
-v3 内置 8 视图运维面板 (`/ops`)，提供全方位系统监控和干预能力：
-
-| 视图 | 功能 |
+| 指标 | 数值 |
 |------|------|
-| **总览** | 7 能力健康卡片 + 熔断器状态 + 死信队列 + 实时统计 |
-| **积木拓扑** | ReactFlow 可视化模块依赖关系 |
-| **联动追踪** | 事件链路追踪，支持筛选和重试 |
-| **事件流** | SSE 双通道实时事件流 |
-| **工作流** | 运行状态 + 步骤详情 |
-| **AI 服务** | 模型状态 + 用量统计 + 延迟监控 |
-| **通知系统** | 渠道状态 + 投递统计 |
-| **手动干预** | DLQ 管理 + 熔断器控制 |
+| MCP 工具 | 162+ |
+| tRPC 路由 | 17 |
+| Prisma 模型 | 36+ |
+| 测试用例 | 1875+ |
+| 前端页面 | 19 |
+| 工作流步骤类型 | 14 |
+| 通知渠道 | 5 |
+| 注册服务 | 32 |
 
-### 自愈系统
+## 🔗 相关链接
 
-- **SelfHealingManager** — 30s 周期健康检查
-- **熔断器** — 三态自动恢复 (Closed / Open / Half-Open)
-- **死信队列** — 失败事件自动捕获和重试
-- **SSE 健康推送** — 实时状态变更通知
+- [在线体验](https://arwei944-ai-task-hub.hf.space)
+- [部署文档](./DEPLOYMENT.md)
+- [贡献指南](./CONTRIBUTING.md)
+- [路线图](./ROADMAP.md)
+- [更新日志](./CHANGELOG.md)
 
-## 统计
+## 📄 许可证
 
-- **101 测试套件 / 1886 测试通过**
-- **TypeScript 错误: src/ 目录 0 错误**
-- **17 tRPC 路由**
-- **162+ MCP 工具**
-- **32 typed services**
-
-## 许可证
-
-MIT
+[MIT](./LICENSE) © 2026 arwei944
