@@ -138,6 +138,7 @@ function parseCapabilities(raw: string | null | undefined): string[] {
 }
 
 function getInitials(name: string): string {
+  if (!name) return '?';
   return name
     .split(/[\s-_]+/)
     .slice(0, 2)

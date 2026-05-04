@@ -30,15 +30,16 @@ export function StatsDashboard({ projects }: StatsDashboardProps) {
     let inProgressCount = 0;
     let todoCount = 0;
     for (const p of projects) {
-      if (p._count?.tasks) {
-        // 根据 progress 近似估算
-        const tasks = p._count.tasks;
-        const done = Math.round((tasks * (p.progress ?? 0)) / 100);
-        const inProg = Math.round((tasks * (1 - (p.progress ?? 0) / 100)) * 0.6);
-        const todo = tasks - done - inProg;
-        doneCount += done;
-        inProgressCount += Math.max(inProg, 0);
-        todoCount += Math.max(todo, 0);
+      // 优先使用 taskStats（来自 overview API），其次用 _count
+      const stats = p.taskStats ?? p._count?.tasks ? {
+        total: p._count?.tasks ?? 0,
+        done: Math.round(((p._count?.tasks ?? 0) * (p.progress ?? 0)) / 100),
+        inProgress: 0, todo: 0
+      } : null;
+      if (stats) {
+        doneCount += stats.done ?? 0;
+        inProgressCount += stats.inProgress ?? 0;
+        todoCount += stats.todo ?? 0;
       }
     }
     const totalTasks = doneCount + inProgressCount + todoCount;
@@ -143,7 +144,7 @@ export function StatsDashboard({ projects }: StatsDashboardProps) {
         <div className="flex w-[200px] min-w-[180px] flex-col gap-1">
           <span className="text-xs font-medium text-muted-foreground">任务完成率</span>
           <div className="h-[120px]">
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height="100%" minWidth={50} minHeight={60}>
               <PieChart>
                 <Pie
                   data={pieData}
@@ -184,7 +185,7 @@ export function StatsDashboard({ projects }: StatsDashboardProps) {
         <div className="flex w-[250px] min-w-[200px] flex-col gap-1">
           <span className="text-xs font-medium text-muted-foreground">优先级分布</span>
           <div className="h-[120px]">
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height="100%" minWidth={50} minHeight={60}>
               <BarChart
                 data={priorityData}
                 layout="vertical"
@@ -214,7 +215,7 @@ export function StatsDashboard({ projects }: StatsDashboardProps) {
         <div className="flex w-[250px] min-w-[200px] flex-col gap-1">
           <span className="text-xs font-medium text-muted-foreground">阶段分布</span>
           <div className="h-[120px]">
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height="100%" minWidth={50} minHeight={60}>
               <BarChart
                 data={phaseData}
                 layout="vertical"

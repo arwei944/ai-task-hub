@@ -93,14 +93,15 @@ export const commandCenterRouter = createTRPCRouter({
       };
 
       // Agent info
-      const agentInfo = detail?.agents?.[0] ? {
-        id: detail.agents[0].id,
-        name: detail.agents[0].name,
-        clientType: detail.agents[0].clientType,
-        role: detail.agents[0].role,
-        capabilities: detail.agents[0].capabilities,
-        isActive: detail.agents[0].isActive,
-        apiKey: detail.agents[0].apiKey,
+      const agentPA = detail?.agents?.[0] ?? null;
+      const agentInfo = agentPA ? {
+        id: agentPA.id,
+        name: (agentPA as any).agent?.name ?? (agentPA as any).name ?? 'Unknown',
+        clientType: (agentPA as any).agent?.clientType ?? (agentPA as any).clientType ?? null,
+        role: agentPA.role,
+        capabilities: agentPA.capabilities,
+        isActive: agentPA.isActive,
+        apiKey: (agentPA as any).agent?.apiKey ?? null,
       } : null;
 
       return {
